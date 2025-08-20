@@ -1,0 +1,27 @@
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="max-w-2xl mx-auto text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl font-bold tracking-tight">KubeOrchestra</h1>
+          <p className="text-xl text-muted-foreground leading-relaxed">
+            Visual Kubernetes workflow orchestrator that transforms complex YAML
+            configurations into intuitive drag-and-drop interfaces
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button size="lg">Get Started</Button>
+          <Button variant="outline" size="lg">
+            View Demo
+          </Button>
+          <Button variant="ghost" size="lg">
+            Documentation
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
