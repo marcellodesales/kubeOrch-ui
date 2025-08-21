@@ -14,7 +14,7 @@ A visual Kubernetes workflow orchestrator that transforms complex YAML configura
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/KubeOrchestra/ui.git
 cd ui
 
 # Install dependencies
@@ -88,7 +88,7 @@ npm run start
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
 
