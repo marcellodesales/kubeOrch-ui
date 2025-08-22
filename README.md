@@ -1,20 +1,47 @@
-# KubeOrchestra
+# KubeOrchestra UI
 
-A visual Kubernetes workflow orchestrator that transforms complex YAML configurations into intuitive drag-and-drop interfaces.
+[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Cloud Native](https://img.shields.io/badge/Cloud%20Native-orange.svg)](https://landscape.cncf.io/)
+
+Visual interface for KubeOrchestra - Kubernetes made simple through drag-and-drop.
+
+## 🎯 Vision
+
+Make Kubernetes accessible to everyone. No YAML, no complexity - just drag components, connect them visually, and deploy with one click.
+
+## 🚀 What is KubeOrchestra UI?
+
+The intuitive frontend that makes Kubernetes visual and simple:
+
+- **Visual Workflow Canvas** - Drag and drop services, draw connections
+- **150+ Components** - Pre-configured databases, apps, ML platforms
+- **One-Click Plugins** - Add monitoring, logging, security instantly
+- **Auto-Connection** - Services wire themselves together intelligently
+- **Zero Configuration** - Everything works with smart defaults
+
+## ✨ Key Features
+
+- 🎨 **Drag & Drop Designer** - Visual workflow creation with connection lines
+- 🔌 **Smart Connections** - Auto-detect compatible services and ports
+- 📦 **Component Library** - PostgreSQL, Redis, Kafka, and 150+ more
+- 🚀 **One-Click Deploy** - Transform visual design to running services
+- 📊 **Real-time Logs** - Stream container logs from all services
+- 🎯 **Plugin Marketplace** - Install complete stacks with one click
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 15 with TypeScript
-- **UI Components**: shadcn/ui with Tailwind CSS
+- **Framework**: Next.js 15 with TypeScript
+- **UI Components**: shadcn/ui + Radix UI
 - **Styling**: Tailwind CSS v4
-- **Code Quality**: ESLint + Prettier
-- **Development**: Turbopack for fast builds
+- **Canvas**: React Flow
+- **State**: Zustand
+- **Real-time**: WebSocket
 
-## 📦 Installation
+## 🚦 Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/KubeOrchestra/ui.git
+git clone https://github.com/yourusername/kubeorchestra-ui.git
 cd ui
 
 # Install dependencies
@@ -24,72 +51,32 @@ npm install
 npm run dev
 ```
 
-## 🎯 Available Scripts
-
-```bash
-npm run dev          # Start development server (port 3001)
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix ESLint issues
-npm run format       # Format code with Prettier
-npm run format:check # Check code formatting
-```
-
-## 🌐 Development
-
-- **Local**: http://localhost:3001
-- **Network**: Available on your local network
+Open http://localhost:3001
 
 ## 📁 Project Structure
 
 ```
-├── app/                 # Next.js app directory
-│   ├── globals.css     # Global styles
-│   ├── layout.tsx      # Root layout
-│   └── page.tsx        # Homepage
-├── components/         # Reusable components
-│   └── ui/            # shadcn/ui components
-├── lib/               # Utility functions
-└── public/            # Static assets
+ui/
+├── app/            # Next.js app directory
+├── components/     # UI components
+│   ├── canvas/     # Workflow designer
+│   ├── palette/    # Component library
+│   └── ui/         # Base components
+├── stores/         # State management
+└── lib/            # Utilities
 ```
 
-## 🎨 UI Components
+## 🎨 UI Philosophy
 
-Built with shadcn/ui components:
+- **Progressive Disclosure** - Show complexity only when needed
+- **Smart Defaults** - Everything works out-of-the-box
+- **Visual Feedback** - Instant validation and suggestions
+- **Zero Configuration** - Optional advanced settings
 
-- Button (multiple variants)
-- Card (with all sub-components)
-- More components can be added as needed
+## 🤝 Contributing
 
-## 🔧 Configuration Files
-
-- `.prettierrc` - Prettier formatting rules
-- `.eslintrc` - ESLint configuration
-- `components.json` - shadcn/ui configuration
-- `tailwind.config.js` - Tailwind CSS configuration
-
-## 📝 Code Quality
-
-- **ESLint**: TypeScript and React best practices
-- **Prettier**: Consistent code formatting
-- **TypeScript**: Full type safety
-- **VS Code**: Auto-formatting on save
-
-## 🚀 Deployment
-
-```bash
-# Build the application
-npm run build
-
-# Start production server
-npm run start
-```
+We welcome contributions! Check out [tasks.md](tasks.md) for the development roadmap.
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
-Built with ❤️ for the Kubernetes community
+Apache License 2.0 - see [LICENSE](LICENSE) file for details.
