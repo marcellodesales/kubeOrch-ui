@@ -25,6 +25,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/stores/AuthStore";
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -34,10 +37,11 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const { setAuthDetails } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string>("");
-
+  const router = useRouter();
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -51,8 +55,22 @@ export function LoginForm() {
     setError("");
 
     try {
-      console.log("Login data:", data);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await api.post("/auth/login", data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      const responseData = response.data;
+      if (response.status === 200) {
+        setAuthDetails(
+          {
+            email: responseData.user.email,
+            id: responseData.user.id,
+            name: responseData.user.name,
+          },
+          // for your guys context this is token:responseData.token
+          responseData.token
+        );
+      }
+      router.push("/dashboard");
     } catch {
       setError("Invalid email or password. Please try again.");
     } finally {
