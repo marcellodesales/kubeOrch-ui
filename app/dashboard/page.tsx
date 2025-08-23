@@ -217,7 +217,7 @@ export default function DashboardPage() {
                     const status =
                       statusConfig[
                         deployment.status as keyof typeof statusConfig
-                      ];
+                      ] ?? statusConfig.warning;
                     const StatusIcon = status.icon;
 
                     return (

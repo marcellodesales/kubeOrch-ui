@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   Sidebar,
   SidebarContent,
@@ -151,13 +152,13 @@ export function NavigationSidebar() {
                             {item.submenu.map(subitem => (
                               <SidebarMenuSubItem key={subitem.title}>
                                 <SidebarMenuSubButton asChild>
-                                  <a
+                                  <Link
                                     href={subitem.href}
                                     className="flex items-center gap-2"
                                   >
                                     <subitem.icon className="h-3 w-3" />
                                     <span>{subitem.title}</span>
-                                  </a>
+                                  </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
                             ))}
@@ -166,10 +167,13 @@ export function NavigationSidebar() {
                       </Collapsible>
                     ) : (
                       <SidebarMenuButton asChild>
-                        <a href={item.href} className="flex items-center gap-2">
+                        <Link
+                          href={item.href}
+                          className="flex items-center gap-2"
+                        >
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuButton>
                     )}
                   </SidebarMenuItem>
