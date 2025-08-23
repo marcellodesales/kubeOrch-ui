@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -12,10 +14,9 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button size="lg">Get Started</Button>
-          <Button variant="outline" size="lg">
-            View Demo
-          </Button>
+          <Link href="/dashboard">
+            <Button size="lg">Get Started</Button>
+          </Link>
           <Button variant="ghost" size="lg">
             Documentation
           </Button>
