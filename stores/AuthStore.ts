@@ -11,6 +11,7 @@ type AuthStore = {
   isAuthenticated: boolean;
   user: User | null;
   token: string | null;
+  expiresAt: number | null;
   setAuthDetails: (user: User, token: string) => void;
   removeAuthDetails: () => void;
 };
@@ -21,10 +22,11 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      expiresAt: null,
       setAuthDetails: (user, token) =>
-        set({ user, token, isAuthenticated: true }),
+        set({ user, token, isAuthenticated: true, expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000 }),
       removeAuthDetails: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+        set({ user: null, token: null, isAuthenticated: false, expiresAt: null }),
     }),
     {
       name: "auth-storage",

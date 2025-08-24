@@ -11,7 +11,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
   config => {
-    // TODO(naman): Add some type of authorization after setup
     return config;
   },
   error => {

@@ -64,15 +64,14 @@ export function RegisterForm() {
     setError("");
 
     try {
-      const response = await api.post("/auth/register", data, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await api.post("/auth/register", data);
       if (response.status === 201) {
         toast.success("Registration successful! Please log in.");
         router.push("/login");
       }
-    } catch {
-      setError("Registration failed. Please try again.");
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Registration failed";
+      setError(message);
     } finally {
       setIsLoading(false);
     }

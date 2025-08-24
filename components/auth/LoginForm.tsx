@@ -55,9 +55,7 @@ export function LoginForm() {
     setError("");
 
     try {
-      const response = await api.post("/auth/login", data, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await api.post("/auth/login", data);
       const responseData = response.data;
       if (response.status === 200) {
         setAuthDetails(
@@ -71,8 +69,9 @@ export function LoginForm() {
         );
       }
       router.push("/dashboard");
-    } catch {
-      setError("Invalid email or password. Please try again.");
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Registration failed";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
