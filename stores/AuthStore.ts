@@ -14,11 +14,13 @@ type AuthStore = {
   expiresAt: number | null;
   setAuthDetails: (user: User, token: string) => void;
   removeAuthDetails: () => void;
+  isTokenExpired: () => boolean;
+  validateAndGetToken: () => string | null;
 };
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    set => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -37,6 +39,22 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
           expiresAt: null,
         }),
+      isTokenExpired: () => {
+        const state = get();
+        if (!state.expiresAt) return true;
+        return new Date().getTime() > state.expiresAt;
+      },
+      validateAndGetToken: () => {
+        const state = get();
+        if (!state.token || !state.expiresAt) return null;
+        
+        if (new Date().getTime() > state.expiresAt) {
+          state.removeAuthDetails();
+          return null;
+        }
+        
+        return state.token;
+      },
     }),
     {
       name: "auth-storage",
