@@ -1,5 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useAuthStore } from "@/stores/AuthStore";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -11,7 +12,19 @@ const api = axios.create({
 
 api.interceptors.request.use(
   config => {
-    // TODO(naman): Add some type of authorization after setup
+    const token = useAuthStore.getState().validateAndGetToken();
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else if (
+      config.url !== "/auth/login" &&
+      config.url !== "/auth/register"
+    ) {
+      toast.error("Session expired. Please login again.");
+      window.location.href = "/login";
+      return Promise.reject(new Error("Token expired"));
+    }
+
     return config;
   },
   error => {

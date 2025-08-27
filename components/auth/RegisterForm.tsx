@@ -25,6 +25,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 const registerSchema = z
   .object({
@@ -45,7 +48,7 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string>("");
-
+  const router = useRouter();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -61,10 +64,14 @@ export function RegisterForm() {
     setError("");
 
     try {
-      console.log("Register data:", data);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch {
-      setError("Registration failed. Please try again.");
+      const response = await api.post("/auth/register", data);
+      if (response.status === 201) {
+        toast.success("Registration successful! Please log in.");
+        router.push("/login");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Registration failed";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
