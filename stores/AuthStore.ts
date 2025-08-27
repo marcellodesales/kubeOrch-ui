@@ -24,9 +24,19 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       expiresAt: null,
       setAuthDetails: (user, token) =>
-        set({ user, token, isAuthenticated: true, expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000 }),
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000,
+        }),
       removeAuthDetails: () =>
-        set({ user: null, token: null, isAuthenticated: false, expiresAt: null }),
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          expiresAt: null,
+        }),
     }),
     {
       name: "auth-storage",
