@@ -16,7 +16,10 @@ api.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (config.url !== "/auth/login" && config.url !== "/auth/register") {
+    } else if (
+      config.url !== "/auth/login" &&
+      config.url !== "/auth/register"
+    ) {
       toast.error("Session expired. Please login again.");
       window.location.href = "/login";
       return Promise.reject(new Error("Token expired"));

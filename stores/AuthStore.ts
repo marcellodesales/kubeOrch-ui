@@ -47,12 +47,12 @@ export const useAuthStore = create<AuthStore>()(
       validateAndGetToken: () => {
         const state = get();
         if (!state.token || !state.expiresAt) return null;
-        
+
         if (new Date().getTime() > state.expiresAt) {
           state.removeAuthDetails();
           return null;
         }
-        
+
         return state.token;
       },
     }),
