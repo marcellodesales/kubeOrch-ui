@@ -63,6 +63,7 @@ export function LoginForm() {
             email: responseData.user.email,
             id: responseData.user.id,
             name: responseData.user.name,
+            role: responseData.user.role,
           },
           // for your guys context this is token:responseData.token
           responseData.token
