@@ -1,5 +1,13 @@
 help: ## Show available commands
-	@echo "Available commands:"
+	@echo "KubeOrch UI - Available Commands"
+	@echo ""
+	@echo "FULL DEVELOPMENT ENVIRONMENT:"
+	@echo "  Use orchcli from the CLI repository:"
+	@echo "    orchcli dev start    - Start all services (UI, Core, DB)"
+	@echo "    orchcli dev logs     - View logs"
+	@echo "    orchcli dev stop     - Stop all services"
+	@echo ""
+	@echo "UI-SPECIFIC TASKS:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf " \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 setup: ## Install dependencies and start dev server

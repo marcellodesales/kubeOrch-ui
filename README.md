@@ -1,15 +1,15 @@
-# KubeOrchestra UI
+# KubeOrch UI
 
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Cloud Native](https://img.shields.io/badge/Cloud%20Native-orange.svg)](https://landscape.cncf.io/)
 
-Visual interface for KubeOrchestra - Kubernetes made simple through drag-and-drop.
+Visual interface for KubeOrch - Kubernetes made simple through drag-and-drop.
 
 ## 🎯 Vision
 
 Make Kubernetes accessible to everyone. No YAML, no complexity - just drag components, connect them visually, and deploy with one click.
 
-## 🚀 What is KubeOrchestra UI?
+## 🚀 What is KubeOrch UI?
 
 The intuitive frontend that makes Kubernetes visual and simple:
 
@@ -41,7 +41,7 @@ The intuitive frontend that makes Kubernetes visual and simple:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kubeorchestra-ui.git
+git clone https://github.com/KubeOrch/ui.git
 cd ui
 
 # Install dependencies

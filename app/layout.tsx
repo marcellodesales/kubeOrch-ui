@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KubeOrchestra - Next.js with shadcn/ui",
+  title: "KubeOrch - Next.js with shadcn/ui",
   description: "A modern Next.js application with shadcn/ui components",
 };
 
