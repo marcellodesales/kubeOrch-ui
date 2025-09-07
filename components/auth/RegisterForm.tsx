@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { InlineLoader } from "@/components/ui/loader";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +50,10 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string>("");
+  const [inviteCode, setInviteCode] = useState<string>("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -59,18 +64,42 @@ export function RegisterForm() {
     },
   });
 
+  useEffect(() => {
+    const invite = searchParams.get("invite");
+    if (invite) {
+      setInviteCode(invite);
+    }
+  }, [searchParams]);
+
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await api.post("/auth/register", data);
+      const payload = {
+        ...data,
+        inviteCode: inviteCode || undefined,
+      };
+      const response = await api.post("/auth/register", payload);
       if (response.status === 201) {
         toast.success("Registration successful! Please log in.");
         router.push("/login");
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Registration failed";
+    } catch (error) {
+      const message =
+        error instanceof Error && "response" in error
+          ? (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.message ||
+            (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.error ||
+            "Registration failed"
+          : "Registration failed";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -205,10 +234,19 @@ export function RegisterForm() {
               )}
             />
 
+            {inviteCode && (
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  Using invite code:{" "}
+                  <span className="font-mono font-medium">{inviteCode}</span>
+                </p>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <InlineLoader className="mr-2" />
                   Creating account...
                 </>
               ) : (

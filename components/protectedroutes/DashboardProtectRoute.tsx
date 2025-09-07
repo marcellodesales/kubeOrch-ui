@@ -2,6 +2,7 @@
 import { useAuthStore } from "@/stores/AuthStore";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PageLoader } from "@/components/ui/loader";
 
 export default function DashboardProtectionRoute({
   children,
@@ -23,7 +24,7 @@ export default function DashboardProtectionRoute({
   }, [isAuthenticated, isHydrated, router]);
 
   if (!isHydrated) {
-    return <div>Loading...</div>;
+    return <PageLoader text="Authenticating..." />;
   }
 
   if (!isAuthenticated) {
