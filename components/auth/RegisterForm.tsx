@@ -52,7 +52,7 @@ export function RegisterForm() {
   const [inviteCode, setInviteCode] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -84,8 +84,21 @@ export function RegisterForm() {
         toast.success("Registration successful! Please log in.");
         router.push("/login");
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.error || "Registration failed";
+    } catch (error) {
+      const message =
+        error instanceof Error && "response" in error
+          ? (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.message ||
+            (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.error ||
+            "Registration failed"
+          : "Registration failed";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -223,7 +236,8 @@ export function RegisterForm() {
             {inviteCode && (
               <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <p className="text-sm text-green-700 dark:text-green-400">
-                  Using invite code: <span className="font-mono font-medium">{inviteCode}</span>
+                  Using invite code:{" "}
+                  <span className="font-mono font-medium">{inviteCode}</span>
                 </p>
               </div>
             )}

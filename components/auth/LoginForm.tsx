@@ -70,8 +70,12 @@ export function LoginForm() {
         );
       }
       router.push("/dashboard");
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Registration failed";
+    } catch (error) {
+      const message =
+        error instanceof Error && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || "Login failed"
+          : "Login failed";
       setError(message);
     } finally {
       setIsLoading(false);

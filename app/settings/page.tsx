@@ -13,7 +13,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
-import { Copy, Shield, Users, Link as LinkIcon, Eye, EyeOff } from "lucide-react";
+import {
+  Copy,
+  Shield,
+  Users,
+  Link as LinkIcon,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
 
@@ -28,11 +35,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchInviteCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInviteCode = async () => {
     if (!isAdmin) return;
-    
+
     setIsLoading(true);
     try {
       const response = await api.get("/settings/invite-code");
@@ -50,7 +58,7 @@ export default function SettingsPage() {
       const response = await api.post("/settings/generate-invite-code");
       setInviteCode(response.data.inviteCode);
       toast.success("New invite code generated successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to generate invite code");
     } finally {
       setIsLoading(false);
@@ -80,7 +88,7 @@ export default function SettingsPage() {
                   <CardTitle>Organization Invite</CardTitle>
                 </div>
                 <CardDescription>
-                  {isAdmin 
+                  {isAdmin
                     ? "Share this invite link with users to allow them to join your organization"
                     : "Only organization admins can manage invite links"}
                 </CardDescription>
@@ -119,12 +127,13 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Invite Link</label>
                       <div className="p-3 bg-muted rounded-lg">
                         <code className="text-xs break-all">
-                          {window.location.origin}/register?invite={inviteCode || "XXXXXX"}
+                          {window.location.origin}/register?invite=
+                          {inviteCode || "XXXXXX"}
                         </code>
                       </div>
                     </div>
@@ -168,7 +177,8 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Contact your organization admin to get an invite link for new users.
+                      Contact your organization admin to get an invite link for
+                      new users.
                     </p>
                   </div>
                 )}
@@ -194,15 +204,17 @@ export default function SettingsPage() {
                         {isAdmin ? "Organization Admin" : "User"}
                       </p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      isAdmin 
-                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400"
-                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                    }`}>
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        isAdmin
+                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400"
+                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                      }`}
+                    >
                       {isAdmin ? "Admin" : "User"}
                     </div>
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">
                     {isAdmin ? (
                       <ul className="space-y-1">
