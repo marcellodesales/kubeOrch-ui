@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { InlineLoader } from "@/components/ui/loader";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -158,7 +159,7 @@ export function LoginForm() {
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <InlineLoader className="mr-2" />
                   Signing in...
                 </>
               ) : (

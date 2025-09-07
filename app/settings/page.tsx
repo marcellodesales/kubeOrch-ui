@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
+import { InlineLoader } from "@/components/ui/loader";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -144,7 +145,11 @@ export default function SettingsPage() {
                         disabled={isLoading}
                         className="flex-1"
                       >
-                        <LinkIcon className="mr-2 h-4 w-4" />
+                        {isLoading ? (
+                          <InlineLoader className="mr-2" />
+                        ) : (
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                        )}
                         Generate New Code
                       </Button>
                       <Button
