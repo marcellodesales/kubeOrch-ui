@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import {
@@ -24,6 +24,7 @@ import {
 import { toast } from "react-toastify";
 import api from "@/lib/api";
 import { InlineLoader } from "@/components/ui/loader";
+import { getInviteLink } from "@/lib/constants";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -34,24 +35,24 @@ export default function SettingsPage() {
 
   const breadcrumbs = [{ label: "Settings" }];
 
-  useEffect(() => {
-    fetchInviteCode();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchInviteCode = async () => {
-    if (!isAdmin) return;
-
+  const fetchInviteCode = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await api.get("/settings/invite-code");
       setInviteCode(response.data.inviteCode);
     } catch (error) {
+      toast.error("Failed to fetch invite code");
       console.error("Error fetching invite code:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchInviteCode();
+    }
+  }, [isAdmin, fetchInviteCode]);
 
   const generateNewInviteCode = async () => {
     setIsLoading(true);
@@ -67,8 +68,7 @@ export default function SettingsPage() {
   };
 
   const copyInviteLink = () => {
-    const baseUrl = window.location.origin;
-    const inviteLink = `${baseUrl}/register?invite=${inviteCode}`;
+    const inviteLink = getInviteLink(inviteCode);
     navigator.clipboard.writeText(inviteLink);
     toast.success("Invite link copied to clipboard!");
   };
@@ -133,8 +133,7 @@ export default function SettingsPage() {
                       <label className="text-sm font-medium">Invite Link</label>
                       <div className="p-3 bg-muted rounded-lg">
                         <code className="text-xs break-all">
-                          {window.location.origin}/register?invite=
-                          {inviteCode || "XXXXXX"}
+                          {getInviteLink(inviteCode || "XXXXXX")}
                         </code>
                       </div>
                     </div>
