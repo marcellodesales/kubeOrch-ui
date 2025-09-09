@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -46,7 +46,7 @@ export function BreadcrumbNav({ items, showHome = true }: BreadcrumbNavProps) {
           const isLast = index === items.length - 1;
 
           return (
-            <React.Fragment key={index}>
+            <Fragment key={index}>
               <BreadcrumbItem>
                 {isLast || !item.href ? (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
@@ -61,7 +61,7 @@ export function BreadcrumbNav({ items, showHome = true }: BreadcrumbNavProps) {
                   <ChevronRight className="h-3.5 w-3.5" />
                 </BreadcrumbSeparator>
               )}
-            </React.Fragment>
+            </Fragment>
           );
         })}
       </BreadcrumbList>

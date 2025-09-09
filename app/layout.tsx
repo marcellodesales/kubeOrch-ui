@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KubeOrch - Next.js with shadcn/ui",
-  description: "A modern Next.js application with shadcn/ui components",
+  title: "KubeOrch",
+  description:
+    "Kubernetes orchestration platform for visual application deployment",
 };
 
 export default function RootLayout({

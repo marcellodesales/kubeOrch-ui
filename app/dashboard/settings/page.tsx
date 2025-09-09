@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import {
