@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { BreadcrumbNav } from "./BreadcrumbNav";
 import { cn } from "@/lib/utils";
 

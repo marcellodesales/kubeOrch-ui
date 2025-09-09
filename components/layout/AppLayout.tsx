@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { NavigationSidebar } from "./NavigationSidebar";
 import { TopBar } from "./TopBar";
 

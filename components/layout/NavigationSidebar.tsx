@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -50,6 +50,15 @@ const navItems = [
     href: "/dashboard",
   },
   {
+    title: "Clusters",
+    icon: Server,
+    href: "/dashboard/clusters",
+    submenu: [
+      { title: "All Clusters", href: "/dashboard/clusters", icon: Server },
+      { title: "Add Cluster", href: "/dashboard/clusters/new", icon: Package },
+    ],
+  },
+  {
     title: "Workflow Designer",
     icon: Workflow,
     href: "/designer",
@@ -92,14 +101,12 @@ const navItems = [
   {
     title: "Settings",
     icon: Settings,
-    href: "/settings",
+    href: "/dashboard/settings",
   },
 ];
 
 export function NavigationSidebar() {
-  const [openMenus, setOpenMenus] = React.useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
 
   const toggleMenu = (title: string) => {
     setOpenMenus(prev => ({

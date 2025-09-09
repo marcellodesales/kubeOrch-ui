@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,10 +25,13 @@ import {
   Sun,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/stores/AuthStore";
 
 export function TopBar() {
-  const [theme, setTheme] = React.useState<"light" | "dark">("light");
-  const [notifications] = React.useState([
+  const router = useRouter();
+  const { removeAuthDetails } = useAuthStore();
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [notifications] = useState([
     { id: 1, title: "Deployment successful", time: "2 min ago", unread: true },
     { id: 2, title: "New version available", time: "1 hour ago", unread: true },
     {
@@ -174,12 +178,20 @@ export function TopBar() {
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push("/dashboard/settings")}
+            >
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => {
+                removeAuthDetails();
+                router.push("/login");
+              }}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
