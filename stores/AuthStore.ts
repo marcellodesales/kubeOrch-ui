@@ -6,6 +6,7 @@ type User = {
   name: string;
   email: string;
   role?: string;
+  createdAt?: string;
 };
 
 type AuthStore = {
@@ -13,7 +14,7 @@ type AuthStore = {
   user: User | null;
   token: string | null;
   expiresAt: number | null;
-  setAuthDetails: (user: User, token: string) => void;
+  setAuthDetails: (token: string, user: User) => void;
   removeAuthDetails: () => void;
   isTokenExpired: () => boolean;
   validateAndGetToken: () => string | null;
@@ -26,7 +27,7 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       isAuthenticated: false,
       expiresAt: null,
-      setAuthDetails: (user, token) =>
+      setAuthDetails: (token, user) =>
         set({
           user,
           token,

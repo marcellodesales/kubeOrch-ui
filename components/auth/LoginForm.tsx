@@ -59,16 +59,12 @@ export function LoginForm() {
       const response = await api.post("/auth/login", data);
       const responseData = response.data;
       if (response.status === 200) {
-        setAuthDetails(
-          {
-            email: responseData.user.email,
-            id: responseData.user.id,
-            name: responseData.user.name,
-            role: responseData.user.role,
-          },
-          // for your guys context this is token:responseData.token
-          responseData.token
-        );
+        setAuthDetails(responseData.token, {
+          email: responseData.user.email,
+          id: responseData.user.id,
+          name: responseData.user.name,
+          role: responseData.user.role,
+        });
       }
       router.push("/dashboard");
     } catch (error) {

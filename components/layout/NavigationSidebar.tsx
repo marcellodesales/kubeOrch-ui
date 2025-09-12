@@ -36,6 +36,7 @@ import {
   ChevronRight,
   Workflow,
   Network,
+  Plus,
 } from "lucide-react";
 import {
   Collapsible,
@@ -61,11 +62,15 @@ const navItems = [
   {
     title: "Workflow Designer",
     icon: Workflow,
-    href: "/designer",
+    href: "/dashboard/workflow",
     submenu: [
-      { title: "Templates", href: "/designer/templates", icon: Layout },
-      { title: "My Workflows", href: "/designer/workflows", icon: FolderOpen },
-      { title: "Components", href: "/designer/components", icon: Package },
+      { title: "All Workflows", href: "/dashboard/workflow", icon: FolderOpen },
+      { title: "New Workflow", href: "/dashboard/workflow/new", icon: Plus },
+      {
+        title: "Templates",
+        href: "/dashboard/workflow/templates",
+        icon: Layout,
+      },
     ],
   },
   {

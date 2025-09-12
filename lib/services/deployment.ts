@@ -40,7 +40,7 @@ export async function deployApplication(
   request: DeploymentRequest
 ): Promise<DeploymentResponse> {
   try {
-    const response = await api.post("/deployments/", request);
+    const response = await api.post("/deployments", request);
     return response.data;
   } catch (error) {
     const errorMessage = getErrorMessage(error, "Deployment failed");

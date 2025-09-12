@@ -29,7 +29,7 @@ import { useAuthStore } from "@/stores/AuthStore";
 
 export function TopBar() {
   const router = useRouter();
-  const { removeAuthDetails } = useAuthStore();
+  const { user, removeAuthDetails } = useAuthStore();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [notifications] = useState([
     { id: 1, title: "Deployment successful", time: "2 min ago", unread: true },
@@ -159,7 +159,11 @@ export function TopBar() {
               <Avatar className="h-9 w-9">
                 <AvatarImage src="/avatar.png" alt="User" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  JD
+                  {user?.name
+                    ?.split(" ")
+                    .map(n => n[0])
+                    .join("")
+                    .toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -167,14 +171,16 @@ export function TopBar() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.name || "User"}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john.doe@example.com
+                  {user?.email || "user@example.com"}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>

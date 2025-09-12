@@ -15,36 +15,92 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Button } from "@/components/ui/button";
-import { Plus, Save, Rocket, FileJson } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Plus,
+  Save,
+  Rocket,
+  Settings,
+  ArrowLeft,
+  Eye,
+  Edit,
+  Archive,
+} from "lucide-react";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
 import DeploymentSettingsPanel from "./DeploymentSettingsPanel";
+import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
 import {
   DeploymentRequest,
   deployApplication,
 } from "@/lib/services/deployment";
+import { Workflow } from "@/lib/services/workflow";
 
 const nodeTypes = {
   deployment: DeploymentNode,
 };
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+interface WorkflowCanvasProps {
+  workflow?: Workflow | null;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+  onNodesChange?: (nodes: Node[]) => void;
+  onEdgesChange?: (edges: Edge[]) => void;
+  onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
+  onPublish?: () => Promise<void>;
+  onStatusChange?: (
+    status: "draft" | "published" | "archived"
+  ) => Promise<void>;
+  editable?: boolean;
+}
 
-function WorkflowCanvasContent() {
+function WorkflowCanvasContent({
+  workflow,
+  initialNodes = [],
+  initialEdges = [],
+  onNodesChange: onNodesChangeProp,
+  onEdgesChange: onEdgesChangeProp,
+  onSave,
+  onPublish,
+  onStatusChange,
+  editable = true,
+}: WorkflowCanvasProps) {
+  const router = useRouter();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [nodeId, setNodeId] = useState(1);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
+  const [workflowSettingsOpen, setWorkflowSettingsOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeData, setSelectedNodeData] =
     useState<DeploymentRequest | null>(null);
   const { validateAndGetToken } = useAuthStore();
   const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData } =
     useWorkflowStore();
+
+  // Initialize with provided nodes and edges
+  useEffect(() => {
+    if (initialNodes.length > 0) {
+      setNodes(initialNodes);
+    }
+    if (initialEdges.length > 0) {
+      setEdges(initialEdges);
+    }
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Notify parent of changes
+  useEffect(() => {
+    onNodesChangeProp?.(nodes);
+  }, [nodes, onNodesChangeProp]);
+
+  useEffect(() => {
+    onEdgesChangeProp?.(edges);
+  }, [edges, onEdgesChangeProp]);
 
   useEffect(() => {
     const handleUpdateNodeData = (nodeId: string, data: DeploymentRequest) => {
@@ -143,34 +199,18 @@ function WorkflowCanvasContent() {
     return errors;
   };
 
-  const generateJSON = useCallback(() => {
-    const deployments = nodes.map(node => node.data as DeploymentRequest);
+  const saveWorkflow = useCallback(async () => {
+    if (!onSave) return;
 
-    console.log(
-      "Generated Workflow JSON:",
-      JSON.stringify(deployments, null, 2)
-    );
-
-    toast.success("JSON Generated - Check console for output");
-
-    return deployments;
-  }, [nodes]);
-
-  const saveWorkflow = useCallback(() => {
-    const workflow = {
-      name: "My Workflow",
-      deployments: nodes.map(node => node.data as DeploymentRequest),
-      connections: edges.map(edge => ({
-        source: edge.source,
-        target: edge.target,
-      })),
-      timestamp: Date.now(),
-    };
-
-    localStorage.setItem("workflow-draft", JSON.stringify(workflow));
-
-    toast.success("Workflow saved as draft");
-  }, [nodes, edges]);
+    setIsSaving(true);
+    try {
+      await onSave(nodes, edges);
+    } catch (error) {
+      console.error("Save failed:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [nodes, edges, onSave]);
 
   const deployAll = useCallback(async () => {
     const deployments = nodes.map(node => node.data as DeploymentRequest);
@@ -268,6 +308,16 @@ function WorkflowCanvasContent() {
     [setNodes, setEdges]
   );
 
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, any> = {
+      draft: { variant: "outline", label: "Draft" },
+      published: { variant: "default", label: "Published" },
+      archived: { variant: "secondary", label: "Archived" },
+    };
+    const config = variants[status] || variants.draft;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
   return (
     <div className="w-full h-screen relative">
       <ReactFlow
@@ -284,16 +334,78 @@ function WorkflowCanvasContent() {
         <Controls />
       </ReactFlow>
 
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        <Button onClick={generateJSON} size="sm" variant="outline">
-          <FileJson className="h-4 w-4 mr-1" />
-          JSON
+      {/* Title bar in top-left */}
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
+        <Button
+          onClick={() => router.push("/dashboard/workflow")}
+          size="sm"
+          variant="ghost"
+          className="p-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
 
-        <Button onClick={saveWorkflow} size="sm" variant="outline">
-          <Save className="h-4 w-4 mr-1" />
-          Save
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold">
+            {workflow?.name || "Workflow"}
+          </h1>
+          {workflow && getStatusBadge(workflow.status)}
+        </div>
+
+        <Button
+          onClick={() => setWorkflowSettingsOpen(true)}
+          size="sm"
+          variant="ghost"
+          className="p-2"
+        >
+          <Settings className="h-4 w-4" />
         </Button>
+      </div>
+
+      {/* Action buttons in top-right */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        {editable && (
+          <>
+            <Button
+              onClick={saveWorkflow}
+              size="sm"
+              variant="outline"
+              disabled={isSaving}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+
+            {workflow?.status === "draft" && (
+              <Button onClick={onPublish} size="sm" variant="outline">
+                <Eye className="h-4 w-4 mr-1" />
+                Publish
+              </Button>
+            )}
+          </>
+        )}
+
+        {workflow?.status === "published" && (
+          <>
+            <Button
+              onClick={() => onStatusChange?.("draft")}
+              size="sm"
+              variant="outline"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+            <Button
+              onClick={() => onStatusChange?.("archived")}
+              size="sm"
+              variant="outline"
+              className="text-destructive"
+            >
+              <Archive className="h-4 w-4 mr-1" />
+              Archive
+            </Button>
+          </>
+        )}
 
         <Button
           onClick={deployAll}
@@ -302,7 +414,7 @@ function WorkflowCanvasContent() {
           disabled={isDeploying || nodes.length === 0}
         >
           <Rocket className="h-4 w-4 mr-1" />
-          {isDeploying ? "Deploying..." : "Deploy All"}
+          {isDeploying ? "Deploying..." : "Run"}
         </Button>
 
         <Button onClick={addDeploymentNode} size="sm" variant="default">
@@ -318,14 +430,26 @@ function WorkflowCanvasContent() {
         onUpdate={handleSettingsUpdate}
         onDelete={handleDeleteNode}
       />
+
+      {workflow && (
+        <WorkflowSettingsPanel
+          isOpen={workflowSettingsOpen}
+          workflow={workflow}
+          onClose={() => setWorkflowSettingsOpen(false)}
+          onUpdate={async () => {
+            // Handle workflow update if needed
+            setWorkflowSettingsOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-export default function WorkflowCanvas() {
+export default function WorkflowCanvas(props: WorkflowCanvasProps) {
   return (
     <ReactFlowProvider>
-      <WorkflowCanvasContent />
+      <WorkflowCanvasContent {...props} />
     </ReactFlowProvider>
   );
 }

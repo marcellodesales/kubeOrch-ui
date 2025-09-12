@@ -31,7 +31,8 @@ export function TokenAuthForm({
           value={tokenValue}
           onChange={e => onTokenChange(e.target.value)}
           rows={4}
-          className="font-mono text-xs"
+          className="font-mono text-xs break-all overflow-hidden resize-none"
+          style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
         />
       </div>
       <div className="space-y-2">
@@ -42,7 +43,8 @@ export function TokenAuthForm({
           value={caDataValue}
           onChange={e => onCaDataChange(e.target.value)}
           rows={4}
-          className="font-mono text-xs"
+          className="font-mono text-xs break-all overflow-hidden resize-none"
+          style={{ wordBreak: "break-all", overflowWrap: "anywhere" }}
         />
       </div>
     </>
