@@ -60,14 +60,13 @@ export function LoginForm() {
       const responseData = response.data;
       if (response.status === 200) {
         setAuthDetails(
+          responseData.token,
           {
             email: responseData.user.email,
             id: responseData.user.id,
             name: responseData.user.name,
             role: responseData.user.role,
-          },
-          // for your guys context this is token:responseData.token
-          responseData.token
+          }
         );
       }
       router.push("/dashboard");
