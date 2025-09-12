@@ -57,7 +57,12 @@ export default function WorkflowDetailPage() {
 
   const handleSave = async (nodes: any[], edges: any[]) => {
     try {
-      await saveWorkflowVersion(workflowId, nodes as WorkflowNode[], edges as WorkflowEdge[], "Manual save");
+      await saveWorkflowVersion(
+        workflowId,
+        nodes as WorkflowNode[],
+        edges as WorkflowEdge[],
+        "Manual save"
+      );
       toast.success("Workflow saved successfully");
       await loadWorkflow(); // Reload to get updated version
     } catch {
