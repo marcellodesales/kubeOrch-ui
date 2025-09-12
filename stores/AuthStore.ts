@@ -6,6 +6,7 @@ type User = {
   name: string;
   email: string;
   role?: string;
+  createdAt?: string;
 };
 
 type AuthStore = {

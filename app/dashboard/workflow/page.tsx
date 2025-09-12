@@ -101,7 +101,7 @@ export default function WorkflowPage() {
   const getStatusBadge = (status: string) => {
     const variants: Record<
       string,
-      { variant: string; label: string; icon: typeof Edit }
+      { variant: "default" | "secondary" | "outline" | "destructive"; label: string; icon: typeof Edit }
     > = {
       draft: { variant: "outline", label: "Draft", icon: Edit },
       published: { variant: "default", label: "Published", icon: CheckCircle },

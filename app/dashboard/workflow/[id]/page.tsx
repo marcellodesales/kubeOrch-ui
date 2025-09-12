@@ -9,6 +9,8 @@ import {
   saveWorkflowVersion,
   updateWorkflowStatus,
   type Workflow,
+  type WorkflowNode,
+  type WorkflowEdge,
 } from "@/lib/services/workflow";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -53,9 +55,9 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const handleSave = async (nodes: unknown[], edges: unknown[]) => {
+  const handleSave = async (nodes: any[], edges: any[]) => {
     try {
-      await saveWorkflowVersion(workflowId, nodes, edges, "Manual save");
+      await saveWorkflowVersion(workflowId, nodes as WorkflowNode[], edges as WorkflowEdge[], "Manual save");
       toast.success("Workflow saved successfully");
       await loadWorkflow(); // Reload to get updated version
     } catch {
@@ -99,8 +101,8 @@ export default function WorkflowDetailPage() {
         workflow={workflow}
         initialNodes={nodes}
         initialEdges={edges}
-        onNodesChange={setNodes}
-        onEdgesChange={setEdges}
+        onNodesChange={(newNodes: any[]) => setNodes(newNodes)}
+        onEdgesChange={(newEdges: any[]) => setEdges(newEdges)}
         onSave={handleSave}
         onPublish={handlePublish}
         onStatusChange={handleStatusChange}

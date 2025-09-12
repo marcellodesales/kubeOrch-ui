@@ -51,7 +51,7 @@ export default function NewWorkflowPage() {
       toast.success("Workflow created successfully");
       // Redirect to the workflow editor with the new ID
       router.push(`/dashboard/workflow/${result.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create workflow:", error);
       const errorMessage =
         error?.response?.data?.error ||
