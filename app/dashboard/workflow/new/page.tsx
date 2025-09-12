@@ -35,7 +35,7 @@ export default function NewWorkflowPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error("Please enter a workflow name");
       return;
@@ -47,13 +47,16 @@ export default function NewWorkflowPage() {
         name: formData.name,
         description: formData.description,
       });
-      
+
       toast.success("Workflow created successfully");
       // Redirect to the workflow editor with the new ID
       router.push(`/dashboard/workflow/${result.id}`);
     } catch (error) {
       console.error("Failed to create workflow:", error);
-      const errorMessage = error?.response?.data?.error || error?.message || "Failed to create workflow";
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to create workflow";
       toast.error(errorMessage);
       setLoading(false);
     }
@@ -96,7 +99,7 @@ export default function NewWorkflowPage() {
                     id="name"
                     placeholder="e.g., Production Deployment"
                     value={formData.name}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, name: e.target.value })
                     }
                     disabled={loading}
@@ -113,14 +116,14 @@ export default function NewWorkflowPage() {
                     id="description"
                     placeholder="Describe what this workflow does..."
                     value={formData.description}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, description: e.target.value })
                     }
                     disabled={loading}
                     rows={4}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Optional: Add more details about the workflow's purpose
+                    Optional: Add more details about the workflow&apos;s purpose
                   </p>
                 </div>
 
@@ -143,14 +146,16 @@ export default function NewWorkflowPage() {
 
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>What's Next?</CardTitle>
+              <CardTitle>What&apos;s Next?</CardTitle>
               <CardDescription>
-                After creating your workflow, you'll be able to:
+                After creating your workflow, you&apos;ll be able to:
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                <li>Add deployment nodes to define your application components</li>
+                <li>
+                  Add deployment nodes to define your application components
+                </li>
                 <li>Connect nodes to create execution flow</li>
                 <li>Configure conditions and parallel executions</li>
                 <li>Save versions and track changes</li>

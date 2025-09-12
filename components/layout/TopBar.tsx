@@ -159,7 +159,11 @@ export function TopBar() {
               <Avatar className="h-9 w-9">
                 <AvatarImage src="/avatar.png" alt="User" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  {user?.name
+                    ?.split(" ")
+                    .map(n => n[0])
+                    .join("")
+                    .toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -167,16 +171,16 @@ export function TopBar() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.name || "User"}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email || 'user@example.com'}
+                  {user?.email || "user@example.com"}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => router.push("/dashboard/profile")}
-            >
+            <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>

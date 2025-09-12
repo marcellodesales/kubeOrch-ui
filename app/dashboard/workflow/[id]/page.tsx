@@ -4,23 +4,23 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
-import { 
-  getWorkflow, 
-  saveWorkflowVersion, 
+import {
+  getWorkflow,
+  saveWorkflowVersion,
   updateWorkflowStatus,
-  type Workflow 
+  type Workflow,
 } from "@/lib/services/workflow";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const WorkflowCanvas = dynamic(
   () => import("@/components/workflow/WorkflowCanvas"),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <Skeleton className="w-32 h-32" />
       </div>
-    )
+    ),
   }
 );
 
@@ -28,14 +28,15 @@ export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
   const workflowId = params.id as string;
-  
+
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
 
   useEffect(() => {
     loadWorkflow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
 
   const loadWorkflow = async () => {
@@ -44,7 +45,7 @@ export default function WorkflowDetailPage() {
       setWorkflow(data);
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load workflow");
       router.push("/dashboard/workflow");
     } finally {
@@ -52,12 +53,12 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const handleSave = async (nodes: any[], edges: any[]) => {
+  const handleSave = async (nodes: unknown[], edges: unknown[]) => {
     try {
       await saveWorkflowVersion(workflowId, nodes, edges, "Manual save");
       toast.success("Workflow saved successfully");
       await loadWorkflow(); // Reload to get updated version
-    } catch (error) {
+    } catch {
       toast.error("Failed to save workflow");
     }
   };
@@ -67,17 +68,19 @@ export default function WorkflowDetailPage() {
       await updateWorkflowStatus(workflowId, "published");
       toast.success("Workflow published successfully");
       await loadWorkflow();
-    } catch (error) {
+    } catch {
       toast.error("Failed to publish workflow");
     }
   };
 
-  const handleStatusChange = async (status: "draft" | "published" | "archived") => {
+  const handleStatusChange = async (
+    status: "draft" | "published" | "archived"
+  ) => {
     try {
       await updateWorkflowStatus(workflowId, status);
       toast.success(`Workflow ${status === "draft" ? "unpublished" : status}`);
       await loadWorkflow();
-    } catch (error) {
+    } catch {
       toast.error(`Failed to update workflow status`);
     }
   };

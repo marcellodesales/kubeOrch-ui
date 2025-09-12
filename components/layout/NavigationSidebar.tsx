@@ -66,7 +66,11 @@ const navItems = [
     submenu: [
       { title: "All Workflows", href: "/dashboard/workflow", icon: FolderOpen },
       { title: "New Workflow", href: "/dashboard/workflow/new", icon: Plus },
-      { title: "Templates", href: "/dashboard/workflow/templates", icon: Layout },
+      {
+        title: "Templates",
+        href: "/dashboard/workflow/templates",
+        icon: Layout,
+      },
     ],
   },
   {

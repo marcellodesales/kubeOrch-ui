@@ -20,32 +20,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Plus, 
-  GitBranch, 
-  MoreVertical, 
-  Edit, 
-  Copy, 
+import {
+  Plus,
+  GitBranch,
+  MoreVertical,
+  Edit,
+  Copy,
   Trash2,
   Play,
   Archive,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { 
-  listWorkflows, 
-  deleteWorkflow, 
+import {
+  listWorkflows,
+  deleteWorkflow,
   cloneWorkflow,
-  type Workflow 
+  type Workflow,
 } from "@/lib/services/workflow";
 
 export default function WorkflowPage() {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Workflow Designer" },
@@ -66,7 +66,7 @@ export default function WorkflowPage() {
     try {
       const data = await listWorkflows();
       setWorkflows(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load workflows");
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export default function WorkflowPage() {
         await deleteWorkflow(id);
         toast.success("Workflow deleted successfully");
         loadWorkflows();
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete workflow");
       }
     }
@@ -92,14 +92,17 @@ export default function WorkflowPage() {
         const result = await cloneWorkflow(id, newName);
         toast.success("Workflow cloned successfully");
         router.push(`/dashboard/workflow/${result.id}`);
-      } catch (error) {
+      } catch {
         toast.error("Failed to clone workflow");
       }
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<
+      string,
+      { variant: string; label: string; icon: typeof Edit }
+    > = {
       draft: { variant: "outline", label: "Draft", icon: Edit },
       published: { variant: "default", label: "Published", icon: CheckCircle },
       archived: { variant: "secondary", label: "Archived", icon: Archive },
@@ -115,12 +118,12 @@ export default function WorkflowPage() {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -154,11 +157,13 @@ export default function WorkflowPage() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {workflows.map((workflow) => (
-              <Card 
+            {workflows.map(workflow => (
+              <Card
                 key={workflow.id}
                 className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => router.push(`/dashboard/workflow/${workflow.id}`)}
+                onClick={() =>
+                  router.push(`/dashboard/workflow/${workflow.id}`)
+                }
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -166,14 +171,17 @@ export default function WorkflowPage() {
                     <div className="flex items-center gap-2">
                       {getStatusBadge(workflow.status)}
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuTrigger
+                          asChild
+                          onClick={e => e.stopPropagation()}
+                        >
                           <Button variant="ghost" size="sm">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={(e) => {
+                          <DropdownMenuItem
+                            onClick={e => {
                               e.stopPropagation();
                               router.push(`/dashboard/workflow/${workflow.id}`);
                             }}
@@ -181,8 +189,8 @@ export default function WorkflowPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={(e) => {
+                          <DropdownMenuItem
+                            onClick={e => {
                               e.stopPropagation();
                               handleClone(workflow.id, workflow.name);
                             }}
@@ -190,8 +198,8 @@ export default function WorkflowPage() {
                             <Copy className="mr-2 h-4 w-4" />
                             Clone
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={(e) => {
+                          <DropdownMenuItem
+                            onClick={e => {
                               e.stopPropagation();
                               toast.info("Run functionality coming soon");
                             }}
@@ -199,9 +207,9 @@ export default function WorkflowPage() {
                             <Play className="mr-2 h-4 w-4" />
                             Run
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-destructive"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleDelete(workflow.id, workflow.name);
                             }}
@@ -222,18 +230,26 @@ export default function WorkflowPage() {
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Nodes</span>
-                      <span className="font-medium">{workflow.nodes?.length || 0}</span>
+                      <span className="font-medium">
+                        {workflow.nodes?.length || 0}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Runs</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{workflow.run_count || 0}</span>
+                        <span className="font-medium">
+                          {workflow.run_count || 0}
+                        </span>
                         {workflow.run_count > 0 && (
                           <div className="flex gap-1">
                             <CheckCircle className="h-3 w-3 text-green-500" />
-                            <span className="text-xs">{workflow.success_count || 0}</span>
+                            <span className="text-xs">
+                              {workflow.success_count || 0}
+                            </span>
                             <XCircle className="h-3 w-3 text-red-500" />
-                            <span className="text-xs">{workflow.failure_count || 0}</span>
+                            <span className="text-xs">
+                              {workflow.failure_count || 0}
+                            </span>
                           </div>
                         )}
                       </div>

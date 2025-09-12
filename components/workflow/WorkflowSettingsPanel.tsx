@@ -7,13 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Workflow } from "@/lib/services/workflow";
 
 interface WorkflowSettingsPanelProps {
@@ -54,12 +47,12 @@ export default function WorkflowSettingsPanel({
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -84,7 +77,7 @@ export default function WorkflowSettingsPanel({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="Workflow name"
@@ -96,7 +89,7 @@ export default function WorkflowSettingsPanel({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, description: e.target.value })
                 }
                 placeholder="Describe what this workflow does..."
@@ -107,11 +100,15 @@ export default function WorkflowSettingsPanel({
             <div>
               <Label>Status</Label>
               <div className="mt-2">
-                <Badge variant={
-                  workflow?.status === "published" ? "default" : 
-                  workflow?.status === "archived" ? "secondary" : 
-                  "outline"
-                }>
+                <Badge
+                  variant={
+                    workflow?.status === "published"
+                      ? "default"
+                      : workflow?.status === "archived"
+                        ? "secondary"
+                        : "outline"
+                  }
+                >
                   {workflow?.status || "draft"}
                 </Badge>
               </div>
@@ -122,11 +119,19 @@ export default function WorkflowSettingsPanel({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created</span>
-                  <span>{workflow?.created_at ? formatDate(workflow.created_at) : "-"}</span>
+                  <span>
+                    {workflow?.created_at
+                      ? formatDate(workflow.created_at)
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Updated</span>
-                  <span>{workflow?.updated_at ? formatDate(workflow.updated_at) : "-"}</span>
+                  <span>
+                    {workflow?.updated_at
+                      ? formatDate(workflow.updated_at)
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nodes</span>
@@ -151,11 +156,15 @@ export default function WorkflowSettingsPanel({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Successful</span>
-                    <span className="text-green-600">{workflow.success_count || 0}</span>
+                    <span className="text-green-600">
+                      {workflow.success_count || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Failed</span>
-                    <span className="text-red-600">{workflow.failure_count || 0}</span>
+                    <span className="text-red-600">
+                      {workflow.failure_count || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Success Rate</span>

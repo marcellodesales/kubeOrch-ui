@@ -16,15 +16,15 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Save, 
-  Rocket, 
-  Settings, 
+import {
+  Plus,
+  Save,
+  Rocket,
+  Settings,
   ArrowLeft,
   Eye,
   Edit,
-  Archive
+  Archive,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -51,7 +51,9 @@ interface WorkflowCanvasProps {
   onEdgesChange?: (edges: Edge[]) => void;
   onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
   onPublish?: () => Promise<void>;
-  onStatusChange?: (status: "draft" | "published" | "archived") => Promise<void>;
+  onStatusChange?: (
+    status: "draft" | "published" | "archived"
+  ) => Promise<void>;
   editable?: boolean;
 }
 
@@ -199,7 +201,7 @@ function WorkflowCanvasContent({
 
   const saveWorkflow = useCallback(async () => {
     if (!onSave) return;
-    
+
     setIsSaving(true);
     try {
       await onSave(nodes, edges);
@@ -342,12 +344,14 @@ function WorkflowCanvasContent({
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        
+
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold">{workflow?.name || "Workflow"}</h1>
+          <h1 className="text-lg font-semibold">
+            {workflow?.name || "Workflow"}
+          </h1>
           {workflow && getStatusBadge(workflow.status)}
         </div>
-        
+
         <Button
           onClick={() => setWorkflowSettingsOpen(true)}
           size="sm"
@@ -362,9 +366,9 @@ function WorkflowCanvasContent({
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         {editable && (
           <>
-            <Button 
-              onClick={saveWorkflow} 
-              size="sm" 
+            <Button
+              onClick={saveWorkflow}
+              size="sm"
               variant="outline"
               disabled={isSaving}
             >
@@ -373,11 +377,7 @@ function WorkflowCanvasContent({
             </Button>
 
             {workflow?.status === "draft" && (
-              <Button
-                onClick={onPublish}
-                size="sm"
-                variant="outline"
-              >
+              <Button onClick={onPublish} size="sm" variant="outline">
                 <Eye className="h-4 w-4 mr-1" />
                 Publish
               </Button>

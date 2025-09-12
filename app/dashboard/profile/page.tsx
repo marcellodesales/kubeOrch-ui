@@ -21,7 +21,7 @@ import api from "@/lib/api";
 import { User, Mail, Shield, Calendar, Edit2, Save, X } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, setAuthDetails } = useAuthStore();
+  const { user, token, setAuthDetails } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,6 +36,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchProfile = async () => {
@@ -47,8 +48,8 @@ export default function ProfilePage() {
         email: userData.email,
       });
       // Update auth store with latest data
-      if (user) {
-        setAuthDetails(userData, user.token || "");
+      if (token) {
+        setAuthDetails(token, userData);
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -61,14 +62,14 @@ export default function ProfilePage() {
       const response = await api.put("/profile", {
         name: formData.name,
       });
-      
+
       const updatedUser = response.data.user;
-      
+
       // Update auth store
-      if (user) {
-        setAuthDetails(updatedUser, user.token || "");
+      if (token) {
+        setAuthDetails(token, updatedUser);
       }
-      
+
       toast.success("Profile updated successfully");
       setEditMode(false);
     } catch (error) {
@@ -101,11 +102,7 @@ export default function ProfilePage() {
   const pageActions = (
     <>
       {!editMode ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setEditMode(true)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
           <Edit2 className="mr-2 h-4 w-4" />
           Edit Profile
         </Button>
@@ -120,11 +117,7 @@ export default function ProfilePage() {
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={loading}
-          >
+          <Button size="sm" onClick={handleSave} disabled={loading}>
             <Save className="mr-2 h-4 w-4" />
             {loading ? "Saving..." : "Save Changes"}
           </Button>
@@ -157,7 +150,7 @@ export default function ProfilePage() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) =>
+                      onChange={e =>
                         setFormData({ ...formData, name: e.target.value })
                       }
                       placeholder="Enter your full name"
@@ -205,7 +198,9 @@ export default function ProfilePage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">Two-Factor Authentication</p>
+                    <p className="text-sm font-medium">
+                      Two-Factor Authentication
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Add an extra layer of security to your account
                     </p>
@@ -241,10 +236,14 @@ export default function ProfilePage() {
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Member Since</span>
+                  <span className="text-sm text-muted-foreground">
+                    Member Since
+                  </span>
                   <div className="flex items-center gap-1 text-sm">
                     <Calendar className="h-3 w-3" />
-                    {new Date().toLocaleDateString()}
+                    {user?.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString()
+                      : "N/A"}
                   </div>
                 </div>
               </CardContent>
@@ -253,21 +252,25 @@ export default function ProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle>Quick Stats</CardTitle>
-                <CardDescription>
-                  Your activity overview
-                </CardDescription>
+                <CardDescription>Your activity overview</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Clusters</span>
+                  <span className="text-sm text-muted-foreground">
+                    Clusters
+                  </span>
                   <span className="text-sm font-medium">0</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Deployments</span>
+                  <span className="text-sm text-muted-foreground">
+                    Deployments
+                  </span>
                   <span className="text-sm font-medium">0</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Workflows</span>
+                  <span className="text-sm text-muted-foreground">
+                    Workflows
+                  </span>
                   <span className="text-sm font-medium">0</span>
                 </div>
               </CardContent>

@@ -59,15 +59,12 @@ export function LoginForm() {
       const response = await api.post("/auth/login", data);
       const responseData = response.data;
       if (response.status === 200) {
-        setAuthDetails(
-          responseData.token,
-          {
-            email: responseData.user.email,
-            id: responseData.user.id,
-            name: responseData.user.name,
-            role: responseData.user.role,
-          }
-        );
+        setAuthDetails(responseData.token, {
+          email: responseData.user.email,
+          id: responseData.user.id,
+          name: responseData.user.name,
+          role: responseData.user.role,
+        });
       }
       router.push("/dashboard");
     } catch (error) {
