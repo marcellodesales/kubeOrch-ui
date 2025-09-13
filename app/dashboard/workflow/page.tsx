@@ -64,15 +64,17 @@ export default function WorkflowPage() {
 
   useEffect(() => {
     checkClustersAndLoadWorkflows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkClustersAndLoadWorkflows = async () => {
+    let hasAnyClusters = false;
     try {
       // First check if any clusters exist
       const clusterData = await clusterService.listClusters();
-      const hasAnyClusters = clusterData.clusters && clusterData.clusters.length > 0;
+      hasAnyClusters = clusterData.clusters && clusterData.clusters.length > 0;
       setHasClusters(hasAnyClusters);
-      
+
       // Only load workflows if clusters exist
       if (hasAnyClusters) {
         await loadWorkflows();
@@ -82,7 +84,7 @@ export default function WorkflowPage() {
       toast.error("Failed to load data");
     } finally {
       setCheckingClusters(false);
-      if (!hasClusters) {
+      if (!hasAnyClusters) {
         setLoading(false);
       }
     }
@@ -175,7 +177,9 @@ export default function WorkflowPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Server className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No clusters configured</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                No clusters configured
+              </h3>
               <p className="text-muted-foreground mb-4">
                 You need to add a Kubernetes cluster before creating workflows
               </p>
@@ -277,7 +281,9 @@ export default function WorkflowPage() {
                         <span>Cluster</span>
                         <div className="flex items-center gap-1">
                           <Server className="h-3 w-3" />
-                          <span className="font-medium">{workflow.cluster_id}</span>
+                          <span className="font-medium">
+                            {workflow.cluster_id}
+                          </span>
                         </div>
                       </div>
                     )}

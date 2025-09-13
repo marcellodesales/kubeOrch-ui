@@ -447,7 +447,6 @@ export default function NewClusterPage() {
                   </div>
                 </TabsContent>
               </Tabs>
-              
               <div className="mt-6 space-y-4">
                 <div className="flex items-start space-x-3">
                   <Checkbox
@@ -458,21 +457,26 @@ export default function NewClusterPage() {
                     }
                   />
                   <div className="space-y-1">
-                    <Label htmlFor="insecure" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="insecure"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       Skip TLS Verification (Insecure)
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Allow connections to clusters with self-signed or invalid certificates
+                      Allow connections to clusters with self-signed or invalid
+                      certificates
                     </p>
                   </div>
                 </div>
-                
                 {formData.credentials.insecure && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Warning:</strong> Skipping TLS verification is insecure and should only be used for testing or development clusters. 
-                      Production clusters should always use proper certificates.
+                      <strong>Warning:</strong> Skipping TLS verification is
+                      insecure and should only be used for testing or
+                      development clusters. Production clusters should always
+                      use proper certificates.
                     </AlertDescription>
                   </Alert>
                 )}

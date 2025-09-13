@@ -106,17 +106,23 @@ export default function WorkflowDetailPage() {
   };
 
   // Use callbacks to prevent unnecessary re-renders
-  const handleNodesChange = useCallback((newNodes: any[]) => {
-    if (isInitialized) {
-      setNodes(newNodes);
-    }
-  }, [isInitialized]);
+  const handleNodesChange = useCallback(
+    (newNodes: any[]) => {
+      if (isInitialized) {
+        setNodes(newNodes);
+      }
+    },
+    [isInitialized]
+  );
 
-  const handleEdgesChange = useCallback((newEdges: any[]) => {
-    if (isInitialized) {
-      setEdges(newEdges);
-    }
-  }, [isInitialized]);
+  const handleEdgesChange = useCallback(
+    (newEdges: any[]) => {
+      if (isInitialized) {
+        setEdges(newEdges);
+      }
+    },
+    [isInitialized]
+  );
 
   if (loading) {
     return (

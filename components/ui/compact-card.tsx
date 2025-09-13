@@ -15,7 +15,10 @@ function CompactCard({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CompactCardHeader({ className, ...props }: React.ComponentProps<"div">) {
+function CompactCardHeader({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <header
       data-slot="compact-card-header"
@@ -38,7 +41,10 @@ function CompactCardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   );
 }
 
-function CompactCardDescription({ className, ...props }: React.ComponentProps<"p">) {
+function CompactCardDescription({
+  className,
+  ...props
+}: React.ComponentProps<"p">) {
   return (
     <p
       data-slot="compact-card-description"
@@ -48,7 +54,10 @@ function CompactCardDescription({ className, ...props }: React.ComponentProps<"p
   );
 }
 
-function CompactCardAction({ className, ...props }: React.ComponentProps<"div">) {
+function CompactCardAction({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="compact-card-action"
@@ -61,7 +70,10 @@ function CompactCardAction({ className, ...props }: React.ComponentProps<"div">)
   );
 }
 
-function CompactCardContent({ className, ...props }: React.ComponentProps<"div">) {
+function CompactCardContent({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="compact-card-content"
@@ -71,7 +83,10 @@ function CompactCardContent({ className, ...props }: React.ComponentProps<"div">
   );
 }
 
-function CompactCardFooter({ className, ...props }: React.ComponentProps<"div">) {
+function CompactCardFooter({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="compact-card-footer"

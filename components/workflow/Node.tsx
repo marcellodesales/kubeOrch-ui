@@ -40,7 +40,9 @@ export default function Node({
   className,
 }: NodeProps) {
   return (
-    <CompactCard className={`w-[280px] shadow-md border relative ${className || ""}`}>
+    <CompactCard
+      className={`w-[280px] shadow-md border relative ${className || ""}`}
+    >
       <CompactCardHeader className="flex flex-row items-center justify-between relative">
         {/* Left connector - centered on header */}
         <Handle

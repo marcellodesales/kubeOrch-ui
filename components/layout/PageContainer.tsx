@@ -19,7 +19,6 @@ export function PageContainer({
   children,
   title,
   description,
-  breadcrumbs,
   actions,
   className,
   fullWidth = false,
@@ -52,7 +51,12 @@ export function PageContainer({
       )}
 
       <div className="flex-1 overflow-auto bg-background">
-        <div className={cn("min-h-full p-6 pb-12", !fullWidth && "mx-auto max-w-7xl")}>
+        <div
+          className={cn(
+            "min-h-full p-6 pb-12",
+            !fullWidth && "mx-auto max-w-7xl"
+          )}
+        >
           {children}
         </div>
       </div>
