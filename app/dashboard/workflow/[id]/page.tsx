@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
 import {
   getWorkflow,
-  saveWorkflowVersion,
+  saveWorkflow,
+  runWorkflow,
   updateWorkflowStatus,
   type Workflow,
   type WorkflowNode,
@@ -57,16 +58,26 @@ export default function WorkflowDetailPage() {
 
   const handleSave = async (nodes: any[], edges: any[]) => {
     try {
-      await saveWorkflowVersion(
+      await saveWorkflow(
         workflowId,
         nodes as WorkflowNode[],
-        edges as WorkflowEdge[],
-        "Manual save"
+        edges as WorkflowEdge[]
       );
       toast.success("Workflow saved successfully");
-      await loadWorkflow(); // Reload to get updated version
+      await loadWorkflow(); // Reload to get updated workflow
     } catch {
       toast.error("Failed to save workflow");
+    }
+  };
+
+  const handleRun = async () => {
+    try {
+      await runWorkflow(workflowId);
+      toast.success("Workflow run started successfully");
+      // Optionally, you can navigate to a run details page or refresh the workflow
+      await loadWorkflow();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to run workflow");
     }
   };
 
@@ -109,6 +120,7 @@ export default function WorkflowDetailPage() {
         onNodesChange={(newNodes: any[]) => setNodes(newNodes)}
         onEdgesChange={(newEdges: any[]) => setEdges(newEdges)}
         onSave={handleSave}
+        onRun={handleRun}
         onPublish={handlePublish}
         onStatusChange={handleStatusChange}
         editable={workflow?.status === "draft"}

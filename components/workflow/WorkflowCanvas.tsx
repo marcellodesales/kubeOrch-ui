@@ -50,6 +50,7 @@ interface WorkflowCanvasProps {
   onNodesChange?: (nodes: Node[]) => void;
   onEdgesChange?: (edges: Edge[]) => void;
   onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
+  onRun?: () => Promise<void>;
   onPublish?: () => Promise<void>;
   onStatusChange?: (
     status: "draft" | "published" | "archived"
@@ -64,6 +65,7 @@ function WorkflowCanvasContent({
   onNodesChange: onNodesChangeProp,
   onEdgesChange: onEdgesChangeProp,
   onSave,
+  onRun,
   onPublish,
   onStatusChange,
   editable = true,
@@ -408,13 +410,29 @@ function WorkflowCanvasContent({
         )}
 
         <Button
-          onClick={deployAll}
+          onClick={async () => {
+            if (onRun) {
+              setIsDeploying(true);
+              try {
+                await onRun();
+              } finally {
+                setIsDeploying(false);
+              }
+            } else {
+              // Fallback to deployAll if onRun not provided
+              await deployAll();
+            }
+          }}
           size="sm"
           variant="default"
-          disabled={isDeploying || nodes.length === 0}
+          disabled={
+            isDeploying ||
+            nodes.length === 0 ||
+            workflow?.status !== "published"
+          }
         >
           <Rocket className="h-4 w-4 mr-1" />
-          {isDeploying ? "Deploying..." : "Run"}
+          {isDeploying ? "Running..." : "Run"}
         </Button>
 
         <Button onClick={addDeploymentNode} size="sm" variant="default">

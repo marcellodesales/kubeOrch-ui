@@ -68,17 +68,28 @@ export async function updateWorkflow(id: string, data: UpdateWorkflowRequest) {
   return response.data;
 }
 
-// Save workflow version (save nodes and edges)
-export async function saveWorkflowVersion(
+// Save workflow (update nodes and edges without creating version)
+export async function saveWorkflow(
   id: string,
   nodes: WorkflowNode[],
   edges: WorkflowEdge[],
   description?: string
 ) {
-  const response = await api.post(`/workflows/${id}/version`, {
+  const response = await api.post(`/workflows/${id}/save`, {
     nodes,
     edges,
-    description: description || "Auto-saved",
+    description,
+  });
+  return response.data;
+}
+
+// Run workflow (creates version and executes)
+export async function runWorkflow(
+  id: string,
+  triggerData?: Record<string, any>
+) {
+  const response = await api.post(`/workflows/${id}/run`, {
+    trigger_data: triggerData || {},
   });
   return response.data;
 }
