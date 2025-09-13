@@ -76,6 +76,7 @@ export default function WorkflowSettingsPanel({
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
+                className="mt-1.5"
                 value={formData.name}
                 onChange={e =>
                   setFormData({ ...formData, name: e.target.value })
@@ -88,6 +89,7 @@ export default function WorkflowSettingsPanel({
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                className="mt-1.5"
                 value={formData.description}
                 onChange={e =>
                   setFormData({ ...formData, description: e.target.value })

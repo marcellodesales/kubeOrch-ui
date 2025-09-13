@@ -32,6 +32,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Server,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -40,27 +41,54 @@ import {
   cloneWorkflow,
   type Workflow,
 } from "@/lib/services/workflow";
+import { clusterService } from "@/lib/services/cluster";
 
 export default function WorkflowPage() {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasClusters, setHasClusters] = useState(false);
+  const [checkingClusters, setCheckingClusters] = useState(true);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Workflow Designer" },
   ];
 
-  const pageActions = (
+  const pageActions = hasClusters ? (
     <Button onClick={() => router.push("/dashboard/workflow/new")}>
       <Plus className="mr-2 h-4 w-4" />
       New Workflow
     </Button>
-  );
+  ) : null;
 
   useEffect(() => {
-    loadWorkflows();
+    checkClustersAndLoadWorkflows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const checkClustersAndLoadWorkflows = async () => {
+    let hasAnyClusters = false;
+    try {
+      // First check if any clusters exist
+      const clusterData = await clusterService.listClusters();
+      hasAnyClusters = clusterData.clusters && clusterData.clusters.length > 0;
+      setHasClusters(hasAnyClusters);
+
+      // Only load workflows if clusters exist
+      if (hasAnyClusters) {
+        await loadWorkflows();
+      }
+    } catch (error) {
+      console.error("Failed to check clusters:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setCheckingClusters(false);
+      if (!hasAnyClusters) {
+        setLoading(false);
+      }
+    }
+  };
 
   const loadWorkflows = async () => {
     try {
@@ -139,12 +167,28 @@ export default function WorkflowPage() {
         breadcrumbs={breadcrumbs}
         actions={pageActions}
       >
-        {loading ? (
+        {loading || checkingClusters ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map(i => (
               <Skeleton key={i} className="h-48" />
             ))}
           </div>
+        ) : !hasClusters ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Server className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                No clusters configured
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                You need to add a Kubernetes cluster before creating workflows
+              </p>
+              <Button onClick={() => router.push("/dashboard/clusters/new")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Cluster
+              </Button>
+            </CardContent>
+          </Card>
         ) : workflows.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -232,6 +276,17 @@ export default function WorkflowPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-muted-foreground">
+                    {workflow.cluster_id && (
+                      <div className="flex items-center justify-between">
+                        <span>Cluster</span>
+                        <div className="flex items-center gap-1">
+                          <Server className="h-3 w-3" />
+                          <span className="font-medium">
+                            {workflow.cluster_id}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span>Nodes</span>
                       <span className="font-medium">

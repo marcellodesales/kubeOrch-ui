@@ -72,7 +72,7 @@ export default function DeploymentSettingsPanel({
             value={data.id || ""}
             disabled
             placeholder="Auto-generated from image"
-            className="bg-muted"
+            className="bg-muted mt-1.5"
           />
         </div>
 
@@ -87,6 +87,7 @@ export default function DeploymentSettingsPanel({
             </Label>
             <Input
               id="templateId"
+              className="mt-1.5"
               value={data.templateId || ""}
               onChange={e => handleFieldUpdate("templateId", e.target.value)}
               placeholder="applications/api/nodejs-api"
@@ -99,6 +100,7 @@ export default function DeploymentSettingsPanel({
             </Label>
             <Input
               id="image"
+              className="mt-1.5"
               value={data.parameters?.image || ""}
               onChange={e =>
                 handleFieldUpdate("parameters.image", e.target.value)
@@ -114,6 +116,7 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="replicas"
+                className="mt-1.5"
                 type="number"
                 min="1"
                 value={data.parameters?.replicas || 1}
@@ -132,6 +135,7 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="port"
+                className="mt-1.5"
                 type="number"
                 min="1"
                 max="65535"

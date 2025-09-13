@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -14,6 +14,7 @@ import ReactFlow, {
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { debounce } from "lodash-es";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -95,14 +96,27 @@ function WorkflowCanvasContent({
     }
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
-  // Notify parent of changes
+  // Create debounced callbacks using useRef to maintain stability
+  const debouncedNodesChange = useRef(
+    debounce((nodes: Node[]) => {
+      onNodesChangeProp?.(nodes);
+    }, 300)
+  ).current;
+
+  const debouncedEdgesChange = useRef(
+    debounce((edges: Edge[]) => {
+      onEdgesChangeProp?.(edges);
+    }, 300)
+  ).current;
+
+  // Notify parent of changes with debouncing
   useEffect(() => {
-    onNodesChangeProp?.(nodes);
-  }, [nodes, onNodesChangeProp]);
+    debouncedNodesChange(nodes);
+  }, [nodes, debouncedNodesChange]);
 
   useEffect(() => {
-    onEdgesChangeProp?.(edges);
-  }, [edges, onEdgesChangeProp]);
+    debouncedEdgesChange(edges);
+  }, [edges, debouncedEdgesChange]);
 
   useEffect(() => {
     const handleUpdateNodeData = (nodeId: string, data: DeploymentRequest) => {

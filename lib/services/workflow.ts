@@ -22,7 +22,7 @@ export interface Workflow {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   owner_id: string;
-  cluster_id?: string;
+  cluster_id: string;
   created_at: string;
   updated_at: string;
   run_count: number;
@@ -34,7 +34,7 @@ export interface Workflow {
 export interface CreateWorkflowRequest {
   name: string;
   description?: string;
-  cluster_id?: string;
+  cluster_id: string;
 }
 
 export interface UpdateWorkflowRequest {
