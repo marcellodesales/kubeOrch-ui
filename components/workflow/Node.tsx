@@ -1,6 +1,11 @@
 import React from "react";
 import { Handle, Position } from "reactflow";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CompactCard,
+  CompactCardContent,
+  CompactCardHeader,
+  CompactCardTitle,
+} from "@/components/ui/compact-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -35,8 +40,8 @@ export default function Node({
   className,
 }: NodeProps) {
   return (
-    <Card className={`w-[280px] shadow-md border relative ${className || ""}`}>
-      <CardHeader className="py-2 px-3 flex flex-row items-center justify-between relative">
+    <CompactCard className={`w-[280px] shadow-md border relative ${className || ""}`}>
+      <CompactCardHeader className="flex flex-row items-center justify-between relative">
         {/* Left connector - centered on header */}
         <Handle
           type="target"
@@ -50,7 +55,7 @@ export default function Node({
           }}
         />
 
-        <CardTitle className="text-xs font-medium">{title}</CardTitle>
+        <CompactCardTitle>{title}</CompactCardTitle>
 
         {onSettingsClick && (
           <Button
@@ -62,9 +67,9 @@ export default function Node({
             <Settings className="h-3 w-3" />
           </Button>
         )}
-      </CardHeader>
+      </CompactCardHeader>
 
-      <CardContent className="px-3 pb-3 space-y-2 relative">
+      <CompactCardContent className="space-y-2 relative">
         {fields.map(field => {
           if (field.type === "group" && field.fields) {
             // Render grouped fields (like replicas and port side by side)
@@ -184,7 +189,7 @@ export default function Node({
             </div>
           );
         })}
-      </CardContent>
-    </Card>
+      </CompactCardContent>
+    </CompactCard>
   );
 }

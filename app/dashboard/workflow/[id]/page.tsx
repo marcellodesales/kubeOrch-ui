@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
@@ -36,6 +36,7 @@ export default function WorkflowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     loadWorkflow();
@@ -48,6 +49,7 @@ export default function WorkflowDetailPage() {
       setWorkflow(data);
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
+      setIsInitialized(true);
     } catch {
       toast.error("Failed to load workflow");
       router.push("/dashboard/workflow");
@@ -103,6 +105,19 @@ export default function WorkflowDetailPage() {
     }
   };
 
+  // Use callbacks to prevent unnecessary re-renders
+  const handleNodesChange = useCallback((newNodes: any[]) => {
+    if (isInitialized) {
+      setNodes(newNodes);
+    }
+  }, [isInitialized]);
+
+  const handleEdgesChange = useCallback((newEdges: any[]) => {
+    if (isInitialized) {
+      setEdges(newEdges);
+    }
+  }, [isInitialized]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -117,8 +132,8 @@ export default function WorkflowDetailPage() {
         workflow={workflow}
         initialNodes={nodes}
         initialEdges={edges}
-        onNodesChange={(newNodes: any[]) => setNodes(newNodes)}
-        onEdgesChange={(newEdges: any[]) => setEdges(newEdges)}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
         onSave={handleSave}
         onRun={handleRun}
         onPublish={handlePublish}
