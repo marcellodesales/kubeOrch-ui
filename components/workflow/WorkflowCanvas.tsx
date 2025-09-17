@@ -178,7 +178,7 @@ function WorkflowCanvasContent({
       },
       data: {
         id: nodeIdStr, // Default to node ID, will be updated when image is set
-        templateId: "applications/api/nodejs-api", // Fixed template
+        templateId: "core/deployment", // Use core deployment template
         parameters: {
           image: "",
           replicas: 1,
