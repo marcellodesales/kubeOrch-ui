@@ -90,7 +90,7 @@ export default function DeploymentSettingsPanel({
               className="mt-1.5"
               value={data.templateId || ""}
               onChange={e => handleFieldUpdate("templateId", e.target.value)}
-              placeholder="applications/api/nodejs-api"
+              placeholder="core/deployment"
             />
           </div>
 

@@ -5,5 +5,5 @@ export const APP_URL =
     : "http://localhost:3000");
 
 export const getInviteLink = (inviteCode: string) => {
-  return `${APP_URL}/register?invite=${inviteCode}`;
+  return `${APP_URL}/signup?invite=${inviteCode}`;
 };

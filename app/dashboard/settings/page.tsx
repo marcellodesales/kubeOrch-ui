@@ -13,36 +13,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
-import {
-  Copy,
-  Shield,
-  Users,
-  Link as LinkIcon,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Copy, Shield, Users, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
 import { InlineLoader } from "@/components/ui/loader";
 import { getInviteLink } from "@/lib/constants";
 
+import { Switch } from "@/components/ui/switch";
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const [inviteCode, setInviteCode] = useState<string>("");
-  const [showInviteCode, setShowInviteCode] = useState(false);
+  const [regenerateAfterSignup, setRegenerateAfterSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isAdmin = user?.role === "admin";
 
   const breadcrumbs = [{ label: "Settings" }];
 
-  const fetchInviteCode = useCallback(async () => {
+  const fetchSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await api.get("/settings/invite-code");
+      const response = await api.get("/settings/regenerate-setting");
       setInviteCode(response.data.inviteCode);
+      setRegenerateAfterSignup(response.data.regenerateAfterSignup || false);
     } catch (error) {
-      toast.error("Failed to fetch invite code");
-      console.error("Error fetching invite code:", error);
+      toast.error("Failed to fetch settings");
+      console.error("Error fetching settings:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,9 +46,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchInviteCode();
+      fetchSettings();
     }
-  }, [isAdmin, fetchInviteCode]);
+  }, [isAdmin, fetchSettings]);
 
   const generateNewInviteCode = async () => {
     setIsLoading(true);
@@ -64,6 +60,26 @@ export default function SettingsPage() {
       toast.error("Failed to generate invite code");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const updateRegenerateSetting = async (value: boolean) => {
+    try {
+      await api.put("/settings/regenerate-setting", {
+        regenerateAfterSignup: value,
+      });
+      setRegenerateAfterSignup(value);
+      toast.success(
+        `Regenerate after signup ${value ? "enabled" : "disabled"}`
+      );
+    } catch (error) {
+      toast.error("Failed to update setting");
+      console.error(
+        "Failed to update 'regenerate after signup' setting:",
+        error
+      );
+      // Revert the state on failure
+      setRegenerateAfterSignup(!value);
     }
   };
 
@@ -98,38 +114,6 @@ export default function SettingsPage() {
                 {isAdmin ? (
                   <>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Invite Code</label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            value={showInviteCode ? inviteCode : "••••••"}
-                            readOnly
-                            className="pr-10 font-mono"
-                            disabled={isLoading}
-                          />
-                          <button
-                            onClick={() => setShowInviteCode(!showInviteCode)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            {showInviteCode ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={copyInviteLink}
-                          disabled={!inviteCode || isLoading}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
                       <label className="text-sm font-medium">Invite Link</label>
                       <div className="p-3 bg-muted rounded-lg">
                         <code className="text-xs break-all">
@@ -138,8 +122,36 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="space-y-0.5">
+                        <label className="text-sm font-medium flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4" />
+                          Regenerate code after signup
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          Automatically generate a new invite code after each
+                          user signs up
+                        </p>
+                      </div>
+                      <Switch
+                        checked={regenerateAfterSignup}
+                        onCheckedChange={updateRegenerateSetting}
+                        disabled={isLoading}
+                      />
+                    </div>
+
                     <div className="flex gap-2">
                       <Button
+                        variant="default"
+                        onClick={copyInviteLink}
+                        disabled={!inviteCode || isLoading}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copy Link
+                      </Button>
+                      <Button
+                        variant="outline"
                         onClick={generateNewInviteCode}
                         disabled={isLoading}
                         className="flex-1"
@@ -150,15 +162,6 @@ export default function SettingsPage() {
                           <LinkIcon className="mr-2 h-4 w-4" />
                         )}
                         Generate New Code
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={copyInviteLink}
-                        disabled={!inviteCode || isLoading}
-                        className="flex-1"
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copy Link
                       </Button>
                     </div>
                   </>
