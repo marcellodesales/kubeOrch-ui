@@ -34,24 +34,23 @@ export default function EditClusterPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [clusterDisplayName, setClusterDisplayName] = useState(clusterName);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [formData, setFormData] = useState({
+    name: "",
     displayName: "",
     description: "",
     server: "",
-    authType: "serviceAccount",
+    authType: "serviceAccount" as string,
     token: "",
   });
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Clusters", href: "/dashboard/clusters" },
-    { label: clusterName },
+    { label: clusterDisplayName || clusterName },
     { label: "Edit" },
   ];
-
-  useEffect(() => {
-    fetchCluster();
-  }, [clusterName]);
 
   const fetchCluster = async () => {
     try {
@@ -60,13 +59,33 @@ export default function EditClusterPage() {
 
       console.log("Cluster data received:", cluster); // Debug log
 
-      setFormData({
+      // Update display name for breadcrumb
+      if (cluster.displayName || cluster.name) {
+        setClusterDisplayName(cluster.displayName || cluster.name);
+      }
+
+      // Update form data with the received values
+      // Map the authType to match our select options
+      let mappedAuthType = cluster.authType;
+      if (mappedAuthType === "bearer" || mappedAuthType === "token") {
+        mappedAuthType = "token";
+      } else if (!mappedAuthType) {
+        mappedAuthType = "serviceAccount";
+      }
+
+      const newFormData = {
+        name: cluster.name || "",
         displayName: cluster.displayName || "",
         description: cluster.description || "",
         server: cluster.server || "",
-        authType: cluster.authType || "serviceAccount",
+        authType: mappedAuthType,
         token: "", // Never show existing token for security
-      });
+      };
+
+      setFormData(newFormData);
+      setDataLoaded(true);
+
+      console.log("Form data set to:", newFormData);
     } catch (error) {
       toast.error("Failed to load cluster details");
       console.error("Failed to load cluster:", error);
@@ -75,12 +94,18 @@ export default function EditClusterPage() {
     }
   };
 
+  useEffect(() => {
+    if (clusterName) {
+      fetchCluster();
+    }
+  }, [clusterName]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         displayName: formData.displayName,
         description: formData.description,
         server: formData.server,
@@ -128,7 +153,7 @@ export default function EditClusterPage() {
     </div>
   );
 
-  if (loading) {
+  if (loading || !dataLoaded) {
     return (
       <AppLayout>
         <PageContainer
@@ -167,7 +192,7 @@ export default function EditClusterPage() {
                 <Input
                   id="displayName"
                   value={formData.displayName}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, displayName: e.target.value })
                   }
                   placeholder="Enter a display name for the cluster"
@@ -179,7 +204,7 @@ export default function EditClusterPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder="Enter a description for the cluster"
@@ -192,7 +217,7 @@ export default function EditClusterPage() {
                 <Input
                   id="server"
                   value={formData.server}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({ ...formData, server: e.target.value })
                   }
                   placeholder="https://kubernetes.example.com:6443"
@@ -203,7 +228,7 @@ export default function EditClusterPage() {
                 <Label htmlFor="authType">Authentication Type</Label>
                 <Select
                   value={formData.authType}
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     setFormData({ ...formData, authType: value })
                   }
                 >
@@ -242,7 +267,7 @@ export default function EditClusterPage() {
                   <Textarea
                     id="token"
                     value={formData.token}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({ ...formData, token: e.target.value })
                     }
                     placeholder="Enter new token to update (leave empty to keep existing)"

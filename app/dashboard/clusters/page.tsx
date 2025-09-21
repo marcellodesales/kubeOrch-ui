@@ -50,7 +50,6 @@ import {
   Trash2,
   Edit,
   Play,
-  Share2,
   Star,
   StarOff,
 } from "lucide-react";
@@ -377,22 +376,11 @@ export default function ClustersPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    router.push(
-                                      `/dashboard/clusters/${cluster.name}/share`
-                                    )
-                                  }
-                                >
-                                  <Share2 className="mr-2 h-4 w-4" />
-                                  Share Access
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
                                     handleDeleteCluster(cluster.name)
                                   }
                                   className="text-destructive"
                                 >
-                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <Trash2 className="mr-2 h-4 w-4 text-destructive" />
                                   Remove Cluster
                                 </DropdownMenuItem>
                               </DropdownMenuContent>

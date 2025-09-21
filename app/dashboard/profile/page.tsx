@@ -137,7 +137,10 @@ export default function ProfilePage() {
                   <Label>Profile Image</Label>
                   <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16 border-2 border-border">
-                      <AvatarImage src={user?.avatarUrl} alt={user?.name || "Profile"} />
+                      <AvatarImage
+                        src={user?.avatarUrl}
+                        alt={user?.name || "Profile"}
+                      />
                       <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                         {user?.name
                           ?.split(" ")
