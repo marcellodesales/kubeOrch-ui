@@ -13,13 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
-import {
-  Copy,
-  Shield,
-  Users,
-  Link as LinkIcon,
-  RefreshCw,
-} from "lucide-react";
+import { Copy, Shield, Users, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
 import { InlineLoader } from "@/components/ui/loader";
@@ -75,9 +69,17 @@ export default function SettingsPage() {
         regenerateAfterSignup: value,
       });
       setRegenerateAfterSignup(value);
-      toast.success(`Regenerate after signup ${value ? "enabled" : "disabled"}`);
-    } catch {
+      toast.success(
+        `Regenerate after signup ${value ? "enabled" : "disabled"}`
+      );
+    } catch (error) {
       toast.error("Failed to update setting");
+      console.error(
+        "Failed to update 'regenerate after signup' setting:",
+        error
+      );
+      // Revert the state on failure
+      setRegenerateAfterSignup(!value);
     }
   };
 
@@ -127,7 +129,8 @@ export default function SettingsPage() {
                           Regenerate code after signup
                         </label>
                         <p className="text-xs text-muted-foreground">
-                          Automatically generate a new invite code after each user signs up
+                          Automatically generate a new invite code after each
+                          user signs up
                         </p>
                       </div>
                       <Switch
