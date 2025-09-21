@@ -64,6 +64,8 @@ export function LoginForm() {
           id: responseData.user.id,
           name: responseData.user.name,
           role: responseData.user.role,
+          avatarUrl: responseData.user.avatarUrl,
+          createdAt: responseData.user.createdAt,
         });
       }
       router.push("/dashboard");
@@ -140,9 +142,9 @@ export function LoginForm() {
                         disabled={isLoading}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
                           <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>

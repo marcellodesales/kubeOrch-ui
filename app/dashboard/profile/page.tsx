@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/AuthStore";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
@@ -34,27 +35,15 @@ export default function ProfilePage() {
     { label: "Profile" },
   ];
 
+  // Initialize form data from store, no need to fetch on every page load
   useEffect(() => {
-    fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get("/profile");
-      const userData = response.data.user;
+    if (user) {
       setFormData({
-        name: userData.name,
-        email: userData.email,
+        name: user.name || "",
+        email: user.email || "",
       });
-      // Update auth store with latest data
-      if (token) {
-        setAuthDetails(token, userData);
-      }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
     }
-  };
+  }, [user]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -145,6 +134,36 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label>Profile Image</Label>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16 border-2 border-border">
+                      <AvatarImage src={user?.avatarUrl} alt={user?.name || "Profile"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                        {user?.name
+                          ?.split(" ")
+                          .map(n => n[0])
+                          .join("")
+                          .toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Your profile image is provided by Gravatar</p>
+                      <p className="text-xs mt-1">
+                        To change it, update your avatar at{" "}
+                        <a
+                          href="https://gravatar.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          gravatar.com
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   {editMode ? (
                     <Input
@@ -188,7 +207,7 @@ export default function ProfilePage() {
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Password</p>
                     <p className="text-sm text-muted-foreground">
-                      Last changed 30 days ago
+                      Click to update your account password
                     </p>
                   </div>
                   <Button variant="outline" size="sm">

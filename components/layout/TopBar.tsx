@@ -157,7 +157,7 @@ export function TopBar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="/avatar.png" alt="User" />
+                <AvatarImage src={user?.avatarUrl} alt={user?.name || "User"} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {user?.name
                     ?.split(" ")

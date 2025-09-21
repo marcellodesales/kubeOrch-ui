@@ -186,9 +186,9 @@ export function RegisterForm() {
                         disabled={isLoading}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
                           <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>
@@ -222,9 +222,9 @@ export function RegisterForm() {
                         disabled={isLoading}
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
                           <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
                         )}
                       </button>
                     </div>
