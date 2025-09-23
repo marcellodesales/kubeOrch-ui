@@ -1,28 +1,31 @@
 // Node type definitions for workflow system
+// These match the backend's WorkflowNode.Data structure
 
 export interface DeploymentNodeData {
   id: string;
-  templateId: string;
-  parameters: {
-    image: string;
-    replicas: number;
-    port: number;
-    env?: Record<string, string>;
-    resources?: {
-      limits?: {
-        cpu?: string;
-        memory?: string;
-      };
-      requests?: {
-        cpu?: string;
-        memory?: string;
-      };
+  name: string;
+  type?: string;
+  namespace?: string;
+  image: string;
+  replicas: number;
+  port: number;
+  env?: Record<string, string>;
+  resources?: {
+    limits?: {
+      cpu?: string;
+      memory?: string;
     };
-    labels?: Record<string, string>;
+    requests?: {
+      cpu?: string;
+      memory?: string;
+    };
   };
-  metadata?: {
-    owner?: string;
-    project?: string;
+  labels?: Record<string, string>;
+  templateId?: string;
+  parameters?: {
+    image?: string;
+    replicas?: number;
+    port?: number;
   };
   hasValidationError?: boolean;
 }

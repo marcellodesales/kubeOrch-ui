@@ -174,14 +174,13 @@ function WorkflowCanvasContent({
         y: Math.random() * 300 + 100,
       },
       data: {
-        id: nodeIdStr, // Default to node ID, will be updated when image is set
-        templateId: "core/deployment", // Use core deployment template
-        parameters: {
-          image: "",
-          replicas: 1,
-          port: 8080,
-        },
-        // metadata will be determined by backend
+        id: nodeIdStr,
+        name: `Deployment-${nodeIdStr}`,
+        namespace: "default",
+        image: "",
+        replicas: 1,
+        port: 8080,
+        templateId: "core/deployment",
       },
     };
 
