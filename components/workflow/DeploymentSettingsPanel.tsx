@@ -205,10 +205,7 @@ export default function DeploymentSettingsPanel({
                 id="requests-memory"
                 value={data.resources?.requests?.memory || ""}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "resources.requests.memory",
-                    e.target.value
-                  )
+                  handleFieldUpdate("resources.requests.memory", e.target.value)
                 }
                 placeholder="256Mi"
               />

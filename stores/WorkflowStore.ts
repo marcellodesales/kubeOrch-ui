@@ -28,8 +28,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodeUpdateHandler: null,
   settingsOpenHandler: null,
 
-  setNodeUpdateHandler: (handler) => set({ nodeUpdateHandler: handler }),
-  setSettingsOpenHandler: (handler) => set({ settingsOpenHandler: handler }),
+  setNodeUpdateHandler: handler => set({ nodeUpdateHandler: handler }),
+  setSettingsOpenHandler: handler => set({ settingsOpenHandler: handler }),
 
   updateNodeData: (nodeId: string, data: WorkflowNodeData) => {
     const handler = get().nodeUpdateHandler;
