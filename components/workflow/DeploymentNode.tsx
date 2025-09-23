@@ -1,10 +1,10 @@
 import React, { memo, useCallback } from "react";
 import { NodeProps as ReactFlowNodeProps } from "reactflow";
 import Node, { NodeField } from "./Node";
-import { DeploymentRequest } from "@/lib/services/deployment";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
+import { DeploymentNodeData } from "@/lib/types/nodes";
 
-export type DeploymentNodeData = DeploymentRequest;
+export type { DeploymentNodeData };
 
 const DeploymentNode = memo(
   ({ data, id }: ReactFlowNodeProps<DeploymentNodeData>) => {

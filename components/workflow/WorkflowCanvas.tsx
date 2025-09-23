@@ -32,12 +32,9 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
+import { DeploymentRequest } from "@/lib/types/nodes";
 import DeploymentSettingsPanel from "./DeploymentSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
-import {
-  DeploymentRequest,
-  deployApplication,
-} from "@/lib/services/deployment";
 import { Workflow } from "@/lib/services/workflow";
 
 const nodeTypes = {
@@ -274,11 +271,16 @@ function WorkflowCanvasContent({
         return;
       }
 
-      const deploymentPromises = deployments.map(deployment =>
-        deployApplication(deployment)
+      // TODO: Replace with actual workflow execution API
+      // For now, we'll simulate the deployment
+      const results = await Promise.allSettled(
+        deployments.map(
+          () =>
+            new Promise(resolve =>
+              setTimeout(() => resolve({ success: true }), 1000)
+            )
+        )
       );
-
-      const results = await Promise.allSettled(deploymentPromises);
 
       const successful = results.filter(r => r.status === "fulfilled").length;
       const failed = results.filter(r => r.status === "rejected").length;

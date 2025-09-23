@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -25,17 +26,14 @@ import {
   Package,
   Server,
   Database,
-  Cloud,
   Settings,
   FileCode,
   Activity,
-  GitBranch,
   Shield,
   Monitor,
   FolderOpen,
   ChevronRight,
   Workflow,
-  Network,
   Plus,
 } from "lucide-react";
 import {
@@ -74,24 +72,14 @@ const navItems = [
     ],
   },
   {
-    title: "Deployments",
-    icon: Server,
-    href: "/deployments",
-    submenu: [
-      { title: "Active", href: "/deployments/active", icon: Activity },
-      { title: "History", href: "/deployments/history", icon: GitBranch },
-      { title: "Rollbacks", href: "/deployments/rollbacks", icon: Shield },
-    ],
-  },
-  {
     title: "Resources",
     icon: Database,
-    href: "/resources",
-    submenu: [
-      { title: "Storage", href: "/resources/storage", icon: Database },
-      { title: "Networking", href: "/resources/networking", icon: Network },
-      { title: "Compute", href: "/resources/compute", icon: Cloud },
-    ],
+    href: "/dashboard/resources",
+  },
+  {
+    title: "Plugins",
+    icon: Package,
+    href: "/dashboard/plugins",
   },
   {
     title: "Monitoring",
@@ -125,9 +113,12 @@ export function NavigationSidebar() {
       <Sidebar className="border-r border-border bg-sidebar">
         <SidebarHeader className="border-b border-sidebar-border px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Cloud className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <Image
+              src="/navbar-logo.png"
+              alt="KubeOrch Logo"
+              width={32}
+              height={32}
+            />
             <span className="text-lg font-semibold text-sidebar-foreground">
               KubeOrch
             </span>
