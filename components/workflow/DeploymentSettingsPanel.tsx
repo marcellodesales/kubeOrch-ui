@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { DeploymentRequest } from "@/lib/services/deployment";
+import { WorkflowNodeData } from "@/stores/WorkflowStore";
 
 interface DeploymentSettingsPanelProps {
   isOpen: boolean;
   nodeId: string | null;
-  data: DeploymentRequest | null;
+  data: WorkflowNodeData | null;
   onClose: () => void;
-  onUpdate: (nodeId: string, data: DeploymentRequest) => void;
+  onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
 }
 
@@ -67,12 +67,12 @@ export default function DeploymentSettingsPanel({
 
       <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-80px)]">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Deployment ID</Label>
+          <Label className="text-sm font-medium">Node Name</Label>
           <Input
-            value={data.id || ""}
-            disabled
-            placeholder="Auto-generated from image"
-            className="bg-muted mt-1.5"
+            value={data.name || ""}
+            onChange={e => handleFieldUpdate("name", e.target.value)}
+            placeholder="Enter node name"
+            className="mt-1.5"
           />
         </div>
 
@@ -82,15 +82,15 @@ export default function DeploymentSettingsPanel({
           <h3 className="text-sm font-semibold">Basic Configuration</h3>
 
           <div className="space-y-2">
-            <Label htmlFor="templateId" className="text-sm">
-              Template ID
+            <Label htmlFor="namespace" className="text-sm">
+              Namespace
             </Label>
             <Input
-              id="templateId"
+              id="namespace"
               className="mt-1.5"
-              value={data.templateId || ""}
-              onChange={e => handleFieldUpdate("templateId", e.target.value)}
-              placeholder="core/deployment"
+              value={data.namespace || "default"}
+              onChange={e => handleFieldUpdate("namespace", e.target.value)}
+              placeholder="default"
             />
           </div>
 
@@ -101,10 +101,8 @@ export default function DeploymentSettingsPanel({
             <Input
               id="image"
               className="mt-1.5"
-              value={data.parameters?.image || ""}
-              onChange={e =>
-                handleFieldUpdate("parameters.image", e.target.value)
-              }
+              value={data.image || ""}
+              onChange={e => handleFieldUpdate("image", e.target.value)}
               placeholder="myorg/backend:1.0"
             />
           </div>
@@ -119,12 +117,9 @@ export default function DeploymentSettingsPanel({
                 className="mt-1.5"
                 type="number"
                 min="1"
-                value={data.parameters?.replicas || 1}
+                value={data.replicas || 1}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "parameters.replicas",
-                    parseInt(e.target.value)
-                  )
+                  handleFieldUpdate("replicas", parseInt(e.target.value))
                 }
               />
             </div>
@@ -139,9 +134,9 @@ export default function DeploymentSettingsPanel({
                 type="number"
                 min="1"
                 max="65535"
-                value={data.parameters?.port || 8080}
+                value={data.port || 8080}
                 onChange={e =>
-                  handleFieldUpdate("parameters.port", parseInt(e.target.value))
+                  handleFieldUpdate("port", parseInt(e.target.value))
                 }
               />
             </div>
@@ -160,12 +155,9 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="limits-cpu"
-                value={data.parameters?.resources?.limits?.cpu || ""}
+                value={data.resources?.limits?.cpu || ""}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "parameters.resources.limits.cpu",
-                    e.target.value
-                  )
+                  handleFieldUpdate("resources.limits.cpu", e.target.value)
                 }
                 placeholder="500m"
               />
@@ -177,12 +169,9 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="limits-memory"
-                value={data.parameters?.resources?.limits?.memory || ""}
+                value={data.resources?.limits?.memory || ""}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "parameters.resources.limits.memory",
-                    e.target.value
-                  )
+                  handleFieldUpdate("resources.limits.memory", e.target.value)
                 }
                 placeholder="512Mi"
               />
@@ -200,12 +189,9 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="requests-cpu"
-                value={data.parameters?.resources?.requests?.cpu || ""}
+                value={data.resources?.requests?.cpu || ""}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "parameters.resources.requests.cpu",
-                    e.target.value
-                  )
+                  handleFieldUpdate("resources.requests.cpu", e.target.value)
                 }
                 placeholder="250m"
               />
@@ -217,12 +203,9 @@ export default function DeploymentSettingsPanel({
               </Label>
               <Input
                 id="requests-memory"
-                value={data.parameters?.resources?.requests?.memory || ""}
+                value={data.resources?.requests?.memory || ""}
                 onChange={e =>
-                  handleFieldUpdate(
-                    "parameters.resources.requests.memory",
-                    e.target.value
-                  )
+                  handleFieldUpdate("resources.requests.memory", e.target.value)
                 }
                 placeholder="256Mi"
               />

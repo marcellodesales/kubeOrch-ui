@@ -13,17 +13,22 @@ import {
   type WorkflowNode,
   type WorkflowEdge,
 } from "@/lib/services/workflow";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Logo } from "@/components/ui/logo";
+
+// Inline loading component for instant display
+const LoadingComponent = () => (
+  <div className="flex items-center justify-center h-screen bg-gray-50">
+    <div className="flex flex-col items-center justify-center gap-4">
+      <Logo width={80} height={80} className="animate-pulse" />
+    </div>
+  </div>
+);
 
 const WorkflowCanvas = dynamic(
   () => import("@/components/workflow/WorkflowCanvas"),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <Skeleton className="w-32 h-32" />
-      </div>
-    ),
+    loading: LoadingComponent,
   }
 );
 
@@ -127,7 +132,12 @@ export default function WorkflowDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-muted-foreground">Loading workflow...</div>
+        <div className="flex flex-col items-center justify-center gap-4">
+          <Logo width={80} height={80} className="animate-pulse" />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Loading workflow...
+          </p>
+        </div>
       </div>
     );
   }

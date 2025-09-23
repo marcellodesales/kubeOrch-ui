@@ -1,21 +1,27 @@
 import { create } from "zustand";
-import { DeploymentRequest } from "@/lib/services/deployment";
+import { DeploymentNodeData } from "@/lib/types/nodes";
+
+// Re-export types for convenience
+export type { DeploymentNodeData };
+export type WorkflowNodeData = DeploymentNodeData;
+export type DeploymentRequest = DeploymentNodeData;
 
 interface WorkflowState {
-  nodeUpdateHandler: ((nodeId: string, data: DeploymentRequest) => void) | null;
+  nodeUpdateHandler: ((nodeId: string, data: WorkflowNodeData) => void) | null;
   settingsOpenHandler:
-    | ((nodeId: string, data: DeploymentRequest) => void)
+    | ((nodeId: string, data: WorkflowNodeData) => void)
     | null;
 
   setNodeUpdateHandler: (
-    handler: (nodeId: string, data: DeploymentRequest) => void
+    handler: ((nodeId: string, data: WorkflowNodeData) => void) | null
   ) => void;
   setSettingsOpenHandler: (
-    handler: (nodeId: string, data: DeploymentRequest) => void
+    handler: ((nodeId: string, data: WorkflowNodeData) => void) | null
   ) => void;
 
-  updateNodeData: (nodeId: string, data: DeploymentRequest) => void;
-  openNodeSettings: (nodeId: string, data: DeploymentRequest) => void;
+  // Direct methods for updating nodes
+  updateNodeData: (nodeId: string, data: WorkflowNodeData) => void;
+  openNodeSettings: (nodeId: string, data: WorkflowNodeData) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -25,17 +31,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   setNodeUpdateHandler: handler => set({ nodeUpdateHandler: handler }),
   setSettingsOpenHandler: handler => set({ settingsOpenHandler: handler }),
 
-  updateNodeData: (nodeId, data) => {
-    const { nodeUpdateHandler } = get();
-    if (nodeUpdateHandler) {
-      nodeUpdateHandler(nodeId, data);
+  updateNodeData: (nodeId: string, data: WorkflowNodeData) => {
+    const handler = get().nodeUpdateHandler;
+    if (handler) {
+      handler(nodeId, data);
     }
   },
 
-  openNodeSettings: (nodeId, data) => {
-    const { settingsOpenHandler } = get();
-    if (settingsOpenHandler) {
-      settingsOpenHandler(nodeId, data);
+  openNodeSettings: (nodeId: string, data: WorkflowNodeData) => {
+    const handler = get().settingsOpenHandler;
+    if (handler) {
+      handler(nodeId, data);
     }
   },
 }));
+
+export default useWorkflowStore;
