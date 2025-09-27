@@ -37,6 +37,7 @@ interface ClusterFormData {
   description: string;
   server: string;
   authType: AuthType;
+  singleNode: boolean;
   credentials: {
     token?: string;
     caData?: string;
@@ -64,6 +65,7 @@ export default function NewClusterPage() {
     description: "",
     server: "",
     authType: "token",
+    singleNode: false,
     credentials: {
       namespace: "default",
       insecure: false,
@@ -477,6 +479,39 @@ export default function NewClusterPage() {
                       insecure and should only be used for testing or
                       development clusters. Production clusters should always
                       use proper certificates.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex items-start space-x-3 mt-4">
+                  <Checkbox
+                    id="singleNode"
+                    checked={formData.singleNode}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        singleNode: checked as boolean,
+                      }))
+                    }
+                  />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="singleNode"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Single-Node Mode (Development)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Remove control-plane taints to allow workloads on single-node clusters
+                    </p>
+                  </div>
+                </div>
+                {formData.singleNode && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Single-node mode will remove control-plane taints, allowing pods to be scheduled on control-plane nodes.
+                      This is suitable for development or single-node clusters only.
                     </AlertDescription>
                   </Alert>
                 )}
