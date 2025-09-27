@@ -57,6 +57,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getErrorMessage } from "@/lib/utils/errorHandling";
 
 interface ClusterMetadata {
   version?: string;
@@ -149,7 +150,11 @@ export default function ClustersPage() {
       fetchClusters();
     } catch (error) {
       console.error(`Failed to test connection to ${clusterName}:`, error);
-      toast.error(`Failed to test connection to ${clusterName}`);
+      const errorMessage = getErrorMessage(
+        error,
+        `Failed to test connection to ${clusterName}`
+      );
+      toast.error(errorMessage);
     }
   };
 

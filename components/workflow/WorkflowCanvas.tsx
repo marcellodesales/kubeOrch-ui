@@ -175,7 +175,7 @@ function WorkflowCanvasContent({
       },
       data: {
         id: nodeIdStr,
-        name: `Deployment-${nodeIdStr}`,
+        name: `deployment-${nodeId}`,
         namespace: "default",
         image: "",
         replicas: 1,

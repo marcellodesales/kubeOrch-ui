@@ -23,9 +23,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InlineLoader } from "@/components/ui/loader";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "react-toastify";
 import api from "@/lib/api";
-import { ArrowLeft, Save, Lock } from "lucide-react";
+import { ArrowLeft, Save, Lock, Info } from "lucide-react";
 
 export default function EditClusterPage() {
   const params = useParams();
@@ -43,6 +45,7 @@ export default function EditClusterPage() {
     server: "",
     authType: "serviceAccount" as string,
     token: "",
+    singleNode: false,
   });
 
   const breadcrumbs = [
@@ -80,6 +83,7 @@ export default function EditClusterPage() {
         server: cluster.server || "",
         authType: mappedAuthType,
         token: "", // Never show existing token for security
+        singleNode: cluster.singleNode || false,
       };
 
       setFormData(newFormData);
@@ -110,6 +114,7 @@ export default function EditClusterPage() {
         description: formData.description,
         server: formData.server,
         authType: formData.authType,
+        singleNode: formData.singleNode,
       };
 
       // Only include credentials if token is provided
@@ -280,6 +285,41 @@ export default function EditClusterPage() {
                   </p>
                 </div>
               </div>
+
+              <div className="flex items-start space-x-3 pt-4 border-t">
+                <Checkbox
+                  id="singleNode"
+                  checked={formData.singleNode}
+                  onCheckedChange={checked =>
+                    setFormData(prev => ({
+                      ...prev,
+                      singleNode: checked as boolean,
+                    }))
+                  }
+                />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="singleNode"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Single-Node Mode (Development)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Remove control-plane taints to allow workloads on
+                    single-node clusters
+                  </p>
+                </div>
+              </div>
+              {formData.singleNode && (
+                <Alert className="mt-2">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Single-node mode will remove control-plane taints, allowing
+                    pods to be scheduled on control-plane nodes. This is
+                    suitable for development or single-node clusters only.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="flex justify-between items-center pt-4">
                 <Button
