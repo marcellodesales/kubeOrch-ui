@@ -150,7 +150,10 @@ export default function ClustersPage() {
       fetchClusters();
     } catch (error) {
       console.error(`Failed to test connection to ${clusterName}:`, error);
-      const errorMessage = getErrorMessage(error, `Failed to test connection to ${clusterName}`);
+      const errorMessage = getErrorMessage(
+        error,
+        `Failed to test connection to ${clusterName}`
+      );
       toast.error(errorMessage);
     }
   };

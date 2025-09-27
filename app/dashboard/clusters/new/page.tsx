@@ -487,8 +487,8 @@ export default function NewClusterPage() {
                   <Checkbox
                     id="singleNode"
                     checked={formData.singleNode}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
+                    onCheckedChange={checked =>
+                      setFormData(prev => ({
                         ...prev,
                         singleNode: checked as boolean,
                       }))
@@ -502,7 +502,8 @@ export default function NewClusterPage() {
                       Single-Node Mode (Development)
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Remove control-plane taints to allow workloads on single-node clusters
+                      Remove control-plane taints to allow workloads on
+                      single-node clusters
                     </p>
                   </div>
                 </div>
@@ -510,8 +511,9 @@ export default function NewClusterPage() {
                   <Alert>
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                      Single-node mode will remove control-plane taints, allowing pods to be scheduled on control-plane nodes.
-                      This is suitable for development or single-node clusters only.
+                      Single-node mode will remove control-plane taints,
+                      allowing pods to be scheduled on control-plane nodes. This
+                      is suitable for development or single-node clusters only.
                     </AlertDescription>
                   </Alert>
                 )}
