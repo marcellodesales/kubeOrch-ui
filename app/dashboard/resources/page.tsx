@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,14 @@ interface Resource {
   name: string;
   namespace: string;
   type: string;
-  status: "running" | "pending" | "failed" | "completed" | "unknown" | "deleted" | "warning";
+  status:
+    | "running"
+    | "pending"
+    | "failed"
+    | "completed"
+    | "unknown"
+    | "deleted"
+    | "warning";
   createdAt: string;
   clusterName: string;
   labels?: Record<string, string>;
@@ -79,7 +86,10 @@ interface Resource {
   };
 }
 
-const resourceIcons: Record<string, any> = {
+const resourceIcons: Record<
+  string,
+  React.ComponentType<import("lucide-react").LucideProps>
+> = {
   Pod: Box,
   Service: Globe,
   Deployment: Package,
@@ -143,7 +153,6 @@ const statusConfig = {
   },
 };
 
-
 export default function ResourcesPage() {
   const router = useRouter();
   const [resources, setResources] = useState<Resource[]>([]);
@@ -160,48 +169,56 @@ export default function ResourcesPage() {
     { label: "Resources" },
   ];
 
-  const fetchResources = async (syncFirst = false) => {
-    try {
-      const params = new URLSearchParams();
+  const fetchResources = useCallback(
+    async (syncFirst = false) => {
+      try {
+        const params = new URLSearchParams();
 
-      // Only add filters if they're not the initial/default values
-      if (selectedCluster && selectedCluster !== "all") {
-        params.append("cluster", selectedCluster);
-      }
-      if (selectedNamespace && selectedNamespace !== "all") {
-        params.append("namespace", selectedNamespace);
-      }
-      if (selectedType && selectedType !== "all") {
-        params.append("type", selectedType);
-      }
+        // Only add filters if they're not the initial/default values
+        if (selectedCluster && selectedCluster !== "all") {
+          params.append("cluster", selectedCluster);
+        }
+        if (selectedNamespace && selectedNamespace !== "all") {
+          params.append("namespace", selectedNamespace);
+        }
+        if (selectedType && selectedType !== "all") {
+          params.append("type", selectedType);
+        }
 
-      // Only sync on initial load or manual refresh
-      if (syncFirst) {
-        params.append("sync", "true");
-      }
+        // Only sync on initial load or manual refresh
+        if (syncFirst) {
+          params.append("sync", "true");
+        }
 
-      const response = await api.get(`/resources${params.toString() ? `?${params.toString()}` : ''}`);
-      setResources(response.data.resources || []);
-    } catch (error) {
-      console.error("Failed to fetch resources:", error);
-      toast.error(getErrorMessage(error, "Failed to load resources"));
-      setResources([]); // Set empty array on error
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+        const response = await api.get(
+          `/resources${params.toString() ? `?${params.toString()}` : ""}`
+        );
+        setResources(response.data.resources || []);
+      } catch (error) {
+        console.error("Failed to fetch resources:", error);
+        toast.error(getErrorMessage(error, "Failed to load resources"));
+        setResources([]); // Set empty array on error
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [selectedCluster, selectedNamespace, selectedType]
+  );
 
   useEffect(() => {
     // Sync with clusters on initial load
     fetchResources(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch when filters change (without sync)
   useEffect(() => {
-    if (!loading) { // Only refetch after initial load
+    if (!loading) {
+      // Only refetch after initial load
       fetchResources(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCluster, selectedNamespace, selectedType]);
 
   const handleRefresh = () => {
@@ -209,52 +226,78 @@ export default function ResourcesPage() {
     fetchResources(true); // Sync when manually refreshing
   };
 
-  // Get unique values for filters
-  const clusters = [...new Set(resources.map(r => r.clusterName))];
-  const namespaces = [...new Set(resources.map(r => r.namespace))].filter(ns => ns);
-  const types = [...new Set(resources.map(r => r.type))];
-
   // System namespaces to filter out
-  const systemNamespaces = ["kube-system", "kube-public", "kube-node-lease", "kube-flannel"];
+  const systemNamespaces = useMemo(
+    () => ["kube-system", "kube-public", "kube-node-lease", "kube-flannel"],
+    []
+  );
 
-  // Filter resources
-  const filteredResources = resources.filter(resource => {
-    // Filter out system resources if checkbox is checked
-    if (hideSystemResources) {
-      // Hide resources in system namespaces
-      if (systemNamespaces.includes(resource.namespace)) {
-        return false;
-      }
-      // Hide system ConfigMaps that appear in user namespaces
-      if (resource.type === "ConfigMap" && resource.name === "kube-root-ca.crt") {
-        return false;
-      }
-      // Hide the kubernetes service in default namespace
-      if (resource.type === "Service" && resource.name === "kubernetes") {
-        return false;
-      }
-    }
+  // Get unique values for filters
+  const clusters = useMemo(
+    () => [...new Set(resources.map(r => r.clusterName))],
+    [resources]
+  );
+  const namespaces = useMemo(
+    () => [...new Set(resources.map(r => r.namespace))].filter(ns => ns),
+    [resources]
+  );
+  const types = useMemo(
+    () => [...new Set(resources.map(r => r.type))],
+    [resources]
+  );
 
-    const matchesCluster = selectedCluster === "all" || resource.clusterName === selectedCluster;
-    const matchesNamespace = selectedNamespace === "all" || resource.namespace === selectedNamespace;
-    const matchesType = selectedType === "all" || resource.type === selectedType;
-    const matchesSearch = searchQuery === "" ||
-      resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (resource.namespace && resource.namespace.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter resources - only apply client-side filters (search and hideSystem)
+  const filteredResources = useMemo(() => {
+    return resources.filter(resource => {
+      // Filter out system resources if checkbox is checked
+      if (hideSystemResources) {
+        // Hide resources in system namespaces
+        if (systemNamespaces.includes(resource.namespace)) {
+          return false;
+        }
+        // Hide system ConfigMaps that appear in user namespaces
+        if (
+          resource.type === "ConfigMap" &&
+          resource.name === "kube-root-ca.crt"
+        ) {
+          return false;
+        }
+        // Hide the kubernetes service in default namespace
+        if (resource.type === "Service" && resource.name === "kubernetes") {
+          return false;
+        }
+      }
 
-    return matchesCluster && matchesNamespace && matchesType && matchesSearch;
-  });
+      const matchesSearch =
+        searchQuery === "" ||
+        resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (resource.namespace &&
+          resource.namespace.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      return matchesSearch;
+    });
+  }, [resources, hideSystemResources, searchQuery, systemNamespaces]);
 
   // Group resources by type for statistics
-  const resourceStats = resources.reduce((acc, resource) => {
-    acc[resource.type] = (acc[resource.type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const resourceStats = useMemo(() => {
+    return resources.reduce(
+      (acc, resource) => {
+        acc[resource.type] = (acc[resource.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+  }, [resources]);
 
-  const statusStats = resources.reduce((acc, resource) => {
-    acc[resource.status] = (acc[resource.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusStats = useMemo(() => {
+    return resources.reduce(
+      (acc, resource) => {
+        acc[resource.status] = (acc[resource.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+  }, [resources]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -291,13 +334,17 @@ export default function ResourcesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Filters</CardTitle>
-                <CardDescription>Filter resources by cluster, namespace, and type</CardDescription>
+                <CardDescription>
+                  Filter resources by cluster, namespace, and type
+                </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="hideSystem"
                   checked={hideSystemResources}
-                  onCheckedChange={(checked) => setHideSystemResources(checked as boolean)}
+                  onCheckedChange={checked =>
+                    setHideSystemResources(checked as boolean)
+                  }
                 />
                 <label
                   htmlFor="hideSystem"
@@ -318,14 +365,17 @@ export default function ResourcesPage() {
                 <Input
                   placeholder="Search by name, namespace, or type..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9 w-full"
                 />
               </div>
 
               {/* Filters - compact on desktop, stack on mobile */}
               <div className="flex flex-col sm:flex-row gap-4 md:gap-2">
-                <Select value={selectedCluster} onValueChange={setSelectedCluster}>
+                <Select
+                  value={selectedCluster}
+                  onValueChange={setSelectedCluster}
+                >
                   <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue placeholder="Cluster" />
                   </SelectTrigger>
@@ -339,7 +389,10 @@ export default function ResourcesPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedNamespace} onValueChange={setSelectedNamespace}>
+                <Select
+                  value={selectedNamespace}
+                  onValueChange={setSelectedNamespace}
+                >
                   <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="Namespace" />
                   </SelectTrigger>
@@ -378,7 +431,8 @@ export default function ResourcesPage() {
               <div>
                 <CardTitle>Resources</CardTitle>
                 <CardDescription>
-                  {filteredResources.length} resource{filteredResources.length !== 1 ? "s" : ""} found
+                  {filteredResources.length} resource
+                  {filteredResources.length !== 1 ? "s" : ""} found
                 </CardDescription>
               </div>
             </div>
@@ -393,7 +447,9 @@ export default function ResourcesPage() {
             ) : filteredResources.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Database className="mb-4 h-12 w-12 text-muted-foreground" />
-                <h3 className="mb-2 text-lg font-semibold">No resources found</h3>
+                <h3 className="mb-2 text-lg font-semibold">
+                  No resources found
+                </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
                   Try adjusting your filters or search query
                 </p>
@@ -413,16 +469,19 @@ export default function ResourcesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredResources.map((resource) => {
-                      const Icon = resourceIcons[resource.type] || resourceIcons.Custom;
+                    {filteredResources.map(resource => {
+                      const Icon =
+                        resourceIcons[resource.type] || resourceIcons.Custom;
                       const status = statusConfig[resource.status];
 
                       return (
                         <TableRow
-                        key={resource.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => router.push(`/dashboard/resources/${resource.id}`)}
-                      >
+                          key={resource.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() =>
+                            router.push(`/dashboard/resources/${resource.id}`)
+                          }
+                        >
                           <TableCell>
                             <Icon className="h-5 w-5 text-muted-foreground" />
                           </TableCell>
@@ -472,7 +531,10 @@ export default function ResourcesPage() {
                   .map(([type, count]) => {
                     const Icon = resourceIcons[type] || resourceIcons.Custom;
                     return (
-                      <div key={type} className="flex items-center justify-between">
+                      <div
+                        key={type}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-2">
                           <Icon className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">{type}</span>
@@ -492,7 +554,8 @@ export default function ResourcesPage() {
             <CardContent>
               <div className="space-y-2 text-sm">
                 {Object.entries(statusStats).map(([status, count]) => {
-                  const config = statusConfig[status as keyof typeof statusConfig];
+                  const config =
+                    statusConfig[status as keyof typeof statusConfig];
                   return (
                     <div key={status} className="flex justify-between">
                       <span className="text-muted-foreground capitalize">
@@ -513,7 +576,9 @@ export default function ResourcesPage() {
             <CardContent>
               <div className="space-y-2 text-sm">
                 {clusters.map(cluster => {
-                  const count = resources.filter(r => r.clusterName === cluster).length;
+                  const count = resources.filter(
+                    r => r.clusterName === cluster
+                  ).length;
                   return (
                     <div key={cluster} className="flex justify-between">
                       <span className="text-muted-foreground">{cluster}</span>
