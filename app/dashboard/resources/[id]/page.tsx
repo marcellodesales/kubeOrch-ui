@@ -32,6 +32,7 @@ import api from "@/lib/api";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
+import { LogsTab } from "@/components/resources/LogsTab";
 
 interface Resource {
   id: string;
@@ -110,8 +111,6 @@ export default function ResourceDetailPage() {
   const [history, setHistory] = useState<ResourceHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [logs, setLogs] = useState<string>("");
-  const [loadingLogs, setLoadingLogs] = useState(false);
   const [pods, setPods] = useState<Pod[]>([]);
 
   const resourceId = params.id as string;
@@ -136,24 +135,6 @@ export default function ResourceDetailPage() {
       setRefreshing(false);
     }
   }, [resourceId, router]);
-
-  const fetchLogs = useCallback(async () => {
-    if (resource?.type !== "Pod") {
-      toast.info("Logs are only available for Pods");
-      return;
-    }
-
-    setLoadingLogs(true);
-    try {
-      const response = await api.get(`/resources/${resourceId}/logs`);
-      setLogs(response.data.logs || "No logs available");
-    } catch (error) {
-      console.error("Failed to fetch logs:", error);
-      toast.error(getErrorMessage(error, "Failed to fetch logs"));
-    } finally {
-      setLoadingLogs(false);
-    }
-  }, [resource?.type, resourceId]);
 
   const fetchPods = useCallback(async () => {
     if (resource?.type !== "Deployment" && resource?.type !== "StatefulSet") {
@@ -194,16 +175,11 @@ export default function ResourceDetailPage() {
 
   useEffect(() => {
     if (resource) {
-      if (resource.type === "Pod") {
-        fetchLogs();
-      } else if (
-        resource.type === "Deployment" ||
-        resource.type === "StatefulSet"
-      ) {
+      if (resource.type === "Deployment" || resource.type === "StatefulSet") {
         fetchPods();
       }
     }
-  }, [resource, fetchLogs, fetchPods]);
+  }, [resource, fetchPods]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -418,20 +394,7 @@ export default function ResourceDetailPage() {
 
           {resource.type === "Pod" && (
             <TabsContent value="logs">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pod Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingLogs ? (
-                    <Skeleton className="h-96 w-full" />
-                  ) : (
-                    <pre className="h-96 overflow-auto rounded bg-black p-4 text-xs text-green-400">
-                      {logs || "No logs available"}
-                    </pre>
-                  )}
-                </CardContent>
-              </Card>
+              <LogsTab resourceId={resourceId} resourceType={resource.type} />
             </TabsContent>
           )}
 
