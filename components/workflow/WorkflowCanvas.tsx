@@ -27,7 +27,7 @@ import {
   Edit,
   Archive,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
 import { useWorkflowStore } from "@/stores/WorkflowStore";

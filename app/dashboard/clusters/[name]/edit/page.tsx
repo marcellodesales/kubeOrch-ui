@@ -25,7 +25,7 @@ import {
 import { InlineLoader } from "@/components/ui/loader";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { ArrowLeft, Save, Lock, Info } from "lucide-react";
 

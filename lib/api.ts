@@ -1,5 +1,5 @@
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/AuthStore";
 
 const api = axios.create({

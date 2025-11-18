@@ -27,6 +27,9 @@ export interface UseLogStreamResult {
 const MAX_LOG_LINES = 5000; // Maximum number of log lines to keep in memory
 const RECONNECT_DELAY_MS = 3000; // Delay before auto-reconnecting after error
 
+// Global connection tracker to prevent duplicate connections across all instances
+const activeConnections = new Set<string>();
+
 export function useLogStream(
   resourceId: string,
   enabled: boolean = true,
@@ -41,6 +44,8 @@ export function useLogStream(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectingRef = useRef<boolean>(false);
   const logIdCounter = useRef(0);
+  const hasInitialized = useRef(false);
+  const connectionKeyRef = useRef<string | null>(null);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
@@ -56,18 +61,45 @@ export function useLogStream(
       reconnectTimeoutRef.current = null;
     }
     setIsConnected(false);
+
+    // Remove from global tracker using stored key after a small delay
+    // This prevents double connections in React StrictMode (mount->unmount->mount)
+    if (connectionKeyRef.current) {
+      const keyToDelete = connectionKeyRef.current;
+      setTimeout(() => {
+        activeConnections.delete(keyToDelete);
+      }, 100); // Small delay to handle StrictMode double-mount
+      connectionKeyRef.current = null;
+    }
   }, []);
 
   const connect = useCallback(async () => {
-    if (!enabled || !resourceId) return;
-
-    // Prevent duplicate connections
-    if (isConnectingRef.current) {
+    if (!enabled || !resourceId) {
+      isConnectingRef.current = false;
       return;
     }
 
+    const connectionKey = `${resourceId}-${follow}-${tailLines}`;
+
+    // Prevent duplicate connections globally
+    if (isConnectingRef.current || activeConnections.has(connectionKey)) {
+      return;
+    }
+
+    // First cleanup old connection if exists (without removing from set yet)
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Now mark as connecting and add to set
     isConnectingRef.current = true;
-    cleanup();
+    activeConnections.add(connectionKey);
+    connectionKeyRef.current = connectionKey;
 
     const baseUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/v1/api";
@@ -78,6 +110,7 @@ export function useLogStream(
 
     if (!token) {
       setError("No authentication token found");
+      isConnectingRef.current = false;
       return;
     }
 
@@ -100,6 +133,7 @@ export function useLogStream(
 
       setIsConnected(true);
       setError(null);
+      isConnectingRef.current = false;
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -189,6 +223,7 @@ export function useLogStream(
           // Auto-reconnect after delay
           if (follow && enabled) {
             reconnectTimeoutRef.current = setTimeout(() => {
+              isConnectingRef.current = false;
               connect();
             }, RECONNECT_DELAY_MS);
           }
@@ -199,10 +234,12 @@ export function useLogStream(
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed");
       setIsConnected(false);
+      isConnectingRef.current = false;
 
       // Auto-reconnect after delay
       if (follow && enabled) {
         reconnectTimeoutRef.current = setTimeout(() => {
+          isConnectingRef.current = false;
           connect();
         }, RECONNECT_DELAY_MS);
       }
@@ -217,17 +254,27 @@ export function useLogStream(
   }, [connect]);
 
   useEffect(() => {
-    // Only connect if not already connecting or connected
-    if (!isConnectingRef.current && !eventSourceRef.current) {
+    const connectionKey = `${resourceId}-${follow}-${tailLines}`;
+
+    // Only connect once on mount - check both local and global state
+    if (
+      !hasInitialized.current &&
+      !isConnectingRef.current &&
+      !eventSourceRef.current &&
+      !activeConnections.has(connectionKey)
+    ) {
+      hasInitialized.current = true;
       connect();
     }
 
-    // Cleanup function that runs on unmount or before re-running effect
+    // Cleanup function that runs on unmount
     return () => {
       cleanup();
       isConnectingRef.current = false; // Reset connecting flag on cleanup
+      hasInitialized.current = false; // Reset on unmount
     };
-  }, [connect, cleanup]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     logs,
