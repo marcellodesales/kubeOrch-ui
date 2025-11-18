@@ -7,7 +7,7 @@ import {
   type AddClusterRequest,
   type ClusterCredentials,
 } from "@/lib/services/cluster";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 type ClusterStore = {
   clusters: Cluster[];

@@ -55,7 +55,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 

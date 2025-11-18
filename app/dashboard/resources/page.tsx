@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 
@@ -308,14 +308,12 @@ export default function ResourcesPage() {
     <div className="flex items-center gap-2">
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={handleRefresh}
         disabled={refreshing}
+        title="Refresh resources"
       >
-        <RefreshCw
-          className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-        />
-        Refresh
+        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
       </Button>
     </div>
   );

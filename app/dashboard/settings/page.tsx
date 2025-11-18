@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
 import { Copy, Shield, Users, Link as LinkIcon, RefreshCw } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { InlineLoader } from "@/components/ui/loader";
 import { getInviteLink } from "@/lib/constants";

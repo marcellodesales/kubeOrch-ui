@@ -29,10 +29,11 @@ import {
   Server,
 } from "lucide-react";
 import api from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 import { LogsTab } from "@/components/resources/LogsTab";
+import { TerminalTab } from "@/components/resources/TerminalTab";
 
 interface Resource {
   id: string;
@@ -112,6 +113,7 @@ export default function ResourceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pods, setPods] = useState<Pod[]>([]);
+  const [uptime, setUptime] = useState<string>("");
 
   const resourceId = params.id as string;
 
@@ -191,6 +193,41 @@ export default function ResourceDetailPage() {
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
+  const calculateUptime = useCallback((createdAt: string) => {
+    const created = new Date(createdAt).getTime();
+    const now = Date.now();
+    const diffMs = now - created;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 0) {
+      return `${diffDay}d ${diffHour % 24}h`;
+    }
+    if (diffHour > 0) {
+      return `${diffHour}h ${diffMin % 60}m`;
+    }
+    if (diffMin > 0) {
+      return `${diffMin}m`;
+    }
+    return `${diffSec}s`;
+  }, []);
+
+  useEffect(() => {
+    if (resource?.createdAt) {
+      // Update uptime immediately
+      setUptime(calculateUptime(resource.createdAt));
+
+      // Update every 10 seconds
+      const interval = setInterval(() => {
+        setUptime(calculateUptime(resource.createdAt));
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [resource?.createdAt, calculateUptime]);
+
   if (loading) {
     return (
       <AppLayout>
@@ -216,24 +253,28 @@ export default function ResourceDetailPage() {
 
   const pageActions = (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={toggleFavorite}>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={toggleFavorite}
+        title={
+          resource.isFavorite ? "Remove from favorites" : "Add to favorites"
+        }
+      >
         {resource.isFavorite ? (
-          <StarOff className="mr-2 h-4 w-4" />
+          <StarOff className="h-4 w-4" />
         ) : (
-          <Star className="mr-2 h-4 w-4" />
+          <Star className="h-4 w-4" />
         )}
-        {resource.isFavorite ? "Unfavorite" : "Favorite"}
       </Button>
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={handleRefresh}
         disabled={refreshing}
+        title="Refresh resource"
       >
-        <RefreshCw
-          className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-        />
-        Refresh
+        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
       </Button>
     </div>
   );
@@ -263,9 +304,11 @@ export default function ResourceDetailPage() {
                 <Badge variant={status.variant} className="text-sm">
                   {status.text}
                 </Badge>
-                <Badge variant="outline" className="text-sm">
-                  {resource.clusterName}
-                </Badge>
+                {uptime && (
+                  <Badge variant="secondary" className="text-sm">
+                    {uptime}
+                  </Badge>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -301,10 +344,16 @@ export default function ResourceDetailPage() {
               Details
             </TabsTrigger>
             {resource.type === "Pod" && (
-              <TabsTrigger value="logs">
-                <FileText className="mr-2 h-4 w-4" />
-                Logs
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="logs">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Logs
+                </TabsTrigger>
+                <TabsTrigger value="terminal">
+                  <Activity className="mr-2 h-4 w-4" />
+                  Terminal
+                </TabsTrigger>
+              </>
             )}
             {(resource.type === "Deployment" ||
               resource.type === "StatefulSet") && (
@@ -393,9 +442,22 @@ export default function ResourceDetailPage() {
           </TabsContent>
 
           {resource.type === "Pod" && (
-            <TabsContent value="logs">
-              <LogsTab resourceId={resourceId} resourceType={resource.type} />
-            </TabsContent>
+            <>
+              <TabsContent value="logs">
+                <LogsTab resourceId={resourceId} resourceType={resource.type} />
+              </TabsContent>
+              <TabsContent value="terminal">
+                <TerminalTab
+                  resourceId={resourceId}
+                  resourceType={resource.type}
+                  containers={
+                    resource.spec?.containers as
+                      | Array<{ name: string }>
+                      | undefined
+                  }
+                />
+              </TabsContent>
+            </>
           )}
 
           {(resource.type === "Deployment" ||

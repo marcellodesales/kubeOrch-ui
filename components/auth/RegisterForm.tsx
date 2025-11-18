@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const registerSchema = z
   .object({

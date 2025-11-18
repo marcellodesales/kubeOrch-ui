@@ -96,20 +96,17 @@ export default function Node({
                         value={
                           typeof subField.value === "boolean"
                             ? String(subField.value)
-                            : subField.value || ""
+                            : subField.type === "number" &&
+                                isNaN(subField.value as number)
+                              ? ""
+                              : (subField.value ?? "")
                         }
                         onChange={e => {
-                          if (subField.type === "number") {
-                            const value = e.target.value;
-                            if (value === "") {
-                              subField.onChange?.("");
-                            } else {
-                              const num = parseInt(value);
-                              subField.onChange?.(isNaN(num) ? value : num);
-                            }
-                          } else {
-                            subField.onChange?.(e.target.value);
-                          }
+                          subField.onChange?.(
+                            subField.type === "number"
+                              ? parseInt(e.target.value)
+                              : e.target.value
+                          );
                         }}
                         placeholder={subField.placeholder}
                         className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
@@ -154,20 +151,16 @@ export default function Node({
                 value={
                   typeof field.value === "boolean"
                     ? String(field.value)
-                    : field.value || ""
+                    : field.type === "number" && isNaN(field.value as number)
+                      ? ""
+                      : (field.value ?? "")
                 }
                 onChange={e => {
-                  if (field.type === "number") {
-                    const value = e.target.value;
-                    if (value === "") {
-                      field.onChange?.("");
-                    } else {
-                      const num = parseInt(value);
-                      field.onChange?.(isNaN(num) ? value : num);
-                    }
-                  } else {
-                    field.onChange?.(e.target.value);
-                  }
+                  field.onChange?.(
+                    field.type === "number"
+                      ? parseInt(e.target.value)
+                      : e.target.value
+                  );
                 }}
                 placeholder={field.placeholder}
                 className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${

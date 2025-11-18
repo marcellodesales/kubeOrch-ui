@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/AuthStore";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { User, Mail, Shield, Calendar, Edit2, Save, X } from "lucide-react";
 

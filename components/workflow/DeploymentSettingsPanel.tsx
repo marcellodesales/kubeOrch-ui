@@ -116,8 +116,9 @@ export default function DeploymentSettingsPanel({
                 id="replicas"
                 className="mt-1.5"
                 type="number"
-                min="1"
-                value={data.replicas || 1}
+                min="0"
+                value={isNaN(data.replicas) ? "" : (data.replicas ?? 1)}
+                placeholder="1"
                 onChange={e =>
                   handleFieldUpdate("replicas", parseInt(e.target.value))
                 }
@@ -134,7 +135,8 @@ export default function DeploymentSettingsPanel({
                 type="number"
                 min="1"
                 max="65535"
-                value={data.port || 8080}
+                value={isNaN(data.port) ? "" : (data.port ?? 8080)}
+                placeholder="8080"
                 onChange={e =>
                   handleFieldUpdate("port", parseInt(e.target.value))
                 }

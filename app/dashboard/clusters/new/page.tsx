@@ -20,7 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Info, AlertTriangle } from "lucide-react";
 import api from "@/lib/api";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 import { TokenAuthForm } from "@/components/clusters/TokenAuthForm";
 

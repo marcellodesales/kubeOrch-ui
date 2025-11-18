@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   getWorkflow,
   saveWorkflow,
