@@ -53,16 +53,15 @@ export function useTerminal(
       // Only close if the WebSocket is OPEN or CLOSING
       // Don't close if it's still CONNECTING (readyState === 0)
       // This prevents React StrictMode from closing connections before they're established
-      if (wsRef.current.readyState === WebSocket.OPEN ||
-          wsRef.current.readyState === WebSocket.CLOSING) {
-        console.log("[useTerminal] Closing WebSocket, readyState:", wsRef.current.readyState);
+      if (
+        wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CLOSING
+      ) {
         wsRef.current.close();
       } else if (wsRef.current.readyState === WebSocket.CONNECTING) {
-        console.log("[useTerminal] WebSocket still connecting, not closing immediately");
         // Mark for cleanup once connected
         const ws = wsRef.current;
-        ws.addEventListener('open', () => {
-          console.log("[useTerminal] Closing WebSocket after connect (StrictMode cleanup)");
+        ws.addEventListener("open", () => {
           ws.close();
         });
       }
@@ -155,21 +154,18 @@ export function useTerminal(
     }
 
     try {
-      // Note: WebSocket doesn't support custom headers in browsers
-      // We'll need to send the token as query param or handle it differently
-      // For now, adding as query param
+      // SECURITY WARNING: Sending token as URL query parameter is not ideal
+      // WebSocket in browsers doesn't support custom headers, so we have limited options:
+      // 1. URL query param (current - can be logged/cached)
+      // 2. Sec-WebSocket-Protocol header (better but limited browser support)
+      // 3. Backend should exchange token for short-lived, single-use ticket
+      // TODO: Implement backend ticket exchange for better security
       url += `&token=${encodeURIComponent(token)}`;
-
-      console.log("[useTerminal] Creating WebSocket connection to:", url);
-      console.log("[useTerminal] Token length:", token.length);
 
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
-      console.log("[useTerminal] WebSocket created, readyState:", ws.readyState);
-
       ws.onopen = () => {
-        console.log("[useTerminal] WebSocket OPENED successfully");
         setIsConnected(true);
         setError(null);
         isConnectingRef.current = false;
@@ -214,22 +210,17 @@ export function useTerminal(
         }
       };
 
-      ws.onerror = err => {
-        console.error("[useTerminal] WebSocket ERROR:", err);
-        console.error("[useTerminal] WebSocket readyState on error:", ws.readyState);
-        console.error("[useTerminal] WebSocket URL:", ws.url);
+      ws.onerror = () => {
         setError("Connection error");
         setIsConnected(false);
       };
 
-      ws.onclose = (event) => {
-        console.log("[useTerminal] WebSocket CLOSED. Code:", event.code, "Reason:", event.reason, "Was clean:", event.wasClean);
+      ws.onclose = () => {
         setIsConnected(false);
         isConnectingRef.current = false;
 
         // Auto-reconnect if enabled and not intentionally closed
         if (enabled && shouldReconnectRef.current) {
-          console.log("[useTerminal] Scheduling reconnect in", RECONNECT_DELAY_MS, "ms");
           reconnectTimeoutRef.current = setTimeout(() => {
             isConnectingRef.current = false;
             connect();
@@ -264,17 +255,14 @@ export function useTerminal(
 
     // Prevent duplicate connections from StrictMode
     if (activeConnections.has(connectionKey)) {
-      console.log("[useTerminal] Connection already exists, skipping");
       return;
     }
 
     // Start connection
-    console.log("[useTerminal] Starting new connection");
     connect();
 
     // Cleanup on unmount
     return () => {
-      console.log("[useTerminal] useEffect cleanup triggered");
       shouldReconnectRef.current = false;
       cleanup();
       isConnectingRef.current = false;

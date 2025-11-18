@@ -44,7 +44,6 @@ export function useLogStream(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectingRef = useRef<boolean>(false);
   const logIdCounter = useRef(0);
-  const hasInitialized = useRef(false);
   const connectionKeyRef = useRef<string | null>(null);
 
   const clearLogs = useCallback(() => {
@@ -254,27 +253,15 @@ export function useLogStream(
   }, [connect]);
 
   useEffect(() => {
-    const connectionKey = `${resourceId}-${follow}-${tailLines}`;
+    // Connect when enabled and parameters change
+    connect();
 
-    // Only connect once on mount - check both local and global state
-    if (
-      !hasInitialized.current &&
-      !isConnectingRef.current &&
-      !eventSourceRef.current &&
-      !activeConnections.has(connectionKey)
-    ) {
-      hasInitialized.current = true;
-      connect();
-    }
-
-    // Cleanup function that runs on unmount
+    // Cleanup function that runs on unmount or before re-running effect
     return () => {
       cleanup();
       isConnectingRef.current = false; // Reset connecting flag on cleanup
-      hasInitialized.current = false; // Reset on unmount
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [connect, cleanup]);
 
   return {
     logs,

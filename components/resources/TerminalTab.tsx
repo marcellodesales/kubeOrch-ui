@@ -45,8 +45,6 @@ export function TerminalTab({
   const [container, setContainer] = useState<string>(containers[0]?.name || "");
   const [shell, setShell] = useState<string>("/bin/sh");
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [commandHistory, setCommandHistory] = useState<string[]>([]);
-  const currentCommandRef = useRef<string>("");
 
   const { isConnected, error, metadata, sendInput, sendResize, reconnect } =
     useTerminal(
@@ -238,13 +236,10 @@ export function TerminalTab({
 
   const handleContainerChange = (value: string) => {
     setContainer(value);
-    // Note: Changing container requires reconnection
-    // This is handled by reconnect button for now
   };
 
   const handleShellChange = (value: string) => {
     setShell(value);
-    // Note: Changing shell requires reconnection
   };
 
   if (resourceType !== "Pod") {
@@ -266,9 +261,7 @@ export function TerminalTab({
   return (
     <div
       className={`flex flex-col border rounded-lg overflow-hidden bg-background ${
-        isFullscreen
-          ? "fixed inset-0 z-50 h-screen w-screen"
-          : "h-full"
+        isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "h-full"
       }`}
     >
       {/* Header with Controls */}

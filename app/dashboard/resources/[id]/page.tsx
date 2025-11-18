@@ -200,14 +200,18 @@ export default function ResourceDetailPage() {
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
 
-    if (diffHour > 0) {
-      return `${diffHour}h`;
-    } else if (diffMin > 0) {
-      return `${diffMin}m`;
-    } else {
-      return `${diffSec}s`;
+    if (diffDay > 0) {
+      return `${diffDay}d ${diffHour % 24}h`;
     }
+    if (diffHour > 0) {
+      return `${diffHour}h ${diffMin % 60}m`;
+    }
+    if (diffMin > 0) {
+      return `${diffMin}m`;
+    }
+    return `${diffSec}s`;
   }, []);
 
   useEffect(() => {
@@ -253,7 +257,9 @@ export default function ResourceDetailPage() {
         variant="outline"
         size="icon"
         onClick={toggleFavorite}
-        title={resource.isFavorite ? "Remove from favorites" : "Add to favorites"}
+        title={
+          resource.isFavorite ? "Remove from favorites" : "Add to favorites"
+        }
       >
         {resource.isFavorite ? (
           <StarOff className="h-4 w-4" />
@@ -268,9 +274,7 @@ export default function ResourceDetailPage() {
         disabled={refreshing}
         title="Refresh resource"
       >
-        <RefreshCw
-          className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-        />
+        <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
       </Button>
     </div>
   );
