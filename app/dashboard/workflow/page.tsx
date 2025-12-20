@@ -102,13 +102,13 @@ export default function WorkflowPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete "${name}"?`)) {
+    if (confirm(`Are you sure you want to archive "${name}"?`)) {
       try {
         await deleteWorkflow(id);
-        toast.success("Workflow deleted successfully");
+        toast.success("Workflow archived successfully");
         loadWorkflows();
       } catch {
-        toast.error("Failed to delete workflow");
+        toast.error("Failed to archive workflow");
       }
     }
   };
@@ -214,9 +214,14 @@ export default function WorkflowPage() {
                 }
               >
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <GitBranch className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg mb-1">{workflow.name}</CardTitle>
+                      <CardDescription>
+                        {workflow.description || "No description"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
                       {getStatusBadge(workflow.status)}
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -256,23 +261,19 @@ export default function WorkflowPage() {
                             Run
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-destructive"
+                            className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
                             onClick={e => {
                               e.stopPropagation();
                               handleDelete(workflow.id, workflow.name);
                             }}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                            Archive
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
-                  <CardTitle className="text-lg">{workflow.name}</CardTitle>
-                  <CardDescription>
-                    {workflow.description || "No description"}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-muted-foreground">

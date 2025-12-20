@@ -18,6 +18,12 @@ import { debounce } from "lodash-es";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Plus,
   Save,
   Rocket,
@@ -25,20 +31,25 @@ import {
   ArrowLeft,
   Eye,
   Edit,
-  Archive,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
-import { useWorkflowStore } from "@/stores/WorkflowStore";
+import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
-import { DeploymentRequest } from "@/lib/types/nodes";
+import ServiceNode from "./ServiceNode";
+import { DeploymentRequest, ServiceNodeData } from "@/lib/types/nodes";
 import DeploymentSettingsPanel from "./DeploymentSettingsPanel";
+import ServiceSettingsPanel from "./ServiceSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
+import CommandPalette from "./CommandPalette";
 import { Workflow } from "@/lib/services/workflow";
+import { TemplateMetadata } from "@/lib/services/templates";
 
 const nodeTypes = {
   deployment: DeploymentNode,
+  service: ServiceNode,
 };
 
 interface WorkflowCanvasProps {
@@ -69,29 +80,44 @@ function WorkflowCanvasContent({
   editable = true,
 }: WorkflowCanvasProps) {
   const router = useRouter();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [nodeId, setNodeId] = useState(1);
   const [isDeploying, setIsDeploying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [workflowSettingsOpen, setWorkflowSettingsOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeData, setSelectedNodeData] =
-    useState<DeploymentRequest | null>(null);
+    useState<WorkflowNodeData | null>(null);
   const { validateAndGetToken } = useAuthStore();
   const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData } =
     useWorkflowStore();
+  const isInitializedRef = useRef(false);
 
-  // Initialize with provided nodes and edges
+  // Calculate next node ID from existing nodes
+  const getNextNodeId = useCallback((existingNodes: Node[]) => {
+    let maxId = 0;
+    existingNodes.forEach(node => {
+      const match = node.id.match(/^node-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxId) maxId = num;
+      }
+    });
+    return maxId + 1;
+  }, []);
+
+  // Initialize with provided nodes and edges when they become available
   useEffect(() => {
-    if (initialNodes.length > 0) {
+    if (!isInitializedRef.current && (initialNodes.length > 0 || initialEdges.length > 0)) {
       setNodes(initialNodes);
-    }
-    if (initialEdges.length > 0) {
       setEdges(initialEdges);
+      setNodeId(getNextNodeId(initialNodes));
+      isInitializedRef.current = true;
     }
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
 
   // Create debounced callbacks using useRef to maintain stability
   const debouncedNodesChange = useRef(
@@ -116,13 +142,14 @@ function WorkflowCanvasContent({
   }, [edges, debouncedEdgesChange]);
 
   useEffect(() => {
-    const handleUpdateNodeData = (nodeId: string, data: DeploymentRequest) => {
+    const handleUpdateNodeData = (nodeId: string, data: WorkflowNodeData) => {
       setNodes(nds =>
         nds.map(node => {
           if (node.id === nodeId) {
-            // Auto-generate ID from node ID and image name
-            if (data.parameters?.image) {
-              const imageParts = data.parameters.image.split("/");
+            // Auto-generate ID from node ID and image name for deployment nodes
+            const deploymentData = data as DeploymentRequest;
+            if (deploymentData.parameters?.image) {
+              const imageParts = deploymentData.parameters.image.split("/");
               const imageName = imageParts[imageParts.length - 1].split(":")[0];
               const sanitizedImageName = imageName.replace(
                 /[^a-zA-Z0-9-]/g,
@@ -143,7 +170,7 @@ function WorkflowCanvasContent({
 
     const handleOpenNodeSettings = (
       nodeId: string,
-      data: DeploymentRequest
+      data: WorkflowNodeData
     ) => {
       setSelectedNodeId(nodeId);
       setSelectedNodeData(data);
@@ -164,27 +191,50 @@ function WorkflowCanvasContent({
     [setEdges]
   );
 
-  const addDeploymentNode = useCallback(() => {
+  const handleSelectTemplate = useCallback((template: TemplateMetadata) => {
     const nodeIdStr = `node-${nodeId}`;
-    const newNode: Node<DeploymentRequest> = {
-      id: nodeIdStr,
-      type: "deployment",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 300 + 100,
-      },
-      data: {
-        id: nodeIdStr,
-        name: `deployment-${nodeId}`,
-        namespace: "default",
-        image: "",
-        replicas: 1,
-        port: 8080,
-        templateId: "core/deployment",
-      },
-    };
 
-    setNodes(nds => [...nds, newNode]);
+    // Create node based on template type
+    if (template.name === "deployment") {
+      const newNode: Node<DeploymentRequest> = {
+        id: nodeIdStr,
+        type: "deployment",
+        position: {
+          x: Math.random() * 400 + 100,
+          y: Math.random() * 300 + 100,
+        },
+        data: {
+          id: nodeIdStr,
+          name: `deployment-${nodeId}`,
+          namespace: "default",
+          image: "",
+          replicas: 1,
+          port: 8080,
+          templateId: template.id,
+        },
+      };
+      setNodes(nds => [...nds, newNode]);
+    } else if (template.name === "service") {
+      const newNode: Node<ServiceNodeData> = {
+        id: nodeIdStr,
+        type: "service",
+        position: {
+          x: Math.random() * 400 + 100,
+          y: Math.random() * 300 + 100,
+        },
+        data: {
+          id: nodeIdStr,
+          name: `service-${nodeId}`,
+          namespace: "default",
+          serviceType: "ClusterIP",
+          targetApp: "",
+          port: 80,
+          templateId: template.id,
+        },
+      };
+      setNodes(nds => [...nds, newNode]);
+    }
+
     setNodeId(id => id + 1);
   }, [nodeId, setNodes]);
 
@@ -301,7 +351,7 @@ function WorkflowCanvasContent({
   }, [nodes, setNodes, validateAndGetToken]);
 
   const handleSettingsUpdate = useCallback(
-    (nodeId: string, data: DeploymentRequest) => {
+    (nodeId: string, data: WorkflowNodeData) => {
       updateNodeData(nodeId, data);
       setSelectedNodeData(data);
     },
@@ -416,9 +466,9 @@ function WorkflowCanvasContent({
               onClick={() => onStatusChange?.("archived")}
               size="sm"
               variant="outline"
-              className="text-destructive"
+              className="text-destructive hover:bg-red-50 hover:text-destructive"
             >
-              <Archive className="h-4 w-4 mr-1" />
+              <Trash2 className="h-4 w-4 mr-1" />
               Archive
             </Button>
           </>
@@ -450,18 +500,56 @@ function WorkflowCanvasContent({
           {isDeploying ? "Running..." : "Run"}
         </Button>
 
-        <Button onClick={addDeploymentNode} size="sm" variant="default">
-          <Plus className="h-4 w-4" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  onClick={() => setCommandPaletteOpen(true)}
+                  size="sm"
+                  variant="default"
+                  disabled={!editable}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!editable && (
+              <TooltipContent>
+                <p>Switch to draft mode to edit</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      <DeploymentSettingsPanel
-        isOpen={settingsPanelOpen}
-        nodeId={selectedNodeId}
-        data={selectedNodeData}
-        onClose={handleCloseSettings}
-        onUpdate={handleSettingsUpdate}
-        onDelete={handleDeleteNode}
+      {/* Settings panels - conditional rendering based on node type */}
+      {selectedNodeData && "serviceType" in selectedNodeData && (
+        <ServiceSettingsPanel
+          isOpen={settingsPanelOpen}
+          nodeId={selectedNodeId}
+          data={selectedNodeData as ServiceNodeData}
+          onClose={handleCloseSettings}
+          onUpdate={handleSettingsUpdate}
+          onDelete={handleDeleteNode}
+        />
+      )}
+
+      {selectedNodeData && !("serviceType" in selectedNodeData) && "image" in selectedNodeData && (
+        <DeploymentSettingsPanel
+          isOpen={settingsPanelOpen}
+          nodeId={selectedNodeId}
+          data={selectedNodeData as DeploymentRequest}
+          onClose={handleCloseSettings}
+          onUpdate={handleSettingsUpdate}
+          onDelete={handleDeleteNode}
+        />
+      )}
+
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
       />
 
       {workflow && (
