@@ -9,17 +9,17 @@ type SidebarStore = {
 
 export const useSidebarStore = create<SidebarStore>()(
   persist(
-    (set) => ({
+    set => ({
       openMenus: {},
-      toggleMenu: (title) =>
-        set((state) => ({
+      toggleMenu: title =>
+        set(state => ({
           openMenus: {
             ...state.openMenus,
             [title]: !state.openMenus[title],
           },
         })),
       setMenuOpen: (title, isOpen) =>
-        set((state) => ({
+        set(state => ({
           openMenus: {
             ...state.openMenus,
             [title]: isOpen,

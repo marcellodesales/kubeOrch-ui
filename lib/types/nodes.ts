@@ -33,6 +33,30 @@ export interface DeploymentNodeData {
 // Type alias for backward compatibility
 export type DeploymentRequest = DeploymentNodeData;
 
+export interface ServiceNodeData {
+  id: string;
+  name: string;
+  type?: string;
+  namespace?: string;
+  serviceType: "ClusterIP" | "NodePort" | "LoadBalancer";
+  targetApp: string;
+  port: number;
+  targetPort?: number;
+  ports?: Array<{
+    name?: string;
+    protocol?: string;
+    port: number;
+    targetPort?: number;
+    nodePort?: number;
+  }>;
+  selector?: Record<string, string>;
+  sessionAffinity?: "None" | "ClientIP";
+  labels?: Record<string, string>;
+  annotations?: Record<string, string>;
+  templateId?: string;
+  hasValidationError?: boolean;
+}
+
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
@@ -58,6 +82,7 @@ export interface WebhookNodeData {
 // Union type for all node data types
 export type WorkflowNodeData =
   | DeploymentNodeData
+  | ServiceNodeData
   | ConditionalNodeData
   | ParallelNodeData
   | WebhookNodeData;

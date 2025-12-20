@@ -9,12 +9,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Settings } from "lucide-react";
 
 export interface NodeField {
   id: string;
   label: string;
-  type: "text" | "number" | "group";
+  type: "text" | "number" | "select" | "group";
   value?: string | number | boolean;
   placeholder?: string;
   min?: number;
@@ -22,6 +29,7 @@ export interface NodeField {
   required?: boolean;
   hasError?: boolean;
   hasConnector?: boolean;
+  options?: Array<{ value: string; label: string }>;
   onChange?: (value: string | number | boolean) => void;
   fields?: NodeField[]; // For grouped fields
 }
@@ -86,33 +94,56 @@ export default function Node({
                       >
                         {subField.label}
                       </Label>
-                      <Input
-                        id={subField.id}
-                        type={
-                          subField.type === "group" ? "text" : subField.type
-                        }
-                        min={subField.min}
-                        max={subField.max}
-                        value={
-                          typeof subField.value === "boolean"
-                            ? String(subField.value)
-                            : subField.type === "number" &&
-                                isNaN(subField.value as number)
-                              ? ""
-                              : (subField.value ?? "")
-                        }
-                        onChange={e => {
-                          subField.onChange?.(
-                            subField.type === "number"
-                              ? parseInt(e.target.value)
-                              : e.target.value
-                          );
-                        }}
-                        placeholder={subField.placeholder}
-                        className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
-                          subField.hasError ? "border-red-500" : ""
-                        }`}
-                      />
+                      {subField.type === "select" && subField.options ? (
+                        <Select
+                          value={String(subField.value ?? "")}
+                          onValueChange={value => subField.onChange?.(value)}
+                        >
+                          <SelectTrigger
+                            className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${subField.hasError ? "border-red-500" : ""}`}
+                          >
+                            <SelectValue placeholder={subField.placeholder} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subField.options.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id={subField.id}
+                          type={
+                            subField.type === "group" ? "text" : subField.type
+                          }
+                          min={subField.min}
+                          max={subField.max}
+                          value={
+                            typeof subField.value === "boolean"
+                              ? String(subField.value)
+                              : subField.type === "number" &&
+                                  isNaN(subField.value as number)
+                                ? ""
+                                : (subField.value ?? "")
+                          }
+                          onChange={e => {
+                            subField.onChange?.(
+                              subField.type === "number"
+                                ? parseInt(e.target.value)
+                                : e.target.value
+                            );
+                          }}
+                          placeholder={subField.placeholder}
+                          className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
+                            subField.hasError ? "border-red-500" : ""
+                          }`}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -143,30 +174,50 @@ export default function Node({
                 {field.label}
               </Label>
 
-              <Input
-                id={field.id}
-                type={field.type === "group" ? "text" : field.type}
-                min={field.min}
-                max={field.max}
-                value={
-                  typeof field.value === "boolean"
-                    ? String(field.value)
-                    : field.type === "number" && isNaN(field.value as number)
-                      ? ""
-                      : (field.value ?? "")
-                }
-                onChange={e => {
-                  field.onChange?.(
-                    field.type === "number"
-                      ? parseInt(e.target.value)
-                      : e.target.value
-                  );
-                }}
-                placeholder={field.placeholder}
-                className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
-                  field.hasError ? "border-red-500" : ""
-                }`}
-              />
+              {field.type === "select" && field.options ? (
+                <Select
+                  value={String(field.value ?? "")}
+                  onValueChange={value => field.onChange?.(value)}
+                >
+                  <SelectTrigger
+                    className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${field.hasError ? "border-red-500" : ""}`}
+                  >
+                    <SelectValue placeholder={field.placeholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id={field.id}
+                  type={field.type === "group" ? "text" : field.type}
+                  min={field.min}
+                  max={field.max}
+                  value={
+                    typeof field.value === "boolean"
+                      ? String(field.value)
+                      : field.type === "number" && isNaN(field.value as number)
+                        ? ""
+                        : (field.value ?? "")
+                  }
+                  onChange={e => {
+                    field.onChange?.(
+                      field.type === "number"
+                        ? parseInt(e.target.value)
+                        : e.target.value
+                    );
+                  }}
+                  placeholder={field.placeholder}
+                  className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
+                    field.hasError ? "border-red-500" : ""
+                  }`}
+                />
+              )}
 
               {/* Connector at label level for single fields */}
               <Handle

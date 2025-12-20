@@ -9,8 +9,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getAvailableTemplates, TemplateMetadata } from "@/lib/services/templates";
+import {
+  getAvailableTemplates,
+  TemplateMetadata,
+} from "@/lib/services/templates";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -49,6 +53,7 @@ export default function CommandPalette({
         })
         .catch(error => {
           console.error("Failed to load templates:", error);
+          toast.error("Failed to load templates");
           setIsLoading(false);
         });
       setSearchQuery("");
@@ -190,9 +195,7 @@ export default function CommandPalette({
                   key={template.id}
                   onClick={() => handleSelectTemplate(template)}
                   className={`w-full text-left rounded-md p-3 mb-1 transition-colors ${
-                    index === selectedIndex
-                      ? "bg-accent"
-                      : "hover:bg-accent/50"
+                    index === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
                   }`}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
@@ -247,13 +250,16 @@ export default function CommandPalette({
         <div className="border-t px-4 py-2 text-xs text-muted-foreground bg-muted/30">
           <div className="flex items-center justify-between">
             <span>
-              Use <kbd className="px-1 py-0.5 bg-background border rounded">↑</kbd>{" "}
-              <kbd className="px-1 py-0.5 bg-background border rounded">↓</kbd> to
-              navigate
+              Use{" "}
+              <kbd className="px-1 py-0.5 bg-background border rounded">↑</kbd>{" "}
+              <kbd className="px-1 py-0.5 bg-background border rounded">↓</kbd>{" "}
+              to navigate
             </span>
             <span>
-              <kbd className="px-1 py-0.5 bg-background border rounded">Enter</kbd> to
-              select
+              <kbd className="px-1 py-0.5 bg-background border rounded">
+                Enter
+              </kbd>{" "}
+              to select
             </span>
           </div>
         </div>

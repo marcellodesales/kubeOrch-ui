@@ -111,7 +111,10 @@ function WorkflowCanvasContent({
 
   // Initialize with provided nodes and edges when they become available
   useEffect(() => {
-    if (!isInitializedRef.current && (initialNodes.length > 0 || initialEdges.length > 0)) {
+    if (
+      !isInitializedRef.current &&
+      (initialNodes.length > 0 || initialEdges.length > 0)
+    ) {
       setNodes(initialNodes);
       setEdges(initialEdges);
       setNodeId(getNextNodeId(initialNodes));
@@ -168,10 +171,7 @@ function WorkflowCanvasContent({
       );
     };
 
-    const handleOpenNodeSettings = (
-      nodeId: string,
-      data: WorkflowNodeData
-    ) => {
+    const handleOpenNodeSettings = (nodeId: string, data: WorkflowNodeData) => {
       setSelectedNodeId(nodeId);
       setSelectedNodeData(data);
       setSettingsPanelOpen(true);
@@ -191,52 +191,59 @@ function WorkflowCanvasContent({
     [setEdges]
   );
 
-  const handleSelectTemplate = useCallback((template: TemplateMetadata) => {
-    const nodeIdStr = `node-${nodeId}`;
+  const handleCommandPaletteClose = useCallback(() => {
+    setCommandPaletteOpen(false);
+  }, []);
 
-    // Create node based on template type
-    if (template.name === "deployment") {
-      const newNode: Node<DeploymentRequest> = {
-        id: nodeIdStr,
-        type: "deployment",
-        position: {
-          x: Math.random() * 400 + 100,
-          y: Math.random() * 300 + 100,
-        },
-        data: {
-          id: nodeIdStr,
-          name: `deployment-${nodeId}`,
-          namespace: "default",
-          image: "",
-          replicas: 1,
-          port: 8080,
-          templateId: template.id,
-        },
-      };
-      setNodes(nds => [...nds, newNode]);
-    } else if (template.name === "service") {
-      const newNode: Node<ServiceNodeData> = {
-        id: nodeIdStr,
-        type: "service",
-        position: {
-          x: Math.random() * 400 + 100,
-          y: Math.random() * 300 + 100,
-        },
-        data: {
-          id: nodeIdStr,
-          name: `service-${nodeId}`,
-          namespace: "default",
-          serviceType: "ClusterIP",
-          targetApp: "",
-          port: 80,
-          templateId: template.id,
-        },
-      };
-      setNodes(nds => [...nds, newNode]);
-    }
+  const handleSelectTemplate = useCallback(
+    (template: TemplateMetadata) => {
+      const nodeIdStr = `node-${nodeId}`;
 
-    setNodeId(id => id + 1);
-  }, [nodeId, setNodes]);
+      // Create node based on template type
+      if (template.name === "deployment") {
+        const newNode: Node<DeploymentRequest> = {
+          id: nodeIdStr,
+          type: "deployment",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `deployment-${nodeId}`,
+            namespace: "default",
+            image: "",
+            replicas: 1,
+            port: 8080,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "service") {
+        const newNode: Node<ServiceNodeData> = {
+          id: nodeIdStr,
+          type: "service",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `service-${nodeId}`,
+            namespace: "default",
+            serviceType: "ClusterIP",
+            targetApp: "",
+            port: 80,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      }
+
+      setNodeId(id => id + 1);
+    },
+    [nodeId, setNodes]
+  );
 
   const validateDeployment = (deployment: DeploymentRequest): string[] => {
     const errors: string[] = [];
@@ -528,27 +535,29 @@ function WorkflowCanvasContent({
         <ServiceSettingsPanel
           isOpen={settingsPanelOpen}
           nodeId={selectedNodeId}
-          data={selectedNodeData as ServiceNodeData}
+          data={selectedNodeData}
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}
           onDelete={handleDeleteNode}
         />
       )}
 
-      {selectedNodeData && !("serviceType" in selectedNodeData) && "image" in selectedNodeData && (
-        <DeploymentSettingsPanel
-          isOpen={settingsPanelOpen}
-          nodeId={selectedNodeId}
-          data={selectedNodeData as DeploymentRequest}
-          onClose={handleCloseSettings}
-          onUpdate={handleSettingsUpdate}
-          onDelete={handleDeleteNode}
-        />
-      )}
+      {selectedNodeData &&
+        !("serviceType" in selectedNodeData) &&
+        "image" in selectedNodeData && (
+          <DeploymentSettingsPanel
+            isOpen={settingsPanelOpen}
+            nodeId={selectedNodeId}
+            data={selectedNodeData as DeploymentRequest}
+            onClose={handleCloseSettings}
+            onUpdate={handleSettingsUpdate}
+            onDelete={handleDeleteNode}
+          />
+        )}
 
       <CommandPalette
         isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
+        onClose={handleCommandPaletteClose}
         onSelectTemplate={handleSelectTemplate}
       />
 

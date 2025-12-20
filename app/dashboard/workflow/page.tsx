@@ -101,7 +101,7 @@ export default function WorkflowPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleArchive = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to archive "${name}"?`)) {
       try {
         await deleteWorkflow(id);
@@ -216,7 +216,9 @@ export default function WorkflowPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg mb-1">{workflow.name}</CardTitle>
+                      <CardTitle className="text-lg mb-1">
+                        {workflow.name}
+                      </CardTitle>
                       <CardDescription>
                         {workflow.description || "No description"}
                       </CardDescription>
@@ -264,7 +266,7 @@ export default function WorkflowPage() {
                             className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
                             onClick={e => {
                               e.stopPropagation();
-                              handleDelete(workflow.id, workflow.name);
+                              handleArchive(workflow.id, workflow.name);
                             }}
                           >
                             <Trash2 className="mr-2 h-4 w-4 text-destructive" />
