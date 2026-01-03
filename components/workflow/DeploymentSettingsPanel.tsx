@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { WorkflowNodeData } from "@/stores/WorkflowStore";
 import { DeploymentNodeData } from "@/lib/types/nodes";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
@@ -95,29 +100,54 @@ export default function DeploymentSettingsPanel({
         {/* Status Section */}
         {deploymentData._status && (
           <>
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Status</h3>
-              <Badge
-                variant={
-                  deploymentData._status.state === "healthy"
-                    ? "default"
-                    : deploymentData._status.state === "error"
-                      ? "destructive"
-                      : "secondary"
-                }
-                className="flex items-center gap-1"
-              >
-                {deploymentData._status.state === "healthy" && (
-                  <CheckCircle2 className="h-3 w-3" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Status</h3>
+                {deploymentData._status.state === "partial" ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1 cursor-help"
+                      >
+                        <AlertCircle className="h-3 w-3" />
+                        partial
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {deploymentData._status.readyReplicas ?? 0} /{" "}
+                      {deploymentData._status.replicas} pods ready
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Badge
+                    variant={
+                      deploymentData._status.state === "healthy"
+                        ? "default"
+                        : "destructive"
+                    }
+                    className="flex items-center gap-1"
+                  >
+                    {deploymentData._status.state === "healthy" && (
+                      <CheckCircle2 className="h-3 w-3" />
+                    )}
+                    {deploymentData._status.state === "error" && (
+                      <XCircle className="h-3 w-3" />
+                    )}
+                    {deploymentData._status.state || "Unknown"}
+                  </Badge>
                 )}
-                {deploymentData._status.state === "partial" && (
-                  <AlertCircle className="h-3 w-3" />
+              </div>
+
+              {/* Error box - only show for error state */}
+              {deploymentData._status.state === "error" &&
+                deploymentData._status.message && (
+                  <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive">
+                      {deploymentData._status.message}
+                    </p>
+                  </div>
                 )}
-                {deploymentData._status.state === "error" && (
-                  <XCircle className="h-3 w-3" />
-                )}
-                {deploymentData._status.state || "Unknown"}
-              </Badge>
             </div>
             <Separator />
           </>
@@ -287,7 +317,10 @@ export default function DeploymentSettingsPanel({
                   id="requests-memory"
                   value={data.resources?.requests?.memory || ""}
                   onChange={e =>
-                    handleFieldUpdate("resources.requests.memory", e.target.value)
+                    handleFieldUpdate(
+                      "resources.requests.memory",
+                      e.target.value
+                    )
                   }
                   placeholder="256Mi"
                   disabled={!editable}
@@ -305,7 +338,12 @@ export default function DeploymentSettingsPanel({
             Add environment variables as key-value pairs
           </p>
           <DisabledInputWrapper disabled={!editable}>
-            <Button variant="outline" size="sm" className="w-full" disabled={!editable}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={!editable}
+            >
               Add Environment Variable
             </Button>
           </DisabledInputWrapper>
@@ -319,7 +357,12 @@ export default function DeploymentSettingsPanel({
             Add custom labels for your deployment
           </p>
           <DisabledInputWrapper disabled={!editable}>
-            <Button variant="outline" size="sm" className="w-full" disabled={!editable}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={!editable}
+            >
               Add Label
             </Button>
           </DisabledInputWrapper>

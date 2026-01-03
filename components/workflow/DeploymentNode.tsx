@@ -77,7 +77,12 @@ const DeploymentNode = memo(
     ];
 
     return (
-      <Node title="Deployment" fields={fields} onSettingsClick={openSettings} disabled={!editable} />
+      <Node
+        title="Deployment"
+        fields={fields}
+        onSettingsClick={openSettings}
+        disabled={!editable}
+      />
     );
   }
 );

@@ -79,22 +79,15 @@ export default function WorkflowDetailPage() {
 
   const handleRun = async () => {
     try {
+      // Auto-publish if in draft mode
+      if (workflow?.status === "draft") {
+        await updateWorkflowStatus(workflowId, "published");
+      }
       await runWorkflow(workflowId);
       toast.success("Workflow run started successfully");
-      // Optionally, you can navigate to a run details page or refresh the workflow
       await loadWorkflow();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to run workflow");
-    }
-  };
-
-  const handlePublish = async () => {
-    try {
-      await updateWorkflowStatus(workflowId, "published");
-      toast.success("Workflow published successfully");
-      await loadWorkflow();
-    } catch {
-      toast.error("Failed to publish workflow");
     }
   };
 
@@ -102,9 +95,20 @@ export default function WorkflowDetailPage() {
     status: "draft" | "published" | "archived"
   ) => {
     try {
-      await updateWorkflowStatus(workflowId, status);
-      toast.success(`Workflow ${status === "draft" ? "unpublished" : status}`);
-      await loadWorkflow();
+      const result = await updateWorkflowStatus(workflowId, status);
+      if (status === "archived") {
+        if (result.warning) {
+          toast.warning(result.warning);
+        } else {
+          toast.success("Workflow archived and K8s resources cleaned up");
+        }
+        router.push("/dashboard/workflow");
+      } else {
+        toast.success(
+          `Workflow ${status === "draft" ? "unpublished" : status}`
+        );
+        await loadWorkflow();
+      }
     } catch {
       toast.error(`Failed to update workflow status`);
     }
@@ -152,8 +156,8 @@ export default function WorkflowDetailPage() {
         onEdgesChange={handleEdgesChange}
         onSave={handleSave}
         onRun={handleRun}
-        onPublish={handlePublish}
         onStatusChange={handleStatusChange}
+        onArchive={() => handleStatusChange("archived")}
         editable={workflow?.status === "draft"}
       />
     </div>

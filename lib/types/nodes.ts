@@ -33,6 +33,7 @@ export interface DeploymentNodeData {
     state?: "healthy" | "partial" | "error";
     replicas?: number;
     readyReplicas?: number;
+    message?: string;
   };
 }
 

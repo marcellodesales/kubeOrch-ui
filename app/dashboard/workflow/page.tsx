@@ -21,6 +21,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   GitBranch,
   MoreVertical,
@@ -37,8 +47,8 @@ import {
 import { toast } from "sonner";
 import {
   listWorkflows,
-  deleteWorkflow,
   cloneWorkflow,
+  updateWorkflowStatus,
   type Workflow,
 } from "@/lib/services/workflow";
 import { clusterService } from "@/lib/services/cluster";
@@ -48,6 +58,12 @@ export default function WorkflowPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasClusters, setHasClusters] = useState(false);
+  const [archiveDialog, setArchiveDialog] = useState<{
+    open: boolean;
+    id: string;
+    name: string;
+  }>({ open: false, id: "", name: "" });
+  const [isArchiving, setIsArchiving] = useState(false);
   const [checkingClusters, setCheckingClusters] = useState(true);
 
   const breadcrumbs = [
@@ -101,15 +117,25 @@ export default function WorkflowPage() {
     }
   };
 
-  const handleArchive = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to archive "${name}"?`)) {
-      try {
-        await deleteWorkflow(id);
-        toast.success("Workflow archived successfully");
-        loadWorkflows();
-      } catch {
-        toast.error("Failed to archive workflow");
+  const handleArchive = (id: string, name: string) => {
+    setArchiveDialog({ open: true, id, name });
+  };
+
+  const confirmArchive = async () => {
+    setIsArchiving(true);
+    try {
+      const result = await updateWorkflowStatus(archiveDialog.id, "archived");
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success("Workflow archived and K8s resources cleaned up");
       }
+      loadWorkflows();
+    } catch {
+      toast.error("Failed to archive workflow");
+    } finally {
+      setIsArchiving(false);
+      setArchiveDialog({ open: false, id: "", name: "" });
     }
   };
 
@@ -329,6 +355,35 @@ export default function WorkflowPage() {
           </div>
         )}
       </PageContainer>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog
+        open={archiveDialog.open}
+        onOpenChange={open =>
+          !isArchiving && setArchiveDialog(prev => ({ ...prev, open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Workflow</AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/80">
+              Are you sure you want to archive &quot;{archiveDialog.name}&quot;?
+              This will also delete all associated Kubernetes resources
+              (Deployments, Services).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmArchive}
+              disabled={isArchiving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isArchiving ? "Archiving..." : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

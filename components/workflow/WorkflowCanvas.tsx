@@ -23,16 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Plus,
-  Save,
-  Rocket,
-  Settings,
-  ArrowLeft,
-  Eye,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { Plus, Save, Rocket, Settings, ArrowLeft, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
@@ -60,10 +51,8 @@ interface WorkflowCanvasProps {
   onEdgesChange?: (edges: Edge[]) => void;
   onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
   onRun?: () => Promise<void>;
-  onPublish?: () => Promise<void>;
-  onStatusChange?: (
-    status: "draft" | "published" | "archived"
-  ) => Promise<void>;
+  onStatusChange?: (status: "draft" | "published") => Promise<void>;
+  onArchive?: () => void;
   editable?: boolean;
 }
 
@@ -75,8 +64,8 @@ function WorkflowCanvasContent({
   onEdgesChange: onEdgesChangeProp,
   onSave,
   onRun,
-  onPublish,
   onStatusChange,
+  onArchive,
   editable = true,
 }: WorkflowCanvasProps) {
   const router = useRouter();
@@ -92,8 +81,12 @@ function WorkflowCanvasContent({
   const [selectedNodeData, setSelectedNodeData] =
     useState<WorkflowNodeData | null>(null);
   const { validateAndGetToken } = useAuthStore();
-  const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData, setEditable } =
-    useWorkflowStore();
+  const {
+    setNodeUpdateHandler,
+    setSettingsOpenHandler,
+    updateNodeData,
+    setEditable,
+  } = useWorkflowStore();
   const isInitializedRef = useRef(false);
 
   // Calculate next node ID from existing nodes
@@ -203,7 +196,10 @@ function WorkflowCanvasContent({
           const targetNode = nds.find(n => n.id === params.target);
 
           // Service (source) → Deployment (target)
-          if (sourceNode?.type === "service" && targetNode?.type === "deployment") {
+          if (
+            sourceNode?.type === "service" &&
+            targetNode?.type === "deployment"
+          ) {
             return nds.map(n => {
               if (n.id === params.source) {
                 const deploymentData = targetNode.data as DeploymentRequest;
@@ -222,7 +218,10 @@ function WorkflowCanvasContent({
           }
 
           // Deployment (source) → Service (target)
-          if (sourceNode?.type === "deployment" && targetNode?.type === "service") {
+          if (
+            sourceNode?.type === "deployment" &&
+            targetNode?.type === "service"
+          ) {
             return nds.map(n => {
               if (n.id === params.target) {
                 const deploymentData = sourceNode.data as DeploymentRequest;
@@ -525,46 +524,26 @@ function WorkflowCanvasContent({
       {/* Action buttons in top-right */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         {editable && (
-          <>
-            <Button
-              onClick={saveWorkflow}
-              size="sm"
-              variant="outline"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-
-            {workflow?.status === "draft" && (
-              <Button onClick={onPublish} size="sm" variant="outline">
-                <Eye className="h-4 w-4 mr-1" />
-                Publish
-              </Button>
-            )}
-          </>
+          <Button
+            onClick={saveWorkflow}
+            size="sm"
+            variant="outline"
+            disabled={isSaving}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
         )}
 
         {workflow?.status === "published" && (
-          <>
-            <Button
-              onClick={() => onStatusChange?.("draft")}
-              size="sm"
-              variant="outline"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
-            <Button
-              onClick={() => onStatusChange?.("archived")}
-              size="sm"
-              variant="outline"
-              className="text-destructive hover:bg-red-50 hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Archive
-            </Button>
-          </>
+          <Button
+            onClick={() => onStatusChange?.("draft")}
+            size="sm"
+            variant="outline"
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
         )}
 
         <Button
@@ -577,17 +556,12 @@ function WorkflowCanvasContent({
                 setIsDeploying(false);
               }
             } else {
-              // Fallback to deployAll if onRun not provided
               await deployAll();
             }
           }}
           size="sm"
           variant="default"
-          disabled={
-            isDeploying ||
-            nodes.length === 0 ||
-            workflow?.status !== "published"
-          }
+          disabled={isDeploying || nodes.length === 0}
         >
           <Rocket className="h-4 w-4 mr-1" />
           {isDeploying ? "Running..." : "Run"}
@@ -626,6 +600,7 @@ function WorkflowCanvasContent({
           onUpdate={handleSettingsUpdate}
           onDelete={handleDeleteNode}
           editable={editable}
+          workflowId={workflow?.id}
         />
       )}
 
@@ -658,6 +633,7 @@ function WorkflowCanvasContent({
             // Handle workflow update if needed
             setWorkflowSettingsOpen(false);
           }}
+          onArchive={onArchive}
         />
       )}
     </div>

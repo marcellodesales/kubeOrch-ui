@@ -104,7 +104,7 @@ export default function Node({
                           disabled={disabled}
                         >
                           <SelectTrigger
-                            className={`!h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${subField.hasError ? "border-red-500" : ""}`}
+                            className={`!h-7 w-full min-w-0 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${subField.hasError ? "border-red-500" : ""}`}
                             disabled={disabled}
                           >
                             <SelectValue placeholder={subField.placeholder} />

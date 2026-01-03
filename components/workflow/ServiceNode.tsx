@@ -68,7 +68,7 @@ const ServiceNode = memo(
             options: [
               { value: "ClusterIP", label: "ClusterIP" },
               { value: "NodePort", label: "NodePort" },
-              { value: "LoadBalancer", label: "LoadBalancer" },
+              { value: "LoadBalancer", label: "LB" },
             ],
             onChange: value => handleUpdate("serviceType", value),
           },
@@ -88,7 +88,12 @@ const ServiceNode = memo(
     ];
 
     return (
-      <Node title="Service" fields={fields} onSettingsClick={openSettings} disabled={!editable} />
+      <Node
+        title="Service"
+        fields={fields}
+        onSettingsClick={openSettings}
+        disabled={!editable}
+      />
     );
   }
 );

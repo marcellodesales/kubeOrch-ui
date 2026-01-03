@@ -1,5 +1,13 @@
 import React from "react";
-import { X, Trash2, Globe, Server, Hash, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  X,
+  Trash2,
+  Globe,
+  Server,
+  Hash,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +23,7 @@ import {
 import { WorkflowNodeData } from "@/stores/WorkflowStore";
 import { ServiceNodeData } from "@/lib/types/nodes";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
+import { ServiceDiagnosticsPanel } from "./ServiceDiagnosticsPanel";
 
 interface ServiceSettingsPanelProps {
   isOpen: boolean;
@@ -24,6 +33,7 @@ interface ServiceSettingsPanelProps {
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
   editable?: boolean;
+  workflowId?: string;
 }
 
 export default function ServiceSettingsPanel({
@@ -34,6 +44,7 @@ export default function ServiceSettingsPanel({
   onUpdate,
   onDelete,
   editable = true,
+  workflowId,
 }: ServiceSettingsPanelProps) {
   if (!isOpen || !data || !nodeId) return null;
 
@@ -129,6 +140,7 @@ export default function ServiceSettingsPanel({
               </div>
 
               <div className="space-y-2 rounded-md bg-muted/50 p-3">
+                {/* Cluster IP - always show for all types */}
                 {serviceData._status.clusterIP && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 text-muted-foreground">
@@ -141,27 +153,35 @@ export default function ServiceSettingsPanel({
                   </div>
                 )}
 
-                {serviceData._status.externalIP && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                      <Globe className="h-3.5 w-3.5" />
-                      External IP
-                    </span>
-                    <code className="text-xs bg-background px-2 py-0.5 rounded font-semibold text-green-600">
-                      {serviceData._status.externalIP}
-                    </code>
-                  </div>
-                )}
-
-                {serviceData._status.nodePort && (
+                {/* Node Port - only show for NodePort type */}
+                {serviceData.serviceType === "NodePort" && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Hash className="h-3.5 w-3.5" />
                       Node Port
                     </span>
                     <code className="text-xs bg-background px-2 py-0.5 rounded">
-                      {serviceData._status.nodePort}
+                      {serviceData._status.nodePort || "—"}
                     </code>
+                  </div>
+                )}
+
+                {/* External IP - only show for LoadBalancer type */}
+                {serviceData.serviceType === "LoadBalancer" && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Globe className="h-3.5 w-3.5" />
+                      External IP
+                    </span>
+                    {serviceData._status.externalIP ? (
+                      <code className="text-xs bg-background px-2 py-0.5 rounded font-semibold text-green-600">
+                        {serviceData._status.externalIP}
+                      </code>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">
+                        Pending...
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -172,6 +192,14 @@ export default function ServiceSettingsPanel({
                 )}
               </div>
             </div>
+            <Separator />
+          </>
+        )}
+
+        {/* Diagnostics Panel - only show when deployed and workflowId is available */}
+        {serviceData._status && workflowId && nodeId && (
+          <>
+            <ServiceDiagnosticsPanel workflowId={workflowId} nodeId={nodeId} />
             <Separator />
           </>
         )}
@@ -239,19 +267,17 @@ export default function ServiceSettingsPanel({
                 onValueChange={value => handleFieldUpdate("serviceType", value)}
                 disabled={!editable}
               >
-                <SelectTrigger id="serviceType" disabled={!editable}>
+                <SelectTrigger
+                  id="serviceType"
+                  disabled={!editable}
+                  className="w-full"
+                >
                   <SelectValue placeholder="Select service type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ClusterIP">
-                    ClusterIP - Internal cluster access only
-                  </SelectItem>
-                  <SelectItem value="NodePort">
-                    NodePort - Expose on each node&apos;s IP
-                  </SelectItem>
-                  <SelectItem value="LoadBalancer">
-                    LoadBalancer - External load balancer
-                  </SelectItem>
+                  <SelectItem value="ClusterIP">ClusterIP</SelectItem>
+                  <SelectItem value="NodePort">NodePort</SelectItem>
+                  <SelectItem value="LoadBalancer">LoadBalancer</SelectItem>
                 </SelectContent>
               </Select>
             </DisabledInputWrapper>
@@ -269,7 +295,9 @@ export default function ServiceSettingsPanel({
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={isNaN(serviceData.port) ? "" : (serviceData.port ?? 80)}
+                  value={
+                    isNaN(serviceData.port) ? "" : (serviceData.port ?? 80)
+                  }
                   placeholder="80"
                   onChange={e => handlePortChange("port", e.target.value)}
                   disabled={!editable}
@@ -315,7 +343,9 @@ export default function ServiceSettingsPanel({
           <DisabledInputWrapper disabled={!editable}>
             <Select
               value={serviceData.sessionAffinity || "None"}
-              onValueChange={value => handleFieldUpdate("sessionAffinity", value)}
+              onValueChange={value =>
+                handleFieldUpdate("sessionAffinity", value)
+              }
               disabled={!editable}
             >
               <SelectTrigger disabled={!editable} className="w-full">
@@ -340,7 +370,12 @@ export default function ServiceSettingsPanel({
             Add custom labels for your service
           </p>
           <DisabledInputWrapper disabled={!editable}>
-            <Button variant="outline" size="sm" className="w-full" disabled={!editable}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={!editable}
+            >
               Add Label
             </Button>
           </DisabledInputWrapper>
@@ -354,7 +389,12 @@ export default function ServiceSettingsPanel({
             Add annotations for service-specific configurations
           </p>
           <DisabledInputWrapper disabled={!editable}>
-            <Button variant="outline" size="sm" className="w-full" disabled={!editable}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={!editable}
+            >
               Add Annotation
             </Button>
           </DisabledInputWrapper>
