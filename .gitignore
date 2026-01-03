@@ -43,3 +43,6 @@ next-env.d.ts
 # vscode
 .vscode/*
 !.vscode/settings.json
+
+# Claude Code rules
+CLAUDE.md

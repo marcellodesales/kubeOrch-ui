@@ -8,7 +8,7 @@ export type { ServiceNodeData };
 
 const ServiceNode = memo(
   ({ data, id }: ReactFlowNodeProps<ServiceNodeData>) => {
-    const { updateNodeData, openNodeSettings } = useWorkflowStore();
+    const { updateNodeData, openNodeSettings, editable } = useWorkflowStore();
 
     const handleUpdate = useCallback(
       (field: string, value: string | number | boolean) => {
@@ -36,16 +36,25 @@ const ServiceNode = memo(
       openNodeSettings(id, data as unknown as WorkflowNodeData);
     }, [id, data, openNodeSettings]);
 
+    // Check if Service is linked to a Deployment via edge
+    const isLinked = !!data._linkedDeployment;
+
     const fields: NodeField[] = [
-      {
-        id: `targetApp-${id}`,
-        label: "Target App",
-        type: "text",
-        value: data.targetApp || "",
-        placeholder: "my-app",
-        hasError: data.hasValidationError && !data.targetApp,
-        onChange: value => handleUpdate("targetApp", value),
-      },
+      // Only show targetApp field if not linked via edge
+      ...(!isLinked
+        ? [
+            {
+              id: `targetApp-${id}`,
+              label: "Target App",
+              type: "text" as const,
+              value: data.targetApp || "",
+              placeholder: "my-app",
+              hasError: data.hasValidationError && !data.targetApp,
+              onChange: (value: string | number | boolean) =>
+                handleUpdate("targetApp", value),
+            },
+          ]
+        : []),
       {
         id: `group-${id}`,
         label: "",
@@ -79,7 +88,7 @@ const ServiceNode = memo(
     ];
 
     return (
-      <Node title="Service" fields={fields} onSettingsClick={openSettings} />
+      <Node title="Service" fields={fields} onSettingsClick={openSettings} disabled={!editable} />
     );
   }
 );

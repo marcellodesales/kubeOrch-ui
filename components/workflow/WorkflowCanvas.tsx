@@ -92,7 +92,7 @@ function WorkflowCanvasContent({
   const [selectedNodeData, setSelectedNodeData] =
     useState<WorkflowNodeData | null>(null);
   const { validateAndGetToken } = useAuthStore();
-  const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData } =
+  const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData, setEditable } =
     useWorkflowStore();
   const isInitializedRef = useRef(false);
 
@@ -121,6 +121,11 @@ function WorkflowCanvasContent({
       isInitializedRef.current = true;
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
+
+  // Sync editable state to store for node components to access
+  useEffect(() => {
+    setEditable(editable);
+  }, [editable, setEditable]);
 
   // Create debounced callbacks using useRef to maintain stability
   const debouncedNodesChange = useRef(
@@ -187,8 +192,88 @@ function WorkflowCanvasContent({
   }, [setNodes, setNodeUpdateHandler, setSettingsOpenHandler]);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges(eds => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      // Add the edge
+      setEdges(eds => addEdge(params, eds));
+
+      // Auto-populate Service targetApp when connected to Deployment
+      if (params.source && params.target) {
+        setNodes(nds => {
+          const sourceNode = nds.find(n => n.id === params.source);
+          const targetNode = nds.find(n => n.id === params.target);
+
+          // Service (source) → Deployment (target)
+          if (sourceNode?.type === "service" && targetNode?.type === "deployment") {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const deploymentData = targetNode.data as DeploymentRequest;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: deploymentData.name,
+                    targetPort: deploymentData.port,
+                    _linkedDeployment: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Deployment (source) → Service (target)
+          if (sourceNode?.type === "deployment" && targetNode?.type === "service") {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const deploymentData = sourceNode.data as DeploymentRequest;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: deploymentData.name,
+                    targetPort: deploymentData.port,
+                    _linkedDeployment: params.source,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          return nds;
+        });
+      }
+    },
+    [setEdges, setNodes]
+  );
+
+  // Handle edge deletion - clear Service's targetApp when disconnected
+  const onEdgesDelete = useCallback(
+    (deletedEdges: Edge[]) => {
+      setNodes(nds => {
+        return nds.map(node => {
+          if (node.type === "service") {
+            // Check if any deleted edge involves this service node
+            const hasDeletedConnection = deletedEdges.some(
+              edge => edge.source === node.id || edge.target === node.id
+            );
+            if (hasDeletedConnection) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  targetApp: "",
+                  targetPort: undefined,
+                  _linkedDeployment: undefined,
+                },
+              };
+            }
+          }
+          return node;
+        });
+      });
+    },
+    [setNodes]
   );
 
   const handleCommandPaletteClose = useCallback(() => {
@@ -400,6 +485,7 @@ function WorkflowCanvasContent({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
         nodeTypes={nodeTypes}
         fitView
         className="bg-gray-50"
@@ -523,7 +609,7 @@ function WorkflowCanvasContent({
             </TooltipTrigger>
             {!editable && (
               <TooltipContent>
-                <p>Switch to draft mode to edit</p>
+                <p>Switch to edit mode to add</p>
               </TooltipContent>
             )}
           </Tooltip>
@@ -539,6 +625,7 @@ function WorkflowCanvasContent({
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}
           onDelete={handleDeleteNode}
+          editable={editable}
         />
       )}
 
@@ -552,6 +639,7 @@ function WorkflowCanvasContent({
             onClose={handleCloseSettings}
             onUpdate={handleSettingsUpdate}
             onDelete={handleDeleteNode}
+            editable={editable}
           />
         )}
 

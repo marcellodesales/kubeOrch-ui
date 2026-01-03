@@ -11,6 +11,7 @@ interface WorkflowState {
   settingsOpenHandler:
     | ((nodeId: string, data: WorkflowNodeData) => void)
     | null;
+  editable: boolean;
 
   setNodeUpdateHandler: (
     handler: ((nodeId: string, data: WorkflowNodeData) => void) | null
@@ -18,6 +19,7 @@ interface WorkflowState {
   setSettingsOpenHandler: (
     handler: ((nodeId: string, data: WorkflowNodeData) => void) | null
   ) => void;
+  setEditable: (editable: boolean) => void;
 
   // Direct methods for updating nodes
   updateNodeData: (nodeId: string, data: WorkflowNodeData) => void;
@@ -27,9 +29,11 @@ interface WorkflowState {
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodeUpdateHandler: null,
   settingsOpenHandler: null,
+  editable: true,
 
   setNodeUpdateHandler: handler => set({ nodeUpdateHandler: handler }),
   setSettingsOpenHandler: handler => set({ settingsOpenHandler: handler }),
+  setEditable: editable => set({ editable }),
 
   updateNodeData: (nodeId: string, data: WorkflowNodeData) => {
     const handler = get().nodeUpdateHandler;

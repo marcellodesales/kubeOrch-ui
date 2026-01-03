@@ -62,20 +62,24 @@ export default function CommandPalette({
     }
   }, [isOpen]);
 
+  // Normalize string for search (treat spaces, hyphens, underscores as equivalent)
+  const normalizeForSearch = (str: string) =>
+    str.toLowerCase().replace(/[-_\s]+/g, " ");
+
   // Filter templates based on search query
   const filteredTemplates = useMemo(() => {
     if (!debouncedSearchQuery.trim()) {
       return templates;
     }
 
-    const query = debouncedSearchQuery.toLowerCase();
+    const query = normalizeForSearch(debouncedSearchQuery);
     return templates.filter(
       template =>
-        template.name.toLowerCase().includes(query) ||
-        template.displayName.toLowerCase().includes(query) ||
-        template.description.toLowerCase().includes(query) ||
-        template.category.toLowerCase().includes(query) ||
-        template.tags.some(tag => tag.toLowerCase().includes(query))
+        normalizeForSearch(template.name).includes(query) ||
+        normalizeForSearch(template.displayName).includes(query) ||
+        normalizeForSearch(template.description).includes(query) ||
+        normalizeForSearch(template.category).includes(query) ||
+        template.tags.some(tag => normalizeForSearch(tag).includes(query))
     );
   }, [templates, debouncedSearchQuery]);
 
@@ -132,15 +136,6 @@ export default function CommandPalette({
       monitoring: "bg-orange-100 text-orange-800",
     };
     return colors[category.toLowerCase()] || "bg-gray-100 text-gray-800";
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    const colors: Record<string, string> = {
-      beginner: "border-green-500 text-green-700",
-      intermediate: "border-yellow-500 text-yellow-700",
-      advanced: "border-red-500 text-red-700",
-    };
-    return colors[difficulty.toLowerCase()] || "border-gray-500 text-gray-700";
   };
 
   return (
@@ -219,13 +214,7 @@ export default function CommandPalette({
                         >
                           {template.category}
                         </Badge>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${getDifficultyColor(template.difficulty)}`}
-                        >
-                          {template.difficulty}
-                        </Badge>
-                        {template.tags.slice(0, 2).map(tag => (
+                        {template.tags.slice(0, 3).map(tag => (
                           <Badge
                             key={tag}
                             variant="outline"

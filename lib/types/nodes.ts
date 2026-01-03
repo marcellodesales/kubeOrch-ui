@@ -28,6 +28,12 @@ export interface DeploymentNodeData {
     port?: number;
   };
   hasValidationError?: boolean;
+  /** Runtime status fields (populated after deployment) */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    replicas?: number;
+    readyReplicas?: number;
+  };
 }
 
 // Type alias for backward compatibility
@@ -55,6 +61,16 @@ export interface ServiceNodeData {
   annotations?: Record<string, string>;
   templateId?: string;
   hasValidationError?: boolean;
+  /** Internal field: ID of linked deployment node (set when connected via edge) */
+  _linkedDeployment?: string;
+  /** Runtime status fields (populated after deployment) */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    clusterIP?: string;
+    externalIP?: string;
+    nodePort?: number;
+    message?: string;
+  };
 }
 
 // Future node types can be added here

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Settings } from "lucide-react";
+import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export interface NodeField {
   id: string;
@@ -39,6 +40,7 @@ export interface NodeProps {
   fields: NodeField[];
   onSettingsClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function Node({
@@ -46,8 +48,9 @@ export default function Node({
   fields,
   onSettingsClick,
   className,
+  disabled = false,
 }: NodeProps) {
-  return (
+  const cardContent = (
     <CompactCard
       className={`w-[280px] shadow-md border relative ${className || ""}`}
     >
@@ -98,9 +101,11 @@ export default function Node({
                         <Select
                           value={String(subField.value ?? "")}
                           onValueChange={value => subField.onChange?.(value)}
+                          disabled={disabled}
                         >
                           <SelectTrigger
-                            className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${subField.hasError ? "border-red-500" : ""}`}
+                            className={`!h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${subField.hasError ? "border-red-500" : ""}`}
+                            disabled={disabled}
                           >
                             <SelectValue placeholder={subField.placeholder} />
                           </SelectTrigger>
@@ -123,6 +128,7 @@ export default function Node({
                           }
                           min={subField.min}
                           max={subField.max}
+                          disabled={disabled}
                           value={
                             typeof subField.value === "boolean"
                               ? String(subField.value)
@@ -178,9 +184,11 @@ export default function Node({
                 <Select
                   value={String(field.value ?? "")}
                   onValueChange={value => field.onChange?.(value)}
+                  disabled={disabled}
                 >
                   <SelectTrigger
-                    className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${field.hasError ? "border-red-500" : ""}`}
+                    className={`!h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${field.hasError ? "border-red-500" : ""}`}
+                    disabled={disabled}
                   >
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
@@ -198,6 +206,7 @@ export default function Node({
                   type={field.type === "group" ? "text" : field.type}
                   min={field.min}
                   max={field.max}
+                  disabled={disabled}
                   value={
                     typeof field.value === "boolean"
                       ? String(field.value)
@@ -237,5 +246,12 @@ export default function Node({
         })}
       </CompactCardContent>
     </CompactCard>
+  );
+
+  // Wrap entire card with tooltip when disabled
+  return (
+    <DisabledInputWrapper disabled={disabled}>
+      {cardContent}
+    </DisabledInputWrapper>
   );
 }
