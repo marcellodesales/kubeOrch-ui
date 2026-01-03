@@ -33,7 +33,6 @@
     "@reactflow/controls": "^11.2.14",
     "@reactflow/core": "^11.11.4",
     "@reactflow/minimap": "^11.7.14",
-    "@tailwindcss/oxide-darwin-arm64": "^4.1.18",
     "@types/lodash-es": "^4.17.12",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
@@ -41,7 +40,6 @@
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lightningcss-darwin-arm64": "^1.30.2",
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.540.0",
     "next": "15.5.0",
@@ -68,5 +66,19 @@
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-darwin-arm64": "^4.1.18",
+    "@tailwindcss/oxide-darwin-x64": "^4.1.18",
+    "@tailwindcss/oxide-linux-arm64": "^4.1.18",
+    "@tailwindcss/oxide-linux-x64": "^4.1.18",
+    "@tailwindcss/oxide-win32-arm64": "^4.1.18",
+    "@tailwindcss/oxide-win32-x64": "^4.1.18",
+    "lightningcss-darwin-arm64": "^1.30.2",
+    "lightningcss-darwin-x64": "^1.30.2",
+    "lightningcss-linux-arm64": "^1.30.2",
+    "lightningcss-linux-x64": "^1.30.2",
+    "lightningcss-win32-arm64": "^1.30.2",
+    "lightningcss-win32-x64": "^1.30.2"
   }
 }
