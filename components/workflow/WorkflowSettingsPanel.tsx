@@ -77,7 +77,20 @@ export default function WorkflowSettingsPanel({
     >
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Workflow Settings</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Workflow Settings</h2>
+            <Badge
+              variant={
+                workflow?.status === "published"
+                  ? "default"
+                  : workflow?.status === "archived"
+                    ? "secondary"
+                    : "outline"
+              }
+            >
+              {workflow?.status || "draft"}
+            </Badge>
+          </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -110,23 +123,6 @@ export default function WorkflowSettingsPanel({
                 placeholder="Describe what this workflow does..."
                 rows={4}
               />
-            </div>
-
-            <div>
-              <Label>Status</Label>
-              <div className="mt-2">
-                <Badge
-                  variant={
-                    workflow?.status === "published"
-                      ? "default"
-                      : workflow?.status === "archived"
-                        ? "secondary"
-                        : "outline"
-                  }
-                >
-                  {workflow?.status || "draft"}
-                </Badge>
-              </div>
             </div>
 
             <div className="pt-4 border-t">
@@ -234,7 +230,7 @@ export default function WorkflowSettingsPanel({
                 onArchive?.();
                 setArchiveDialogOpen(false);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               Archive
             </AlertDialogAction>

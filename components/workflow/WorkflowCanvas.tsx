@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import React, { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -17,12 +17,6 @@ import "reactflow/dist/style.css";
 import { debounce } from "lodash-es";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Plus, Save, Rocket, Settings, ArrowLeft, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -31,8 +25,7 @@ import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
 import ServiceNode from "./ServiceNode";
 import { DeploymentRequest, ServiceNodeData } from "@/lib/types/nodes";
-import DeploymentSettingsPanel from "./DeploymentSettingsPanel";
-import ServiceSettingsPanel from "./ServiceSettingsPanel";
+import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
 import CommandPalette from "./CommandPalette";
 import { Workflow } from "@/lib/services/workflow";
@@ -54,6 +47,8 @@ interface WorkflowCanvasProps {
   onStatusChange?: (status: "draft" | "published") => Promise<void>;
   onArchive?: () => void;
   editable?: boolean;
+  openSettings?: boolean;
+  onCloseSettings?: () => void;
 }
 
 function WorkflowCanvasContent({
@@ -67,6 +62,8 @@ function WorkflowCanvasContent({
   onStatusChange,
   onArchive,
   editable = true,
+  openSettings = false,
+  onCloseSettings,
 }: WorkflowCanvasProps) {
   const router = useRouter();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -88,6 +85,7 @@ function WorkflowCanvasContent({
     setEditable,
   } = useWorkflowStore();
   const isInitializedRef = useRef(false);
+  const [initialSnapshot, setInitialSnapshot] = useState<string>("");
 
   // Calculate next node ID from existing nodes
   const getNextNodeId = useCallback((existingNodes: Node[]) => {
@@ -111,6 +109,7 @@ function WorkflowCanvasContent({
       setNodes(initialNodes);
       setEdges(initialEdges);
       setNodeId(getNextNodeId(initialNodes));
+      setInitialSnapshot(JSON.stringify({ nodes: initialNodes, edges: initialEdges }));
       isInitializedRef.current = true;
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
@@ -119,6 +118,21 @@ function WorkflowCanvasContent({
   useEffect(() => {
     setEditable(editable);
   }, [editable, setEditable]);
+
+  // Open workflow settings panel if openSettings prop is true
+  useEffect(() => {
+    if (openSettings) {
+      setWorkflowSettingsOpen(true);
+      setSettingsPanelOpen(false); // Close node settings when opening workflow settings
+    }
+  }, [openSettings]);
+
+  // Check if there are unsaved changes by comparing with initial snapshot
+  const hasChanges = useMemo(() => {
+    if (!initialSnapshot) return false;
+    const currentSnapshot = JSON.stringify({ nodes, edges });
+    return currentSnapshot !== initialSnapshot;
+  }, [nodes, edges, initialSnapshot]);
 
   // Create debounced callbacks using useRef to maintain stability
   const debouncedNodesChange = useRef(
@@ -144,8 +158,9 @@ function WorkflowCanvasContent({
 
   useEffect(() => {
     const handleUpdateNodeData = (nodeId: string, data: WorkflowNodeData) => {
-      setNodes(nds =>
-        nds.map(node => {
+      setNodes(nds => {
+        // First, update the target node
+        const updatedNodes = nds.map(node => {
           if (node.id === nodeId) {
             // Auto-generate ID from node ID and image name for deployment nodes
             const deploymentData = data as DeploymentRequest;
@@ -165,14 +180,43 @@ function WorkflowCanvasContent({
             return { ...node, data };
           }
           return node;
-        })
-      );
+        });
+
+        // If this is a deployment node, sync linked services' targetPort
+        const updatedNode = updatedNodes.find(n => n.id === nodeId);
+        if (updatedNode?.type === "deployment") {
+          const deploymentData = data as DeploymentRequest;
+          const deploymentPort = deploymentData.port;
+          const deploymentName = deploymentData.name;
+
+          // Update any service nodes that are linked to this deployment
+          return updatedNodes.map(node => {
+            if (node.type === "service") {
+              const serviceData = node.data as ServiceNodeData;
+              if (serviceData._linkedDeployment === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...serviceData,
+                    targetPort: deploymentPort,
+                    targetApp: deploymentName,
+                  },
+                };
+              }
+            }
+            return node;
+          });
+        }
+
+        return updatedNodes;
+      });
     };
 
     const handleOpenNodeSettings = (nodeId: string, data: WorkflowNodeData) => {
       setSelectedNodeId(nodeId);
       setSelectedNodeData(data);
       setSettingsPanelOpen(true);
+      setWorkflowSettingsOpen(false); // Close workflow settings when opening node settings
     };
 
     setNodeUpdateHandler(handleUpdateNodeData);
@@ -358,6 +402,8 @@ function WorkflowCanvasContent({
     setIsSaving(true);
     try {
       await onSave(nodes, edges);
+      // Update snapshot after successful save
+      setInitialSnapshot(JSON.stringify({ nodes, edges }));
     } catch (error) {
       console.error("Save failed:", error);
     } finally {
@@ -512,7 +558,10 @@ function WorkflowCanvasContent({
         </div>
 
         <Button
-          onClick={() => setWorkflowSettingsOpen(true)}
+          onClick={() => {
+            setWorkflowSettingsOpen(true);
+            setSettingsPanelOpen(false); // Close node settings when opening workflow settings
+          }}
           size="sm"
           variant="ghost"
           className="p-2"
@@ -528,7 +577,7 @@ function WorkflowCanvasContent({
             onClick={saveWorkflow}
             size="sm"
             variant="outline"
-            disabled={isSaving}
+            disabled={isSaving || !hasChanges}
           >
             <Save className="h-4 w-4 mr-1" />
             {isSaving ? "Saving..." : "Save"}
@@ -546,56 +595,47 @@ function WorkflowCanvasContent({
           </Button>
         )}
 
-        <Button
-          onClick={async () => {
-            if (onRun) {
-              setIsDeploying(true);
-              try {
-                await onRun();
-              } finally {
-                setIsDeploying(false);
+        {editable && (
+          <Button
+            onClick={async () => {
+              if (onRun) {
+                setIsDeploying(true);
+                try {
+                  await onRun();
+                } finally {
+                  setIsDeploying(false);
+                }
+              } else {
+                await deployAll();
               }
-            } else {
-              await deployAll();
-            }
-          }}
-          size="sm"
-          variant="default"
-          disabled={isDeploying || nodes.length === 0}
-        >
-          <Rocket className="h-4 w-4 mr-1" />
-          {isDeploying ? "Running..." : "Run"}
-        </Button>
+            }}
+            size="sm"
+            variant="default"
+            disabled={isDeploying || nodes.length === 0}
+          >
+            <Rocket className="h-4 w-4 mr-1" />
+            {isDeploying ? "Running..." : "Run"}
+          </Button>
+        )}
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  onClick={() => setCommandPaletteOpen(true)}
-                  size="sm"
-                  variant="default"
-                  disabled={!editable}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!editable && (
-              <TooltipContent>
-                <p>Switch to edit mode to add</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        {editable && (
+          <Button
+            onClick={() => setCommandPaletteOpen(true)}
+            size="sm"
+            variant="default"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* Settings panels - conditional rendering based on node type */}
-      {selectedNodeData && "serviceType" in selectedNodeData && (
-        <ServiceSettingsPanel
+      {/* Settings panel - unified component for all node types */}
+      {selectedNodeData && selectedNodeId && (
+        <NodeSettingsPanel
           isOpen={settingsPanelOpen}
           nodeId={selectedNodeId}
           data={selectedNodeData}
+          nodeType={"serviceType" in selectedNodeData ? "service" : "deployment"}
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}
           onDelete={handleDeleteNode}
@@ -603,20 +643,6 @@ function WorkflowCanvasContent({
           workflowId={workflow?.id}
         />
       )}
-
-      {selectedNodeData &&
-        !("serviceType" in selectedNodeData) &&
-        "image" in selectedNodeData && (
-          <DeploymentSettingsPanel
-            isOpen={settingsPanelOpen}
-            nodeId={selectedNodeId}
-            data={selectedNodeData as DeploymentRequest}
-            onClose={handleCloseSettings}
-            onUpdate={handleSettingsUpdate}
-            onDelete={handleDeleteNode}
-            editable={editable}
-          />
-        )}
 
       <CommandPalette
         isOpen={commandPaletteOpen}
@@ -628,10 +654,14 @@ function WorkflowCanvasContent({
         <WorkflowSettingsPanel
           isOpen={workflowSettingsOpen}
           workflow={workflow}
-          onClose={() => setWorkflowSettingsOpen(false)}
+          onClose={() => {
+            setWorkflowSettingsOpen(false);
+            onCloseSettings?.();
+          }}
           onUpdate={async () => {
             // Handle workflow update if needed
             setWorkflowSettingsOpen(false);
+            onCloseSettings?.();
           }}
           onArchive={onArchive}
         />

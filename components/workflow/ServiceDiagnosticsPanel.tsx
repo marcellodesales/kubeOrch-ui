@@ -5,13 +5,13 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
-  RefreshCw,
   Wrench,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -166,108 +166,90 @@ export function ServiceDiagnosticsPanel({
                   Issues Detected ({failedChecks.length})
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={e => {
-                    e.stopPropagation();
-                    fetchDiagnostics();
-                  }}
-                  disabled={isLoading}
-                >
-                  <RefreshCw
-                    className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`}
-                  />
-                </Button>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  isExpanded ? "rotate-180" : ""
+                }`}
+              />
             </div>
           </CollapsibleTrigger>
 
           <CollapsibleContent>
             <div className="px-3 pb-3 space-y-3">
-              {/* Diagnostic Checks */}
-              <div className="space-y-2">
-                {diagnostics.checks.map(check => (
-                  <div
-                    key={check.name}
-                    className={`flex items-start gap-2 p-2 rounded-md text-sm ${
-                      check.status === "pass"
-                        ? "bg-green-500/10"
-                        : check.status === "warning"
-                          ? "bg-yellow-500/10"
-                          : "bg-red-500/10"
-                    }`}
-                  >
-                    {check.status === "pass" ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <AlertCircle
-                        className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                          check.status === "warning"
-                            ? "text-yellow-500"
-                            : "text-red-500"
-                        }`}
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          {check.message}
-                        </span>
-                        {check.autoFixable && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs flex-shrink-0"
-                          >
-                            <Wrench className="h-2.5 w-2.5 mr-1" />
-                            Fixable
-                          </Badge>
+              {/* Mode Toggle - Always visible when there are fixable issues */}
+              {fixableChecks.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {fixMode === "auto" ? "Quick Fix" : "Diagnostics"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Manual</span>
+                    <Switch
+                      checked={fixMode === "auto"}
+                      onCheckedChange={checked =>
+                        setFixMode(checked ? "auto" : "manual")
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Diagnostic Checks - Only show in Manual mode */}
+              {fixMode === "manual" && (
+                <div className="space-y-2">
+                  {diagnostics.checks.map(check => (
+                    <div
+                      key={check.name}
+                      className={`flex items-start gap-2 p-2 rounded-md text-sm ${
+                        check.status === "pass"
+                          ? "bg-green-500/10"
+                          : check.status === "warning"
+                            ? "bg-yellow-500/10"
+                            : "bg-red-500/10"
+                      }`}
+                    >
+                      {check.status === "pass" ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle
+                          className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                            check.status === "warning"
+                              ? "text-yellow-500"
+                              : "text-red-500"
+                          }`}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">
+                            {check.message}
+                          </span>
+                          {check.autoFixable && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs flex-shrink-0"
+                            >
+                              <Wrench className="h-2.5 w-2.5 mr-1" />
+                              Fixable
+                            </Badge>
+                          )}
+                        </div>
+                        {check.suggestion && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {check.suggestion}
+                          </p>
                         )}
                       </div>
-                      {check.suggestion && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {check.suggestion}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Auto-Fix Section */}
               {fixableChecks.length > 0 && (
                 <>
-                  <Separator />
+                  {fixMode === "manual" && <Separator />}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Auto-Fix</span>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant={fixMode === "auto" ? "default" : "outline"}
-                          className="h-7 text-xs px-2"
-                          onClick={() => setFixMode("auto")}
-                        >
-                          Auto
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={fixMode === "manual" ? "default" : "outline"}
-                          className="h-7 text-xs px-2"
-                          onClick={() => setFixMode("manual")}
-                        >
-                          Manual
-                        </Button>
-                      </div>
-                    </div>
-
                     {/* Fix type selector (if multiple) */}
                     {fixableChecks.length > 1 && (
                       <div className="flex flex-wrap gap-1">
@@ -294,15 +276,18 @@ export function ServiceDiagnosticsPanel({
                     {/* Fix Template Info */}
                     {fixTemplate && (
                       <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">
-                          <span className="font-medium">
-                            {fixTemplate.name}
-                          </span>
-                          {" - "}
-                          {fixTemplate.description}
-                        </div>
+                        {/* Description - only in manual mode */}
+                        {fixMode === "manual" && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">
+                              {fixTemplate.name}
+                            </span>
+                            {" - "}
+                            {fixTemplate.description}
+                          </div>
+                        )}
 
-                        {/* YAML Editor (Manual Mode) */}
+                        {/* YAML Editor - only in Manual mode */}
                         {fixMode === "manual" && (
                           <div className="border rounded-md overflow-hidden">
                             {isLoadingTemplate ? (
@@ -314,23 +299,6 @@ export function ServiceDiagnosticsPanel({
                                 value={editableYAML}
                                 onChange={setEditableYAML}
                                 height="200px"
-                              />
-                            )}
-                          </div>
-                        )}
-
-                        {/* Auto mode preview */}
-                        {fixMode === "auto" && (
-                          <div className="border rounded-md overflow-hidden">
-                            {isLoadingTemplate ? (
-                              <div className="h-[120px] flex items-center justify-center">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                              </div>
-                            ) : (
-                              <YAMLEditor
-                                value={fixTemplate.yaml}
-                                readOnly
-                                height="120px"
                               />
                             )}
                           </div>

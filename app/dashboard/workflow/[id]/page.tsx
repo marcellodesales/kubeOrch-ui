@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
@@ -35,7 +35,9 @@ const WorkflowCanvas = dynamic(
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workflowId = params.id as string;
+  const openSettings = searchParams.get("settings") === "open";
 
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,6 +135,11 @@ export default function WorkflowDetailPage() {
     [isInitialized]
   );
 
+  // Clear the settings query param from URL when settings panel is closed
+  const handleCloseSettings = useCallback(() => {
+    router.replace(`/dashboard/workflow/${workflowId}`, { scroll: false });
+  }, [router, workflowId]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -159,6 +166,8 @@ export default function WorkflowDetailPage() {
         onStatusChange={handleStatusChange}
         onArchive={() => handleStatusChange("archived")}
         editable={workflow?.status === "draft"}
+        openSettings={openSettings}
+        onCloseSettings={handleCloseSettings}
       />
     </div>
   );

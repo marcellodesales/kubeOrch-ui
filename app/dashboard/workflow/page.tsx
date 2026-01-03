@@ -249,14 +249,18 @@ export default function WorkflowPage() {
                         {workflow.description || "No description"}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {getStatusBadge(workflow.status)}
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           asChild
                           onClick={e => e.stopPropagation()}
                         >
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-4 cursor-pointer hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -264,7 +268,7 @@ export default function WorkflowPage() {
                           <DropdownMenuItem
                             onClick={e => {
                               e.stopPropagation();
-                              router.push(`/dashboard/workflow/${workflow.id}`);
+                              router.push(`/dashboard/workflow/${workflow.id}?settings=open`);
                             }}
                           >
                             <Edit className="mr-2 h-4 w-4" />
@@ -377,7 +381,7 @@ export default function WorkflowPage() {
             <AlertDialogAction
               onClick={confirmArchive}
               disabled={isArchiving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {isArchiving ? "Archiving..." : "Archive"}
             </AlertDialogAction>
