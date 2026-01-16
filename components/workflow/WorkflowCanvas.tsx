@@ -110,27 +110,16 @@ function WorkflowCanvasContent({
 
   // Initialize with provided nodes and edges when they become available
   useEffect(() => {
-    console.log('[Canvas] Init useEffect check:', {
-      isInitialized: isInitializedRef.current,
-      initialNodesLength: initialNodes.length,
-      initialEdgesLength: initialEdges.length,
-    });
-
-    if (
-      !isInitializedRef.current &&
-      (initialNodes.length > 0 || initialEdges.length > 0)
-    ) {
-      console.log('[Canvas] Initializing with nodes:', initialNodes.map(n => n.id));
-      setNodes(initialNodes);
-      setEdges(initialEdges);
-      setNodeId(getNextNodeId(initialNodes));
-      setInitialSnapshot(
-        JSON.stringify({ nodes: initialNodes, edges: initialEdges })
-      );
-      isInitializedRef.current = true;
-    } else if (!isInitializedRef.current && initialNodes.length === 0 && initialEdges.length === 0) {
-      // Also initialize for empty workflows - this was missing!
-      console.log('[Canvas] Initializing empty workflow');
+    if (!isInitializedRef.current) {
+      if (initialNodes.length > 0 || initialEdges.length > 0) {
+        setNodes(initialNodes);
+        setEdges(initialEdges);
+        setNodeId(getNextNodeId(initialNodes));
+        setInitialSnapshot(
+          JSON.stringify({ nodes: initialNodes, edges: initialEdges })
+        );
+      }
+      // Mark as initialized even for empty workflows
       isInitializedRef.current = true;
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
@@ -138,15 +127,9 @@ function WorkflowCanvasContent({
   // Merge real-time status updates from SSE into nodes
   useEffect(() => {
     if (nodeStatuses && nodeStatuses.size > 0 && isInitializedRef.current) {
-      console.log('[Canvas] useEffect triggered for nodeStatuses merge');
-      console.log('[Canvas] nodeStatuses keys:', Array.from(nodeStatuses.keys()));
-
-      setNodes(currentNodes => {
-        console.log('[Canvas] currentNodes IDs:', currentNodes.map(n => n.id));
-
-        const updatedNodes = currentNodes.map(node => {
+      setNodes(currentNodes =>
+        currentNodes.map(node => {
           const newStatus = nodeStatuses.get(node.id);
-          console.log(`[Canvas] node ${node.id}: status = ${newStatus}`);
           if (newStatus) {
             return {
               ...node,
@@ -157,10 +140,8 @@ function WorkflowCanvasContent({
             };
           }
           return node;
-        });
-
-        return updatedNodes;
-      });
+        })
+      );
     }
   }, [nodeStatuses, setNodes]);
 
@@ -282,12 +263,6 @@ function WorkflowCanvasContent({
   useEffect(() => {
     if (selectedNodeId && settingsPanelOpen) {
       const updatedNode = nodes.find(n => n.id === selectedNodeId);
-      console.log('[Canvas] Sync selectedNodeData:', {
-        selectedNodeId,
-        foundNode: !!updatedNode,
-        hasStatus: !!updatedNode?.data?._status,
-        status: updatedNode?.data?._status,
-      });
       if (updatedNode?.data) {
         setSelectedNodeData(updatedNode.data as WorkflowNodeData);
       }
