@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import React, {
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -17,81 +23,147 @@ import "reactflow/dist/style.css";
 import { debounce } from "lodash-es";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Save,
-  Rocket,
-  Settings,
-  ArrowLeft,
-  Eye,
-  Edit,
-  Archive,
-} from "lucide-react";
+import { Plus, Save, Rocket, Settings, ArrowLeft, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
-import { useWorkflowStore } from "@/stores/WorkflowStore";
+import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
-import { DeploymentRequest } from "@/lib/types/nodes";
-import DeploymentSettingsPanel from "./DeploymentSettingsPanel";
+import ServiceNode from "./ServiceNode";
+import { DeploymentRequest, ServiceNodeData } from "@/lib/types/nodes";
+import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
+import CommandPalette from "./CommandPalette";
 import { Workflow } from "@/lib/services/workflow";
+import { TemplateMetadata } from "@/lib/services/templates";
 
 const nodeTypes = {
   deployment: DeploymentNode,
+  service: ServiceNode,
 };
 
 interface WorkflowCanvasProps {
   workflow?: Workflow | null;
   initialNodes?: Node[];
   initialEdges?: Edge[];
+  nodeStatuses?: Map<string, any>; // Real-time status updates from SSE
   onNodesChange?: (nodes: Node[]) => void;
   onEdgesChange?: (edges: Edge[]) => void;
   onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
   onRun?: () => Promise<void>;
-  onPublish?: () => Promise<void>;
-  onStatusChange?: (
-    status: "draft" | "published" | "archived"
-  ) => Promise<void>;
+  onStatusChange?: (status: "draft" | "published") => Promise<void>;
+  onArchive?: () => void;
   editable?: boolean;
+  openSettings?: boolean;
+  onCloseSettings?: () => void;
 }
 
 function WorkflowCanvasContent({
   workflow,
   initialNodes = [],
   initialEdges = [],
+  nodeStatuses,
   onNodesChange: onNodesChangeProp,
   onEdgesChange: onEdgesChangeProp,
   onSave,
   onRun,
-  onPublish,
   onStatusChange,
+  onArchive,
   editable = true,
+  openSettings = false,
+  onCloseSettings,
 }: WorkflowCanvasProps) {
   const router = useRouter();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [nodeId, setNodeId] = useState(1);
   const [isDeploying, setIsDeploying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [workflowSettingsOpen, setWorkflowSettingsOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeData, setSelectedNodeData] =
-    useState<DeploymentRequest | null>(null);
+    useState<WorkflowNodeData | null>(null);
   const { validateAndGetToken } = useAuthStore();
-  const { setNodeUpdateHandler, setSettingsOpenHandler, updateNodeData } =
-    useWorkflowStore();
+  const {
+    setNodeUpdateHandler,
+    setSettingsOpenHandler,
+    updateNodeData,
+    setEditable,
+  } = useWorkflowStore();
+  const isInitializedRef = useRef(false);
+  const [initialSnapshot, setInitialSnapshot] = useState<string>("");
 
-  // Initialize with provided nodes and edges
+  // Calculate next node ID from existing nodes
+  const getNextNodeId = useCallback((existingNodes: Node[]) => {
+    let maxId = 0;
+    existingNodes.forEach(node => {
+      const match = node.id.match(/^node-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxId) maxId = num;
+      }
+    });
+    return maxId + 1;
+  }, []);
+
+  // Initialize with provided nodes and edges when they become available
   useEffect(() => {
-    if (initialNodes.length > 0) {
-      setNodes(initialNodes);
+    if (!isInitializedRef.current) {
+      if (initialNodes.length > 0 || initialEdges.length > 0) {
+        setNodes(initialNodes);
+        setEdges(initialEdges);
+        setNodeId(getNextNodeId(initialNodes));
+        setInitialSnapshot(
+          JSON.stringify({ nodes: initialNodes, edges: initialEdges })
+        );
+      }
+      // Mark as initialized even for empty workflows
+      isInitializedRef.current = true;
     }
-    if (initialEdges.length > 0) {
-      setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
+
+  // Merge real-time status updates from SSE into nodes
+  useEffect(() => {
+    if (nodeStatuses && nodeStatuses.size > 0 && isInitializedRef.current) {
+      setNodes(currentNodes =>
+        currentNodes.map(node => {
+          const newStatus = nodeStatuses.get(node.id);
+          if (newStatus) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                _status: newStatus,
+              },
+            };
+          }
+          return node;
+        })
+      );
     }
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  }, [nodeStatuses, setNodes]);
+
+  // Sync editable state to store for node components to access
+  useEffect(() => {
+    setEditable(editable);
+  }, [editable, setEditable]);
+
+  // Open workflow settings panel if openSettings prop is true
+  useEffect(() => {
+    if (openSettings) {
+      setWorkflowSettingsOpen(true);
+      setSettingsPanelOpen(false); // Close node settings when opening workflow settings
+    }
+  }, [openSettings]);
+
+  // Check if there are unsaved changes by comparing with initial snapshot
+  const hasChanges = useMemo(() => {
+    if (!initialSnapshot) return false;
+    const currentSnapshot = JSON.stringify({ nodes, edges });
+    return currentSnapshot !== initialSnapshot;
+  }, [nodes, edges, initialSnapshot]);
 
   // Create debounced callbacks using useRef to maintain stability
   const debouncedNodesChange = useRef(
@@ -116,13 +188,15 @@ function WorkflowCanvasContent({
   }, [edges, debouncedEdgesChange]);
 
   useEffect(() => {
-    const handleUpdateNodeData = (nodeId: string, data: DeploymentRequest) => {
-      setNodes(nds =>
-        nds.map(node => {
+    const handleUpdateNodeData = (nodeId: string, data: WorkflowNodeData) => {
+      setNodes(nds => {
+        // First, update the target node
+        const updatedNodes = nds.map(node => {
           if (node.id === nodeId) {
-            // Auto-generate ID from node ID and image name
-            if (data.parameters?.image) {
-              const imageParts = data.parameters.image.split("/");
+            // Auto-generate ID from node ID and image name for deployment nodes
+            const deploymentData = data as DeploymentRequest;
+            if (deploymentData.parameters?.image) {
+              const imageParts = deploymentData.parameters.image.split("/");
               const imageName = imageParts[imageParts.length - 1].split(":")[0];
               const sanitizedImageName = imageName.replace(
                 /[^a-zA-Z0-9-]/g,
@@ -137,17 +211,43 @@ function WorkflowCanvasContent({
             return { ...node, data };
           }
           return node;
-        })
-      );
+        });
+
+        // If this is a deployment node, sync linked services' targetPort
+        const updatedNode = updatedNodes.find(n => n.id === nodeId);
+        if (updatedNode?.type === "deployment") {
+          const deploymentData = data as DeploymentRequest;
+          const deploymentPort = deploymentData.port;
+          const deploymentName = deploymentData.name;
+
+          // Update any service nodes that are linked to this deployment
+          return updatedNodes.map(node => {
+            if (node.type === "service") {
+              const serviceData = node.data as ServiceNodeData;
+              if (serviceData._linkedDeployment === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...serviceData,
+                    targetPort: deploymentPort,
+                    targetApp: deploymentName,
+                  },
+                };
+              }
+            }
+            return node;
+          });
+        }
+
+        return updatedNodes;
+      });
     };
 
-    const handleOpenNodeSettings = (
-      nodeId: string,
-      data: DeploymentRequest
-    ) => {
+    const handleOpenNodeSettings = (nodeId: string, data: WorkflowNodeData) => {
       setSelectedNodeId(nodeId);
       setSelectedNodeData(data);
       setSettingsPanelOpen(true);
+      setWorkflowSettingsOpen(false); // Close workflow settings when opening node settings
     };
 
     setNodeUpdateHandler(handleUpdateNodeData);
@@ -159,34 +259,160 @@ function WorkflowCanvasContent({
     };
   }, [setNodes, setNodeUpdateHandler, setSettingsOpenHandler]);
 
+  // Keep selectedNodeData in sync when nodes are updated (e.g. from SSE)
+  useEffect(() => {
+    if (selectedNodeId && settingsPanelOpen) {
+      const updatedNode = nodes.find(n => n.id === selectedNodeId);
+      if (updatedNode?.data) {
+        setSelectedNodeData(updatedNode.data as WorkflowNodeData);
+      }
+    }
+  }, [nodes, selectedNodeId, settingsPanelOpen]);
+
   const onConnect = useCallback(
-    (params: Connection) => setEdges(eds => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      // Add the edge
+      setEdges(eds => addEdge(params, eds));
+
+      // Auto-populate Service targetApp when connected to Deployment
+      if (params.source && params.target) {
+        setNodes(nds => {
+          const sourceNode = nds.find(n => n.id === params.source);
+          const targetNode = nds.find(n => n.id === params.target);
+
+          // Service (source) → Deployment (target)
+          if (
+            sourceNode?.type === "service" &&
+            targetNode?.type === "deployment"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const deploymentData = targetNode.data as DeploymentRequest;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: deploymentData.name,
+                    targetPort: deploymentData.port,
+                    _linkedDeployment: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Deployment (source) → Service (target)
+          if (
+            sourceNode?.type === "deployment" &&
+            targetNode?.type === "service"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const deploymentData = sourceNode.data as DeploymentRequest;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: deploymentData.name,
+                    targetPort: deploymentData.port,
+                    _linkedDeployment: params.source,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          return nds;
+        });
+      }
+    },
+    [setEdges, setNodes]
   );
 
-  const addDeploymentNode = useCallback(() => {
-    const nodeIdStr = `node-${nodeId}`;
-    const newNode: Node<DeploymentRequest> = {
-      id: nodeIdStr,
-      type: "deployment",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 300 + 100,
-      },
-      data: {
-        id: nodeIdStr,
-        name: `deployment-${nodeId}`,
-        namespace: "default",
-        image: "",
-        replicas: 1,
-        port: 8080,
-        templateId: "core/deployment",
-      },
-    };
+  // Handle edge deletion - clear Service's targetApp when disconnected
+  const onEdgesDelete = useCallback(
+    (deletedEdges: Edge[]) => {
+      setNodes(nds => {
+        return nds.map(node => {
+          if (node.type === "service") {
+            // Check if any deleted edge involves this service node
+            const hasDeletedConnection = deletedEdges.some(
+              edge => edge.source === node.id || edge.target === node.id
+            );
+            if (hasDeletedConnection) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  targetApp: "",
+                  targetPort: undefined,
+                  _linkedDeployment: undefined,
+                },
+              };
+            }
+          }
+          return node;
+        });
+      });
+    },
+    [setNodes]
+  );
 
-    setNodes(nds => [...nds, newNode]);
-    setNodeId(id => id + 1);
-  }, [nodeId, setNodes]);
+  const handleCommandPaletteClose = useCallback(() => {
+    setCommandPaletteOpen(false);
+  }, []);
+
+  const handleSelectTemplate = useCallback(
+    (template: TemplateMetadata) => {
+      const nodeIdStr = `node-${nodeId}`;
+
+      // Create node based on template type
+      if (template.name === "deployment") {
+        const newNode: Node<DeploymentRequest> = {
+          id: nodeIdStr,
+          type: "deployment",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `deployment-${nodeId}`,
+            namespace: "default",
+            image: "",
+            replicas: 1,
+            port: 8080,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "service") {
+        const newNode: Node<ServiceNodeData> = {
+          id: nodeIdStr,
+          type: "service",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `service-${nodeId}`,
+            namespace: "default",
+            serviceType: "ClusterIP",
+            targetApp: "",
+            port: 80,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      }
+
+      setNodeId(id => id + 1);
+    },
+    [nodeId, setNodes]
+  );
 
   const validateDeployment = (deployment: DeploymentRequest): string[] => {
     const errors: string[] = [];
@@ -217,6 +443,8 @@ function WorkflowCanvasContent({
     setIsSaving(true);
     try {
       await onSave(nodes, edges);
+      // Update snapshot after successful save
+      setInitialSnapshot(JSON.stringify({ nodes, edges }));
     } catch (error) {
       console.error("Save failed:", error);
     } finally {
@@ -301,7 +529,7 @@ function WorkflowCanvasContent({
   }, [nodes, setNodes, validateAndGetToken]);
 
   const handleSettingsUpdate = useCallback(
-    (nodeId: string, data: DeploymentRequest) => {
+    (nodeId: string, data: WorkflowNodeData) => {
       updateNodeData(nodeId, data);
       setSelectedNodeData(data);
     },
@@ -343,6 +571,7 @@ function WorkflowCanvasContent({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
         nodeTypes={nodeTypes}
         fitView
         className="bg-gray-50"
@@ -370,7 +599,10 @@ function WorkflowCanvasContent({
         </div>
 
         <Button
-          onClick={() => setWorkflowSettingsOpen(true)}
+          onClick={() => {
+            setWorkflowSettingsOpen(true);
+            setSettingsPanelOpen(false); // Close node settings when opening workflow settings
+          }}
           size="sm"
           variant="ghost"
           className="p-2"
@@ -382,97 +614,99 @@ function WorkflowCanvasContent({
       {/* Action buttons in top-right */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         {editable && (
-          <>
-            <Button
-              onClick={saveWorkflow}
-              size="sm"
-              variant="outline"
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-
-            {workflow?.status === "draft" && (
-              <Button onClick={onPublish} size="sm" variant="outline">
-                <Eye className="h-4 w-4 mr-1" />
-                Publish
-              </Button>
-            )}
-          </>
+          <Button
+            onClick={saveWorkflow}
+            size="sm"
+            variant="outline"
+            disabled={isSaving || !hasChanges}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
         )}
 
         {workflow?.status === "published" && (
-          <>
-            <Button
-              onClick={() => onStatusChange?.("draft")}
-              size="sm"
-              variant="outline"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
-            <Button
-              onClick={() => onStatusChange?.("archived")}
-              size="sm"
-              variant="outline"
-              className="text-destructive"
-            >
-              <Archive className="h-4 w-4 mr-1" />
-              Archive
-            </Button>
-          </>
+          <Button
+            onClick={() => onStatusChange?.("draft")}
+            size="sm"
+            variant="outline"
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Edit
+          </Button>
         )}
 
-        <Button
-          onClick={async () => {
-            if (onRun) {
-              setIsDeploying(true);
-              try {
-                await onRun();
-              } finally {
-                setIsDeploying(false);
+        {editable && (
+          <Button
+            onClick={async () => {
+              if (onRun) {
+                setIsDeploying(true);
+                try {
+                  await onRun();
+                } finally {
+                  setIsDeploying(false);
+                }
+              } else {
+                await deployAll();
               }
-            } else {
-              // Fallback to deployAll if onRun not provided
-              await deployAll();
-            }
-          }}
-          size="sm"
-          variant="default"
-          disabled={
-            isDeploying ||
-            nodes.length === 0 ||
-            workflow?.status !== "published"
-          }
-        >
-          <Rocket className="h-4 w-4 mr-1" />
-          {isDeploying ? "Running..." : "Run"}
-        </Button>
+            }}
+            size="sm"
+            variant="default"
+            disabled={isDeploying || nodes.length === 0}
+          >
+            <Rocket className="h-4 w-4 mr-1" />
+            {isDeploying ? "Running..." : "Run"}
+          </Button>
+        )}
 
-        <Button onClick={addDeploymentNode} size="sm" variant="default">
-          <Plus className="h-4 w-4" />
-        </Button>
+        {editable && (
+          <Button
+            onClick={() => setCommandPaletteOpen(true)}
+            size="sm"
+            variant="default"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      <DeploymentSettingsPanel
-        isOpen={settingsPanelOpen}
-        nodeId={selectedNodeId}
-        data={selectedNodeData}
-        onClose={handleCloseSettings}
-        onUpdate={handleSettingsUpdate}
-        onDelete={handleDeleteNode}
+      {/* Settings panel - unified component for all node types */}
+      {selectedNodeData && selectedNodeId && (
+        <NodeSettingsPanel
+          isOpen={settingsPanelOpen}
+          nodeId={selectedNodeId}
+          data={selectedNodeData}
+          nodeType={
+            "serviceType" in selectedNodeData ? "service" : "deployment"
+          }
+          onClose={handleCloseSettings}
+          onUpdate={handleSettingsUpdate}
+          onDelete={handleDeleteNode}
+          editable={editable}
+          workflowId={workflow?.id}
+        />
+      )}
+
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={handleCommandPaletteClose}
+        onSelectTemplate={handleSelectTemplate}
       />
 
       {workflow && (
         <WorkflowSettingsPanel
           isOpen={workflowSettingsOpen}
           workflow={workflow}
-          onClose={() => setWorkflowSettingsOpen(false)}
+          onClose={() => {
+            setWorkflowSettingsOpen(false);
+            onCloseSettings?.();
+          }}
           onUpdate={async () => {
             // Handle workflow update if needed
             setWorkflowSettingsOpen(false);
+            onCloseSettings?.();
           }}
+          onArchive={onArchive}
         />
       )}
     </div>

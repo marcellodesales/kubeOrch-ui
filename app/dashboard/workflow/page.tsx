@@ -21,6 +21,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   Plus,
   GitBranch,
   MoreVertical,
@@ -37,8 +57,8 @@ import {
 import { toast } from "sonner";
 import {
   listWorkflows,
-  deleteWorkflow,
   cloneWorkflow,
+  updateWorkflowStatus,
   type Workflow,
 } from "@/lib/services/workflow";
 import { clusterService } from "@/lib/services/cluster";
@@ -48,6 +68,19 @@ export default function WorkflowPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasClusters, setHasClusters] = useState(false);
+  const [archiveDialog, setArchiveDialog] = useState<{
+    open: boolean;
+    id: string;
+    name: string;
+  }>({ open: false, id: "", name: "" });
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [cloneDialog, setCloneDialog] = useState<{
+    open: boolean;
+    id: string;
+    originalName: string;
+  }>({ open: false, id: "", originalName: "" });
+  const [cloneName, setCloneName] = useState("");
+  const [isCloning, setIsCloning] = useState(false);
   const [checkingClusters, setCheckingClusters] = useState(true);
 
   const breadcrumbs = [
@@ -101,28 +134,50 @@ export default function WorkflowPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      try {
-        await deleteWorkflow(id);
-        toast.success("Workflow deleted successfully");
-        loadWorkflows();
-      } catch {
-        toast.error("Failed to delete workflow");
+  const handleArchive = (id: string, name: string) => {
+    setArchiveDialog({ open: true, id, name });
+  };
+
+  const confirmArchive = async () => {
+    setIsArchiving(true);
+    try {
+      const result = await updateWorkflowStatus(archiveDialog.id, "archived");
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success("Workflow archived and K8s resources cleaned up");
       }
+      loadWorkflows();
+    } catch {
+      toast.error("Failed to archive workflow");
+    } finally {
+      setIsArchiving(false);
+      setArchiveDialog({ open: false, id: "", name: "" });
     }
   };
 
-  const handleClone = async (id: string, name: string) => {
-    const newName = prompt(`Enter name for cloned workflow:`, `${name} (Copy)`);
-    if (newName) {
-      try {
-        const result = await cloneWorkflow(id, newName);
-        toast.success("Workflow cloned successfully");
-        router.push(`/dashboard/workflow/${result.id}`);
-      } catch {
-        toast.error("Failed to clone workflow");
-      }
+  const handleClone = (id: string, name: string) => {
+    setCloneDialog({ open: true, id, originalName: name });
+    setCloneName(`${name} (Copy)`);
+  };
+
+  const confirmClone = async () => {
+    if (!cloneName.trim()) {
+      toast.error("Please enter a name for the cloned workflow");
+      return;
+    }
+
+    setIsCloning(true);
+    try {
+      const result = await cloneWorkflow(cloneDialog.id, cloneName);
+      toast.success("Workflow cloned successfully");
+      setCloneDialog({ open: false, id: "", originalName: "" });
+      setCloneName("");
+      router.push(`/dashboard/workflow/${result.id}`);
+    } catch {
+      toast.error("Failed to clone workflow");
+    } finally {
+      setIsCloning(false);
     }
   };
 
@@ -214,16 +269,27 @@ export default function WorkflowPage() {
                 }
               >
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <GitBranch className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg mb-1">
+                        {workflow.name}
+                      </CardTitle>
+                      <CardDescription>
+                        {workflow.description || "No description"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {getStatusBadge(workflow.status)}
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           asChild
                           onClick={e => e.stopPropagation()}
                         >
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-4 cursor-pointer hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                          >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -231,7 +297,9 @@ export default function WorkflowPage() {
                           <DropdownMenuItem
                             onClick={e => {
                               e.stopPropagation();
-                              router.push(`/dashboard/workflow/${workflow.id}`);
+                              router.push(
+                                `/dashboard/workflow/${workflow.id}?settings=open`
+                              );
                             }}
                           >
                             <Edit className="mr-2 h-4 w-4" />
@@ -256,23 +324,19 @@ export default function WorkflowPage() {
                             Run
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-destructive"
+                            className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
                             onClick={e => {
                               e.stopPropagation();
-                              handleDelete(workflow.id, workflow.name);
+                              handleArchive(workflow.id, workflow.name);
                             }}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                            Archive
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
-                  <CardTitle className="text-lg">{workflow.name}</CardTitle>
-                  <CardDescription>
-                    {workflow.description || "No description"}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-muted-foreground">
@@ -326,6 +390,87 @@ export default function WorkflowPage() {
           </div>
         )}
       </PageContainer>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog
+        open={archiveDialog.open}
+        onOpenChange={open =>
+          !isArchiving && setArchiveDialog(prev => ({ ...prev, open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Workflow</AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/80">
+              Are you sure you want to archive &quot;{archiveDialog.name}&quot;?
+              This will also delete all associated Kubernetes resources
+              (Deployments, Services).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmArchive}
+              disabled={isArchiving}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {isArchiving ? "Archiving..." : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clone Dialog */}
+      <Dialog
+        open={cloneDialog.open}
+        onOpenChange={open =>
+          !isCloning && setCloneDialog(prev => ({ ...prev, open }))
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clone Workflow</DialogTitle>
+            <DialogDescription>
+              Create a copy of &quot;{cloneDialog.originalName}&quot;
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="clone-name">New Workflow Name</Label>
+              <Input
+                id="clone-name"
+                value={cloneName}
+                onChange={e => setCloneName(e.target.value)}
+                placeholder="Enter workflow name"
+                disabled={isCloning}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !isCloning) {
+                    confirmClone();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCloneDialog({ open: false, id: "", originalName: "" });
+                setCloneName("");
+              }}
+              disabled={isCloning}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmClone}
+              disabled={isCloning || !cloneName.trim()}
+            >
+              {isCloning ? "Cloning..." : "Clone Workflow"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

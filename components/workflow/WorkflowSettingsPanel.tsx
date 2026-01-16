@@ -1,12 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Workflow } from "@/lib/services/workflow";
 
 interface WorkflowSettingsPanelProps {
@@ -14,6 +24,7 @@ interface WorkflowSettingsPanelProps {
   workflow: Workflow;
   onClose: () => void;
   onUpdate: (workflow: Workflow) => Promise<void>;
+  onArchive?: () => void;
 }
 
 export default function WorkflowSettingsPanel({
@@ -21,12 +32,14 @@ export default function WorkflowSettingsPanel({
   workflow,
   onClose,
   onUpdate,
+  onArchive,
 }: WorkflowSettingsPanelProps) {
   const [formData, setFormData] = useState({
     name: workflow?.name || "",
     description: workflow?.description || "",
     status: workflow?.status || "draft",
   });
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
 
   useEffect(() => {
     if (workflow) {
@@ -64,7 +77,20 @@ export default function WorkflowSettingsPanel({
     >
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Workflow Settings</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Workflow Settings</h2>
+            <Badge
+              variant={
+                workflow?.status === "published"
+                  ? "default"
+                  : workflow?.status === "archived"
+                    ? "secondary"
+                    : "outline"
+              }
+            >
+              {workflow?.status || "draft"}
+            </Badge>
+          </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -97,23 +123,6 @@ export default function WorkflowSettingsPanel({
                 placeholder="Describe what this workflow does..."
                 rows={4}
               />
-            </div>
-
-            <div>
-              <Label>Status</Label>
-              <div className="mt-2">
-                <Badge
-                  variant={
-                    workflow?.status === "published"
-                      ? "default"
-                      : workflow?.status === "archived"
-                        ? "secondary"
-                        : "outline"
-                  }
-                >
-                  {workflow?.status || "draft"}
-                </Badge>
-              </div>
             </div>
 
             <div className="pt-4 border-t">
@@ -182,7 +191,7 @@ export default function WorkflowSettingsPanel({
           </div>
         </div>
 
-        <div className="border-t p-4">
+        <div className="border-t p-4 space-y-2">
           <Button
             onClick={handleUpdate}
             className="w-full"
@@ -190,8 +199,44 @@ export default function WorkflowSettingsPanel({
           >
             Update Workflow
           </Button>
+          {workflow?.status !== "archived" && onArchive && (
+            <Button
+              onClick={() => setArchiveDialogOpen(true)}
+              variant="outline"
+              className="w-full text-destructive hover:bg-red-50 hover:text-destructive"
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archive Workflow
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Workflow</AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/80">
+              Are you sure you want to archive &quot;{workflow?.name}&quot;?
+              This will also delete all associated Kubernetes resources
+              (Deployments, Services).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onArchive?.();
+                setArchiveDialogOpen(false);
+              }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

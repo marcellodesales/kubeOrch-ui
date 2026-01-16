@@ -143,3 +143,9 @@
   }
 }
 
+/* Command Palette (cmdk) Styles */
+/* cmdk item selection styling */
+[cmdk-item][data-selected="true"] {
+  background: var(--accent);
+}
+

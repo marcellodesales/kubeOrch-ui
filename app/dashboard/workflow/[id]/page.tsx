@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,7 @@ import {
   type WorkflowEdge,
 } from "@/lib/services/workflow";
 import { Logo } from "@/components/ui/logo";
+import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
@@ -35,18 +36,27 @@ const WorkflowCanvas = dynamic(
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workflowId = params.id as string;
+  const openSettings = searchParams.get("settings") === "open";
 
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Real-time workflow status updates via SSE - returns Map<nodeId, status>
+  const { nodeStatuses } = useWorkflowStatusStream(
+    workflowId,
+    !loading && !!workflow
+  );
 
   useEffect(() => {
     loadWorkflow();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
+
+  // nodeStatuses is passed directly to WorkflowCanvas which handles merging
 
   const loadWorkflow = async () => {
     try {
@@ -54,7 +64,6 @@ export default function WorkflowDetailPage() {
       setWorkflow(data);
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
-      setIsInitialized(true);
     } catch {
       toast.error("Failed to load workflow");
       router.push("/dashboard/workflow");
@@ -65,13 +74,18 @@ export default function WorkflowDetailPage() {
 
   const handleSave = async (nodes: any[], edges: any[]) => {
     try {
-      await saveWorkflow(
+      const response = await saveWorkflow(
         workflowId,
         nodes as WorkflowNode[],
         edges as WorkflowEdge[]
       );
       toast.success("Workflow saved successfully");
-      await loadWorkflow(); // Reload to get updated workflow
+      // Use the workflow from save response instead of making another GET request
+      if (response.workflow) {
+        setWorkflow(response.workflow);
+        setNodes(response.workflow.nodes || []);
+        setEdges(response.workflow.edges || []);
+      }
     } catch {
       toast.error("Failed to save workflow");
     }
@@ -79,22 +93,21 @@ export default function WorkflowDetailPage() {
 
   const handleRun = async () => {
     try {
+      // Auto-publish if in draft mode
+      if (workflow?.status === "draft") {
+        await updateWorkflowStatus(workflowId, "published");
+        // Update local state to reflect published status
+        setWorkflow(prev => (prev ? { ...prev, status: "published" } : null));
+      }
       await runWorkflow(workflowId);
+      // Update run count in local state
+      setWorkflow(prev =>
+        prev ? { ...prev, run_count: (prev.run_count || 0) + 1 } : null
+      );
       toast.success("Workflow run started successfully");
-      // Optionally, you can navigate to a run details page or refresh the workflow
-      await loadWorkflow();
+      // No need to refetch - SSE stream provides real-time updates
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to run workflow");
-    }
-  };
-
-  const handlePublish = async () => {
-    try {
-      await updateWorkflowStatus(workflowId, "published");
-      toast.success("Workflow published successfully");
-      await loadWorkflow();
-    } catch {
-      toast.error("Failed to publish workflow");
     }
   };
 
@@ -102,32 +115,38 @@ export default function WorkflowDetailPage() {
     status: "draft" | "published" | "archived"
   ) => {
     try {
-      await updateWorkflowStatus(workflowId, status);
-      toast.success(`Workflow ${status === "draft" ? "unpublished" : status}`);
-      await loadWorkflow();
+      const result = await updateWorkflowStatus(workflowId, status);
+      if (status === "archived") {
+        if (result.warning) {
+          toast.warning(result.warning);
+        } else {
+          toast.success("Workflow archived and K8s resources cleaned up");
+        }
+        router.push("/dashboard/workflow");
+      } else {
+        toast.success(
+          `Workflow ${status === "draft" ? "unpublished" : status}`
+        );
+        await loadWorkflow();
+      }
     } catch {
       toast.error(`Failed to update workflow status`);
     }
   };
 
   // Use callbacks to prevent unnecessary re-renders
-  const handleNodesChange = useCallback(
-    (newNodes: any[]) => {
-      if (isInitialized) {
-        setNodes(newNodes);
-      }
-    },
-    [isInitialized]
-  );
+  const handleNodesChange = useCallback((newNodes: any[]) => {
+    setNodes(newNodes);
+  }, []);
 
-  const handleEdgesChange = useCallback(
-    (newEdges: any[]) => {
-      if (isInitialized) {
-        setEdges(newEdges);
-      }
-    },
-    [isInitialized]
-  );
+  const handleEdgesChange = useCallback((newEdges: any[]) => {
+    setEdges(newEdges);
+  }, []);
+
+  // Clear the settings query param from URL when settings panel is closed
+  const handleCloseSettings = useCallback(() => {
+    router.replace(`/dashboard/workflow/${workflowId}`, { scroll: false });
+  }, [router, workflowId]);
 
   if (loading) {
     return (
@@ -148,13 +167,16 @@ export default function WorkflowDetailPage() {
         workflow={workflow}
         initialNodes={nodes}
         initialEdges={edges}
+        nodeStatuses={nodeStatuses}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onSave={handleSave}
         onRun={handleRun}
-        onPublish={handlePublish}
         onStatusChange={handleStatusChange}
+        onArchive={() => handleStatusChange("archived")}
         editable={workflow?.status === "draft"}
+        openSettings={openSettings}
+        onCloseSettings={handleCloseSettings}
       />
     </div>
   );

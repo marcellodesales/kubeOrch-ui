@@ -8,7 +8,7 @@ export type { DeploymentNodeData };
 
 const DeploymentNode = memo(
   ({ data, id }: ReactFlowNodeProps<DeploymentNodeData>) => {
-    const { updateNodeData, openNodeSettings } = useWorkflowStore();
+    const { updateNodeData, openNodeSettings, editable } = useWorkflowStore();
 
     const handleUpdate = useCallback(
       (field: string, value: string | number | boolean) => {
@@ -77,7 +77,12 @@ const DeploymentNode = memo(
     ];
 
     return (
-      <Node title="Deployment" fields={fields} onSettingsClick={openSettings} />
+      <Node
+        title="Deployment"
+        fields={fields}
+        onSettingsClick={openSettings}
+        disabled={!editable}
+      />
     );
   }
 );

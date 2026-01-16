@@ -50,7 +50,7 @@ export function PageContainer({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto bg-background">
+      <div className="flex-1 overflow-y-auto bg-background">
         <div
           className={cn(
             "min-h-full p-6 pb-12",

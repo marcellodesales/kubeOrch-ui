@@ -28,10 +28,51 @@ export interface DeploymentNodeData {
     port?: number;
   };
   hasValidationError?: boolean;
+  /** Runtime status fields (populated after deployment) */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    replicas?: number;
+    readyReplicas?: number;
+    message?: string;
+  };
 }
 
 // Type alias for backward compatibility
 export type DeploymentRequest = DeploymentNodeData;
+
+export interface ServiceNodeData {
+  id: string;
+  name: string;
+  type?: string;
+  namespace?: string;
+  serviceType: "ClusterIP" | "NodePort" | "LoadBalancer";
+  targetApp: string;
+  port: number;
+  targetPort?: number;
+  ports?: Array<{
+    name?: string;
+    protocol?: string;
+    port: number;
+    targetPort?: number;
+    nodePort?: number;
+  }>;
+  selector?: Record<string, string>;
+  sessionAffinity?: "None" | "ClientIP";
+  labels?: Record<string, string>;
+  annotations?: Record<string, string>;
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Internal field: ID of linked deployment node (set when connected via edge) */
+  _linkedDeployment?: string;
+  /** Runtime status fields (populated after deployment) */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    clusterIP?: string;
+    externalIP?: string;
+    nodePort?: number;
+    message?: string;
+  };
+}
 
 // Future node types can be added here
 export interface ConditionalNodeData {
@@ -58,6 +99,7 @@ export interface WebhookNodeData {
 // Union type for all node data types
 export type WorkflowNodeData =
   | DeploymentNodeData
+  | ServiceNodeData
   | ConditionalNodeData
   | ParallelNodeData
   | WebhookNodeData;

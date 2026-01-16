@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -41,6 +40,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useSidebarStore } from "@/stores/SidebarStore";
 
 const navItems = [
   {
@@ -99,14 +99,7 @@ const navItems = [
 ];
 
 export function NavigationSidebar() {
-  const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
-
-  const toggleMenu = (title: string) => {
-    setOpenMenus(prev => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
-  };
+  const { openMenus, toggleMenu } = useSidebarStore();
 
   return (
     <SidebarProvider>
