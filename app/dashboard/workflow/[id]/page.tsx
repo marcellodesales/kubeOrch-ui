@@ -44,10 +44,9 @@ export default function WorkflowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Real-time workflow status updates via SSE
-  const { nodes: streamNodes } = useWorkflowStatusStream(
+  // Real-time workflow status updates via SSE - returns Map<nodeId, status>
+  const { nodeStatuses } = useWorkflowStatusStream(
     workflowId,
     !loading && !!workflow
   );
@@ -57,26 +56,7 @@ export default function WorkflowDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
 
-  // Merge SSE status updates with current nodes
-  useEffect(() => {
-    if (streamNodes && streamNodes.length > 0 && isInitialized) {
-      setNodes(currentNodes =>
-        currentNodes.map(node => {
-          const streamNode = streamNodes.find(n => n.id === node.id);
-          if (streamNode?.data?._status) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                _status: streamNode.data._status,
-              },
-            };
-          }
-          return node;
-        })
-      );
-    }
-  }, [streamNodes, isInitialized]);
+  // nodeStatuses is passed directly to WorkflowCanvas which handles merging
 
   const loadWorkflow = async () => {
     try {
@@ -84,7 +64,6 @@ export default function WorkflowDetailPage() {
       setWorkflow(data);
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
-      setIsInitialized(true);
     } catch {
       toast.error("Failed to load workflow");
       router.push("/dashboard/workflow");
@@ -95,13 +74,18 @@ export default function WorkflowDetailPage() {
 
   const handleSave = async (nodes: any[], edges: any[]) => {
     try {
-      await saveWorkflow(
+      const response = await saveWorkflow(
         workflowId,
         nodes as WorkflowNode[],
         edges as WorkflowEdge[]
       );
       toast.success("Workflow saved successfully");
-      await loadWorkflow(); // Reload to get updated workflow
+      // Use the workflow from save response instead of making another GET request
+      if (response.workflow) {
+        setWorkflow(response.workflow);
+        setNodes(response.workflow.nodes || []);
+        setEdges(response.workflow.edges || []);
+      }
     } catch {
       toast.error("Failed to save workflow");
     }
@@ -151,23 +135,13 @@ export default function WorkflowDetailPage() {
   };
 
   // Use callbacks to prevent unnecessary re-renders
-  const handleNodesChange = useCallback(
-    (newNodes: any[]) => {
-      if (isInitialized) {
-        setNodes(newNodes);
-      }
-    },
-    [isInitialized]
-  );
+  const handleNodesChange = useCallback((newNodes: any[]) => {
+    setNodes(newNodes);
+  }, []);
 
-  const handleEdgesChange = useCallback(
-    (newEdges: any[]) => {
-      if (isInitialized) {
-        setEdges(newEdges);
-      }
-    },
-    [isInitialized]
-  );
+  const handleEdgesChange = useCallback((newEdges: any[]) => {
+    setEdges(newEdges);
+  }, []);
 
   // Clear the settings query param from URL when settings panel is closed
   const handleCloseSettings = useCallback(() => {
@@ -193,6 +167,7 @@ export default function WorkflowDetailPage() {
         workflow={workflow}
         initialNodes={nodes}
         initialEdges={edges}
+        nodeStatuses={nodeStatuses}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onSave={handleSave}

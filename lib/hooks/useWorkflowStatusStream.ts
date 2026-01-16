@@ -1,9 +1,18 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores/AuthStore";
-import { WorkflowNode } from "@/lib/services/workflow";
+
+export interface NodeStatus {
+  state: string;
+  message?: string;
+  replicas?: number;
+  readyReplicas?: number;
+  clusterIP?: string;
+  externalIP?: string;
+  nodePort?: number;
+}
 
 export interface UseWorkflowStatusStreamResult {
-  nodes: WorkflowNode[];
+  nodeStatuses: Map<string, NodeStatus>;
   isConnected: boolean;
   error: string | null;
   reconnect: () => void;
@@ -18,7 +27,10 @@ export function useWorkflowStatusStream(
   workflowId: string,
   enabled: boolean = true
 ): UseWorkflowStatusStreamResult {
-  const [nodes, setNodes] = useState<WorkflowNode[]>([]);
+  // Use Map to store statuses by node ID - doesn't depend on having correct node list
+  const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeStatus>>(
+    new Map()
+  );
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<{ close: () => void } | null>(null);
@@ -157,41 +169,61 @@ export function useWorkflowStatusStream(
 
                   switch (eventType) {
                     case "metadata":
-                      // Initial workflow state
-                      if (parsedData.nodes) {
-                        setNodes(parsedData.nodes);
+                      // Initial workflow state - extract node statuses if present
+                      if (parsedData.nodes && parsedData.nodes.length > 0) {
+                        console.log(
+                          "[SSE] metadata received, node IDs:",
+                          parsedData.nodes.map((n: any) => n.id)
+                        );
+                        // Extract any existing statuses from nodes
+                        const initialStatuses = new Map<string, NodeStatus>();
+                        for (const node of parsedData.nodes) {
+                          if (node.data?._status) {
+                            initialStatuses.set(node.id, node.data._status);
+                          }
+                        }
+                        if (initialStatuses.size > 0) {
+                          setNodeStatuses(initialStatuses);
+                        }
                       }
                       break;
 
                     case "node_update":
                       // Update specific node status
-                      // New unified SSE format: { type, stream_key, event_type, data: { node_id, status, type } }
+                      // Unified SSE format: { type, stream_key, event_type, data: { node_id, status, type } }
                       const nodeData = parsedData.data || parsedData;
                       const nodeId = nodeData.node_id || parsedData.node_id;
                       const status = nodeData.status;
 
+                      console.log("[SSE] node_update received:", {
+                        nodeId,
+                        status,
+                      });
+
                       if (nodeId && status) {
-                        setNodes(prevNodes =>
-                          prevNodes.map(node => {
-                            if (node.id === nodeId) {
-                              return {
-                                ...node,
-                                data: {
-                                  ...node.data,
-                                  _status: status,
-                                },
-                              };
-                            }
-                            return node;
-                          })
-                        );
+                        // Simply store/update status by node ID - no need to have existing nodes
+                        setNodeStatuses(prev => {
+                          const newMap = new Map(prev);
+                          newMap.set(nodeId, status);
+                          console.log(
+                            "[SSE] Updated nodeStatuses, keys:",
+                            Array.from(newMap.keys())
+                          );
+                          return newMap;
+                        });
                       }
                       break;
 
                     case "workflow_sync":
                       // Full workflow sync from periodic K8s check
                       if (parsedData.data && parsedData.data.nodes) {
-                        setNodes(parsedData.data.nodes);
+                        const syncedStatuses = new Map<string, NodeStatus>();
+                        for (const node of parsedData.data.nodes) {
+                          if (node.data?._status) {
+                            syncedStatuses.set(node.id, node.data._status);
+                          }
+                        }
+                        setNodeStatuses(syncedStatuses);
                       }
                       break;
 
@@ -242,6 +274,8 @@ export function useWorkflowStatusStream(
 
   const reconnect = useCallback(() => {
     cleanup();
+    // Clear statuses on reconnect
+    setNodeStatuses(new Map());
     connect();
   }, [cleanup, connect]);
 
@@ -257,7 +291,7 @@ export function useWorkflowStatusStream(
   }, [enabled, workflowId, connect, cleanup]);
 
   return {
-    nodes,
+    nodeStatuses,
     isConnected,
     error,
     reconnect,
