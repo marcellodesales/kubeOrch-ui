@@ -5,6 +5,7 @@ type SidebarStore = {
   openMenus: { [key: string]: boolean };
   toggleMenu: (title: string) => void;
   setMenuOpen: (title: string, isOpen: boolean) => void;
+  clearSidebarState: () => void;
 };
 
 export const useSidebarStore = create<SidebarStore>()(
@@ -25,6 +26,7 @@ export const useSidebarStore = create<SidebarStore>()(
             [title]: isOpen,
           },
         })),
+      clearSidebarState: () => set({ openMenus: {} }),
     }),
     {
       name: "sidebar-storage",

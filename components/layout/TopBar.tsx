@@ -27,7 +27,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
 
-export function TopBar() {
+interface TopBarProps {
+  onOpenCommandPalette?: () => void;
+}
+
+export function TopBar({ onOpenCommandPalette }: TopBarProps) {
   const router = useRouter();
   const { user, removeAuthDetails } = useAuthStore();
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -53,12 +57,16 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-6 py-[14px]">
       <div className="flex flex-1 items-center gap-4">
-        <div className="relative max-w-md flex-1">
+        <div
+          className="relative max-w-md flex-1 cursor-pointer"
+          onClick={onOpenCommandPalette}
+        >
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            type="search"
+            type="text"
             placeholder="Search workflows, deployments, resources..."
-            className="w-full pl-10 pr-4"
+            className="w-full pl-10 pr-14 cursor-pointer"
+            readOnly
           />
           <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground lg:inline-flex">
             <Command className="h-3 w-3" />K

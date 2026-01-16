@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { usePanelStore } from "./PanelStore";
+import { useSidebarStore } from "./SidebarStore";
 
 type User = {
   id: string;
@@ -35,13 +37,20 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true,
           expiresAt: new Date().getTime() + 24 * 60 * 60 * 1000,
         }),
-      removeAuthDetails: () =>
+      removeAuthDetails: () => {
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           expiresAt: null,
-        }),
+        });
+
+        // Clear panel widths
+        usePanelStore.getState().clearPanelState();
+
+        // Clear sidebar folder states
+        useSidebarStore.getState().clearSidebarState();
+      },
       isTokenExpired: () => {
         const state = get();
         if (!state.expiresAt) return true;

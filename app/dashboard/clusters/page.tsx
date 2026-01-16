@@ -24,8 +24,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,7 +38,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus,
-  RefreshCw,
   Server,
   MoreVertical,
   CheckCircle,
@@ -50,6 +47,7 @@ import {
   Trash2,
   Edit,
   Play,
+  RefreshCw,
   Star,
   StarOff,
 } from "lucide-react";
@@ -110,7 +108,6 @@ export default function ClustersPage() {
   const router = useRouter();
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [defaultClusterId, setDefaultClusterId] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clusterToDelete, setClusterToDelete] = useState<string | null>(null);
@@ -130,18 +127,12 @@ export default function ClustersPage() {
       toast.error("Failed to load clusters");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchClusters();
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchClusters();
-  };
 
   const handleTestConnection = async (clusterName: string) => {
     try {
@@ -202,23 +193,10 @@ export default function ClustersPage() {
   };
 
   const pageActions = (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleRefresh}
-        disabled={refreshing}
-      >
-        <RefreshCw
-          className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-        />
-        Refresh
-      </Button>
-      <Button size="sm" onClick={() => router.push("/dashboard/clusters/new")}>
-        <Plus className="mr-2 h-4 w-4" />
-        Add Cluster
-      </Button>
-    </>
+    <Button size="sm" onClick={() => router.push("/dashboard/clusters/new")}>
+      <Plus className="mr-2 h-4 w-4" />
+      Add Cluster
+    </Button>
   );
 
   return (
@@ -281,7 +259,6 @@ export default function ClustersPage() {
                       <TableHead>Server</TableHead>
                       <TableHead>Auth Type</TableHead>
                       <TableHead>Version</TableHead>
-                      <TableHead>Nodes</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -325,9 +302,6 @@ export default function ClustersPage() {
                             {cluster.metadata?.version || "-"}
                           </TableCell>
                           <TableCell>
-                            {cluster.metadata?.nodeCount || "-"}
-                          </TableCell>
-                          <TableCell>
                             <Badge variant={status.variant} className="gap-1">
                               <StatusIcon className="h-3 w-3" />
                               {status.text}
@@ -341,8 +315,6 @@ export default function ClustersPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
                                 {!isDefault && (
                                   <DropdownMenuItem
                                     onClick={() =>

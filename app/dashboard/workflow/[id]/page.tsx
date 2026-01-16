@@ -14,6 +14,7 @@ import {
   type WorkflowEdge,
 } from "@/lib/services/workflow";
 import { Logo } from "@/components/ui/logo";
+import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
@@ -45,10 +46,37 @@ export default function WorkflowDetailPage() {
   const [edges, setEdges] = useState<any[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Real-time workflow status updates via SSE
+  const { nodes: streamNodes } = useWorkflowStatusStream(
+    workflowId,
+    !loading && !!workflow
+  );
+
   useEffect(() => {
     loadWorkflow();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
+
+  // Merge SSE status updates with current nodes
+  useEffect(() => {
+    if (streamNodes && streamNodes.length > 0 && isInitialized) {
+      setNodes(currentNodes =>
+        currentNodes.map(node => {
+          const streamNode = streamNodes.find(n => n.id === node.id);
+          if (streamNode?.data?._status) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                _status: streamNode.data._status,
+              },
+            };
+          }
+          return node;
+        })
+      );
+    }
+  }, [streamNodes, isInitialized]);
 
   const loadWorkflow = async () => {
     try {
@@ -84,10 +112,16 @@ export default function WorkflowDetailPage() {
       // Auto-publish if in draft mode
       if (workflow?.status === "draft") {
         await updateWorkflowStatus(workflowId, "published");
+        // Update local state to reflect published status
+        setWorkflow(prev => (prev ? { ...prev, status: "published" } : null));
       }
       await runWorkflow(workflowId);
+      // Update run count in local state
+      setWorkflow(prev =>
+        prev ? { ...prev, run_count: (prev.run_count || 0) + 1 } : null
+      );
       toast.success("Workflow run started successfully");
-      await loadWorkflow();
+      // No need to refetch - SSE stream provides real-time updates
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to run workflow");
     }

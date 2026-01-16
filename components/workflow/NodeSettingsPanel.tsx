@@ -15,6 +15,8 @@ import { WorkflowNodeData } from "@/stores/WorkflowStore";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 import { deploymentSettingsConfig } from "./settings/DeploymentSettings";
 import { serviceSettingsConfig } from "./settings/ServiceSettings";
+import { usePanelStore } from "@/stores/PanelStore";
+import { ResizablePanel } from "@/components/ui/ResizablePanel";
 
 // Types
 export interface SettingsField {
@@ -95,6 +97,8 @@ export default function NodeSettingsPanel({
   editable = true,
   workflowId,
 }: NodeSettingsPanelProps) {
+  const { nodeSettingsWidth, setNodeSettingsWidth } = usePanelStore();
+
   if (!isOpen || !data || !nodeId) return null;
 
   const config =
@@ -102,7 +106,10 @@ export default function NodeSettingsPanel({
       ? deploymentSettingsConfig
       : serviceSettingsConfig;
 
-  const handleFieldUpdate = (field: string, value: string | number | boolean) => {
+  const handleFieldUpdate = (
+    field: string,
+    value: string | number | boolean
+  ) => {
     const updatedData = setNestedValue(data, field, value);
     onUpdate(nodeId, updatedData);
   };
@@ -170,7 +177,9 @@ export default function NodeSettingsPanel({
         <DisabledInputWrapper disabled={!editable}>
           <Select
             value={String(value ?? "")}
-            onValueChange={v => field.field && handleFieldUpdate(field.field, v)}
+            onValueChange={v =>
+              field.field && handleFieldUpdate(field.field, v)
+            }
             disabled={!editable}
           >
             <SelectTrigger
@@ -261,8 +270,12 @@ export default function NodeSettingsPanel({
   );
 
   return (
-    <div
-      className={`fixed right-0 top-0 h-full w-80 bg-background border-l shadow-lg transform transition-transform duration-300 z-50 ${
+    <ResizablePanel
+      width={nodeSettingsWidth}
+      minWidth={280}
+      maxWidth={600}
+      onWidthChange={setNodeSettingsWidth}
+      className={`fixed right-0 top-0 h-full bg-background border-l shadow-lg transform transition-transform duration-300 z-50 ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
@@ -362,6 +375,6 @@ export default function NodeSettingsPanel({
           </DisabledInputWrapper>
         </div>
       </div>
-    </div>
+    </ResizablePanel>
   );
 }

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import ReactFlow, {
   Node,
   Edge,
@@ -109,7 +115,9 @@ function WorkflowCanvasContent({
       setNodes(initialNodes);
       setEdges(initialEdges);
       setNodeId(getNextNodeId(initialNodes));
-      setInitialSnapshot(JSON.stringify({ nodes: initialNodes, edges: initialEdges }));
+      setInitialSnapshot(
+        JSON.stringify({ nodes: initialNodes, edges: initialEdges })
+      );
       isInitializedRef.current = true;
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, getNextNodeId]);
@@ -227,6 +235,16 @@ function WorkflowCanvasContent({
       setSettingsOpenHandler(() => {});
     };
   }, [setNodes, setNodeUpdateHandler, setSettingsOpenHandler]);
+
+  // Keep selectedNodeData in sync when nodes are updated (e.g. from SSE)
+  useEffect(() => {
+    if (selectedNodeId && settingsPanelOpen) {
+      const updatedNode = nodes.find(n => n.id === selectedNodeId);
+      if (updatedNode?.data) {
+        setSelectedNodeData(updatedNode.data as WorkflowNodeData);
+      }
+    }
+  }, [nodes, selectedNodeId, settingsPanelOpen]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -635,7 +653,9 @@ function WorkflowCanvasContent({
           isOpen={settingsPanelOpen}
           nodeId={selectedNodeId}
           data={selectedNodeData}
-          nodeType={"serviceType" in selectedNodeData ? "service" : "deployment"}
+          nodeType={
+            "serviceType" in selectedNodeData ? "service" : "deployment"
+          }
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}
           onDelete={handleDeleteNode}

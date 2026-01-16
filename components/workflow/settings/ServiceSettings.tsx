@@ -6,12 +6,7 @@ import { ServiceNodeData } from "@/lib/types/nodes";
 import { ServiceDiagnosticsPanel } from "../ServiceDiagnosticsPanel";
 
 // Status renderer for Service nodes
-function ServiceStatus({
-  data,
-}: {
-  data: ServiceNodeData;
-  editable: boolean;
-}) {
+function ServiceStatus({ data }: { data: ServiceNodeData; editable: boolean }) {
   if (!data._status) return null;
 
   return (
@@ -183,7 +178,13 @@ export const serviceSettingsConfig: NodeSettingsConfig = {
   extraContent: (data, { workflowId, nodeId }) => {
     const serviceData = data as ServiceNodeData;
     if (serviceData._status && workflowId && nodeId) {
-      return <ServiceDiagnosticsPanel workflowId={workflowId} nodeId={nodeId} />;
+      return (
+        <ServiceDiagnosticsPanel
+          workflowId={workflowId}
+          nodeId={nodeId}
+          serviceStatus={serviceData._status}
+        />
+      );
     }
     return null;
   },
