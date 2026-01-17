@@ -23,9 +23,11 @@ import {
   Command,
   Moon,
   Sun,
+  Monitor,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
+import { useTheme } from "next-themes";
 
 interface TopBarProps {
   onOpenCommandPalette?: () => void;
@@ -34,7 +36,7 @@ interface TopBarProps {
 export function TopBar({ onOpenCommandPalette }: TopBarProps) {
   const router = useRouter();
   const { user, removeAuthDetails } = useAuthStore();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { theme, setTheme } = useTheme();
   const [notifications] = useState([
     { id: 1, title: "Deployment successful", time: "2 min ago", unread: true },
     { id: 2, title: "New version available", time: "1 hour ago", unread: true },
@@ -45,12 +47,6 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
       unread: false,
     },
   ]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    document.documentElement.classList.toggle("dark");
-  };
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -78,13 +74,23 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleTheme}
+          onClick={() => {
+            const next =
+              theme === "light"
+                ? "dark"
+                : theme === "dark"
+                  ? "system"
+                  : "light";
+            setTheme(next);
+          }}
           className="relative"
         >
           {theme === "light" ? (
+            <Sun className="h-5 w-5" />
+          ) : theme === "dark" ? (
             <Moon className="h-5 w-5" />
           ) : (
-            <Sun className="h-5 w-5" />
+            <Monitor className="h-5 w-5" />
           )}
         </Button>
 

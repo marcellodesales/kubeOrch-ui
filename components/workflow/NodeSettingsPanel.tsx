@@ -275,7 +275,7 @@ export default function NodeSettingsPanel({
       minWidth={280}
       maxWidth={600}
       onWidthChange={setNodeSettingsWidth}
-      className={`fixed right-0 top-0 h-full bg-background border-l shadow-lg transform transition-transform duration-300 z-50 ${
+      className={`fixed right-0 top-0 h-full bg-card border-l shadow-lg transform transition-transform duration-300 z-50 ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >

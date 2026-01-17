@@ -280,61 +280,63 @@ export default function WorkflowPage() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {getStatusBadge(workflow.status)}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          asChild
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-4 cursor-pointer hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                      {workflow.status !== "archived" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            asChild
+                            onClick={e => e.stopPropagation()}
                           >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={e => {
-                              e.stopPropagation();
-                              router.push(
-                                `/dashboard/workflow/${workflow.id}?settings=open`
-                              );
-                            }}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleClone(workflow.id, workflow.name);
-                            }}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Clone
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={e => {
-                              e.stopPropagation();
-                              toast.info("Run functionality coming soon");
-                            }}
-                          >
-                            <Play className="mr-2 h-4 w-4" />
-                            Run
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleArchive(workflow.id, workflow.name);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                            Archive
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-4 cursor-pointer hover:bg-transparent focus:bg-transparent active:bg-transparent"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/dashboard/workflow/${workflow.id}?settings=open`
+                                );
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleClone(workflow.id, workflow.name);
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Clone
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                toast.info("Run functionality coming soon");
+                              }}
+                            >
+                              <Play className="mr-2 h-4 w-4" />
+                              Run
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleArchive(workflow.id, workflow.name);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                              Archive
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </div>
                 </CardHeader>

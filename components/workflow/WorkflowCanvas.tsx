@@ -574,7 +574,8 @@ function WorkflowCanvasContent({
         onEdgesDelete={onEdgesDelete}
         nodeTypes={nodeTypes}
         fitView
-        className="bg-gray-50"
+        className="bg-background"
+        proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         <Controls />

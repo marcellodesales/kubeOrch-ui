@@ -127,7 +127,7 @@ export function LogsTab({ resourceId, resourceType }: LogsTabProps) {
       <div className="flex-1 overflow-auto bg-black">
         <div className="font-mono text-xs text-green-400 p-4">
           {logs.length === 0 ? (
-            <div className="text-gray-500 text-center py-10">
+            <div className="text-muted-foreground text-center py-10">
               {isConnected ? "Waiting for logs..." : "Connecting to pod..."}
             </div>
           ) : (
@@ -138,7 +138,9 @@ export function LogsTab({ resourceId, resourceType }: LogsTabProps) {
                   className="hover:bg-white/5 px-2 py-0.5 leading-relaxed border-l-2 border-transparent hover:border-green-500"
                 >
                   {log.timestamp && (
-                    <span className="text-gray-500">{log.timestamp} </span>
+                    <span className="text-muted-foreground">
+                      {log.timestamp}{" "}
+                    </span>
                   )}
                   <span className="text-green-400">{log.message}</span>
                 </div>
