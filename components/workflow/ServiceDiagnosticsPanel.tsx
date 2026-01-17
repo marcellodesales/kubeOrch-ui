@@ -232,11 +232,11 @@ export function ServiceDiagnosticsPanel({
   return (
     <div className="space-y-3">
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <div className="border border-yellow-500/50 rounded-md bg-yellow-500/5">
+        <div className="border border-yellow-500/50 dark:border-yellow-500/30 rounded-md bg-yellow-500/5 dark:bg-yellow-500/10">
           <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-yellow-500/10 transition-colors">
+            <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-yellow-500/10 dark:hover:bg-yellow-500/20 transition-colors">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertCircle className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
                 <span className="text-sm font-medium">
                   Issues Detected ({failedChecks.length})
                 </span>
@@ -277,20 +277,20 @@ export function ServiceDiagnosticsPanel({
                       key={check.name}
                       className={`flex items-start gap-2 p-2 rounded-md text-sm ${
                         check.status === "pass"
-                          ? "bg-green-500/10"
+                          ? "bg-green-500/10 dark:bg-green-500/20"
                           : check.status === "warning"
-                            ? "bg-yellow-500/10"
-                            : "bg-red-500/10"
+                            ? "bg-yellow-500/10 dark:bg-yellow-500/20"
+                            : "bg-destructive/10 dark:bg-destructive/20"
                       }`}
                     >
                       {check.status === "pass" ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                       ) : (
                         <AlertCircle
                           className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
                             check.status === "warning"
-                              ? "text-yellow-500"
-                              : "text-red-500"
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-destructive"
                           }`}
                         />
                       )}
@@ -370,10 +370,10 @@ export function ServiceDiagnosticsPanel({
 
                             {/* YAML Validation Error */}
                             {yamlError && (
-                              <div className="flex items-start gap-2 p-2 rounded-md bg-red-500/10 border border-red-500/20">
-                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30">
+                                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-red-500">
+                                  <div className="text-sm font-medium text-destructive">
                                     Invalid YAML Syntax
                                   </div>
                                   <div className="text-xs text-muted-foreground mt-1">

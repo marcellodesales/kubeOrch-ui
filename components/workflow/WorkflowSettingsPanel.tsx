@@ -71,7 +71,7 @@ export default function WorkflowSettingsPanel({
 
   return (
     <div
-      className={`fixed right-0 top-0 h-full w-96 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+      className={`fixed right-0 top-0 h-full w-96 bg-card border-l shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
@@ -203,7 +203,7 @@ export default function WorkflowSettingsPanel({
             <Button
               onClick={() => setArchiveDialogOpen(true)}
               variant="outline"
-              className="w-full text-destructive hover:bg-red-50 hover:text-destructive"
+              className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <Archive className="h-4 w-4 mr-2" />
               Archive Workflow

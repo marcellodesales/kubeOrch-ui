@@ -61,7 +61,7 @@ export default function Node({
           position={Position.Left}
           className="w-2 h-2 absolute"
           style={{
-            background: "#555",
+            background: "var(--handle-color)",
             left: "-12px",
             top: "50%",
             transform: "translateY(-50%)",
@@ -160,7 +160,7 @@ export default function Node({
                   id={`group-${field.id}`}
                   className="w-2 h-2 absolute"
                   style={{
-                    background: "#555",
+                    background: "var(--handle-color)",
                     right: "-20px",
                     top: "12px", // Positioned at label level
                     zIndex: 10,
@@ -235,7 +235,7 @@ export default function Node({
                 id={field.id}
                 className="w-2 h-2 absolute"
                 style={{
-                  background: "#555",
+                  background: "var(--handle-color)",
                   right: "-20px",
                   top: "0px", // Positioned at label level
                   zIndex: 10,
