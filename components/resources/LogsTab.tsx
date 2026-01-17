@@ -138,7 +138,9 @@ export function LogsTab({ resourceId, resourceType }: LogsTabProps) {
                   className="hover:bg-white/5 px-2 py-0.5 leading-relaxed border-l-2 border-transparent hover:border-green-500"
                 >
                   {log.timestamp && (
-                    <span className="text-muted-foreground">{log.timestamp} </span>
+                    <span className="text-muted-foreground">
+                      {log.timestamp}{" "}
+                    </span>
                   )}
                   <span className="text-green-400">{log.message}</span>
                 </div>

@@ -75,7 +75,12 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
           variant="ghost"
           size="icon"
           onClick={() => {
-            const next = theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
+            const next =
+              theme === "light"
+                ? "dark"
+                : theme === "dark"
+                  ? "system"
+                  : "light";
             setTheme(next);
           }}
           className="relative"
