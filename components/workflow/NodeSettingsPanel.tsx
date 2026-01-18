@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import { WorkflowNodeData } from "@/stores/WorkflowStore";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 import { deploymentSettingsConfig } from "./settings/DeploymentSettings";
 import { serviceSettingsConfig } from "./settings/ServiceSettings";
+import { ingressSettingsConfig } from "./settings/IngressSettings";
 import { usePanelStore } from "@/stores/PanelStore";
 import { ResizablePanel } from "@/components/ui/ResizablePanel";
 
@@ -22,7 +24,7 @@ import { ResizablePanel } from "@/components/ui/ResizablePanel";
 export interface SettingsField {
   id: string;
   label?: string;
-  type: "text" | "number" | "select" | "port" | "group";
+  type: "text" | "number" | "select" | "port" | "group" | "toggle";
   field?: string; // Path like "resources.limits.cpu"
   placeholder?: string;
   required?: boolean;
@@ -46,7 +48,7 @@ export interface NodeSettingsConfig {
   statusRenderer?: (data: any, editable: boolean) => ReactNode;
   extraContent?: (
     data: any,
-    props: { workflowId?: string; nodeId: string }
+    props: { workflowId?: string; nodeId: string; editable: boolean }
   ) => ReactNode;
 }
 
@@ -54,7 +56,7 @@ interface NodeSettingsPanelProps {
   isOpen: boolean;
   nodeId: string | null;
   data: WorkflowNodeData | null;
-  nodeType: "deployment" | "service";
+  nodeType: "deployment" | "service" | "ingress";
   onClose: () => void;
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
@@ -104,7 +106,9 @@ export default function NodeSettingsPanel({
   const config =
     nodeType === "deployment"
       ? deploymentSettingsConfig
-      : serviceSettingsConfig;
+      : nodeType === "service"
+        ? serviceSettingsConfig
+        : ingressSettingsConfig;
 
   const handleFieldUpdate = (
     field: string,
@@ -242,6 +246,21 @@ export default function NodeSettingsPanel({
       );
     }
 
+    if (field.type === "toggle") {
+      return (
+        <div className="flex items-center space-x-2 mt-1.5">
+          <Switch
+            id={field.id}
+            checked={!!value}
+            onCheckedChange={checked =>
+              field.field && handleFieldUpdate(field.field, checked)
+            }
+            disabled={!editable}
+          />
+        </div>
+      );
+    }
+
     // Default: text
     return (
       <DisabledInputWrapper disabled={!editable}>
@@ -328,7 +347,7 @@ export default function NodeSettingsPanel({
         {config.extraContent && (
           <>
             <Separator />
-            {config.extraContent(data, { workflowId, nodeId })}
+            {config.extraContent(data, { workflowId, nodeId, editable })}
           </>
         )}
 

@@ -18,7 +18,7 @@ import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
-  <div className="flex items-center justify-center h-screen bg-gray-50">
+  <div className="flex items-center justify-center h-screen bg-background">
     <div className="flex flex-col items-center justify-center gap-4">
       <Logo width={80} height={80} className="animate-pulse" />
     </div>
@@ -44,6 +44,8 @@ export default function WorkflowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
+  const [executionLogs, setExecutionLogs] = useState<string[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Real-time workflow status updates via SSE - returns Map<nodeId, status>
   const { nodeStatuses } = useWorkflowStatusStream(
@@ -99,7 +101,18 @@ export default function WorkflowDetailPage() {
         // Update local state to reflect published status
         setWorkflow(prev => (prev ? { ...prev, status: "published" } : null));
       }
-      await runWorkflow(workflowId);
+
+      // Clear previous logs and show the panel
+      setExecutionLogs([]);
+      setShowLogs(true);
+
+      const result = await runWorkflow(workflowId);
+
+      // Update logs from the response
+      if (result.logs && result.logs.length > 0) {
+        setExecutionLogs(result.logs);
+      }
+
       // Update run count in local state
       setWorkflow(prev =>
         prev ? { ...prev, run_count: (prev.run_count || 0) + 1 } : null
@@ -107,6 +120,7 @@ export default function WorkflowDetailPage() {
       toast.success("Workflow run started successfully");
       // No need to refetch - SSE stream provides real-time updates
     } catch (error: any) {
+      setShowLogs(false);
       toast.error(error.response?.data?.error || "Failed to run workflow");
     }
   };
@@ -148,9 +162,14 @@ export default function WorkflowDetailPage() {
     router.replace(`/dashboard/workflow/${workflowId}`, { scroll: false });
   }, [router, workflowId]);
 
+  // Close the logs panel
+  const handleCloseLogs = useCallback(() => {
+    setShowLogs(false);
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center justify-center gap-4">
           <Logo width={80} height={80} className="animate-pulse" />
           <p className="text-sm text-muted-foreground animate-pulse">
@@ -162,7 +181,7 @@ export default function WorkflowDetailPage() {
   }
 
   return (
-    <div className="h-screen w-full bg-gray-50">
+    <div className="h-screen w-full bg-background">
       <WorkflowCanvas
         workflow={workflow}
         initialNodes={nodes}
@@ -177,6 +196,9 @@ export default function WorkflowDetailPage() {
         editable={workflow?.status === "draft"}
         openSettings={openSettings}
         onCloseSettings={handleCloseSettings}
+        executionLogs={executionLogs}
+        showLogs={showLogs}
+        onCloseLogs={handleCloseLogs}
       />
     </div>
   );

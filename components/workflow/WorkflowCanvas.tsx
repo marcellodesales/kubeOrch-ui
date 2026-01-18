@@ -30,16 +30,24 @@ import { useAuthStore } from "@/stores/AuthStore";
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
 import ServiceNode from "./ServiceNode";
-import { DeploymentRequest, ServiceNodeData } from "@/lib/types/nodes";
+import IngressNode from "./IngressNode";
+import {
+  DeploymentRequest,
+  ServiceNodeData,
+  IngressNodeData,
+  IngressPath,
+} from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
 import CommandPalette from "./CommandPalette";
+import { MiniLogsPanel } from "./MiniLogsPanel";
 import { Workflow } from "@/lib/services/workflow";
 import { TemplateMetadata } from "@/lib/services/templates";
 
 const nodeTypes = {
   deployment: DeploymentNode,
   service: ServiceNode,
+  ingress: IngressNode,
 };
 
 interface WorkflowCanvasProps {
@@ -56,6 +64,9 @@ interface WorkflowCanvasProps {
   editable?: boolean;
   openSettings?: boolean;
   onCloseSettings?: () => void;
+  executionLogs?: string[];
+  showLogs?: boolean;
+  onCloseLogs?: () => void;
 }
 
 function WorkflowCanvasContent({
@@ -72,6 +83,9 @@ function WorkflowCanvasContent({
   editable = true,
   openSettings = false,
   onCloseSettings,
+  executionLogs = [],
+  showLogs = false,
+  onCloseLogs,
 }: WorkflowCanvasProps) {
   const router = useRouter();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -239,6 +253,39 @@ function WorkflowCanvasContent({
           });
         }
 
+        // If this is a service node, sync linked ingresses' servicePort/serviceName in paths
+        if (updatedNode?.type === "service") {
+          const serviceData = updatedNode.data as ServiceNodeData;
+          const servicePort = serviceData.port;
+          const serviceName = serviceData.name;
+
+          // Update any ingress node paths that are linked to this service
+          return updatedNodes.map(node => {
+            if (node.type === "ingress") {
+              const ingressData = node.data as IngressNodeData;
+              // Check if any path is linked to this service
+              const hasLinkedPath = ingressData.paths?.some(
+                p => p._linkedService === nodeId
+              );
+              if (hasLinkedPath) {
+                const updatedPaths = ingressData.paths.map(p =>
+                  p._linkedService === nodeId
+                    ? { ...p, servicePort, serviceName }
+                    : p
+                );
+                return {
+                  ...node,
+                  data: {
+                    ...ingressData,
+                    paths: updatedPaths,
+                  },
+                };
+              }
+            }
+            return node;
+          });
+        }
+
         return updatedNodes;
       });
     };
@@ -269,18 +316,82 @@ function WorkflowCanvasContent({
     }
   }, [nodes, selectedNodeId, settingsPanelOpen]);
 
+  // Validate connections - only allow valid Kubernetes resource relationships
+  const isValidConnection = useCallback(
+    (connection: Connection) => {
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      const targetNode = nodes.find(n => n.id === connection.target);
+
+      if (!sourceNode || !targetNode) return false;
+
+      const sourceType = sourceNode.type;
+      const targetType = targetNode.type;
+
+      // Valid connections:
+      // 1. Deployment ↔ Service
+      // 2. Service ↔ Ingress
+      // Invalid: Deployment ↔ Ingress (must go through Service)
+
+      // Traffic flow: Ingress → Service → Deployment
+      const validPairs = [
+        ["ingress", "service"], // Ingress routes to Service
+        ["service", "deployment"], // Service routes to Deployment
+      ];
+
+      return validPairs.some(
+        ([src, tgt]) => sourceType === src && targetType === tgt
+      );
+    },
+    [nodes]
+  );
+
   const onConnect = useCallback(
     (params: Connection) => {
       // Add the edge
       setEdges(eds => addEdge(params, eds));
 
-      // Auto-populate Service targetApp when connected to Deployment
+      // Auto-populate data based on connections
+      // Flow: Ingress → Service → Deployment
       if (params.source && params.target) {
         setNodes(nds => {
           const sourceNode = nds.find(n => n.id === params.source);
           const targetNode = nds.find(n => n.id === params.target);
 
+          // Ingress (source) → Service (target)
+          // Update Ingress path with service name/port
+          if (
+            sourceNode?.type === "ingress" &&
+            targetNode?.type === "service"
+          ) {
+            const pathId = params.sourceHandle; // The path entry ID
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const serviceData = targetNode.data as ServiceNodeData;
+                const ingressData = n.data as IngressNodeData;
+                const updatedPaths = (ingressData.paths || []).map(p =>
+                  p.id === pathId
+                    ? {
+                        ...p,
+                        serviceName: serviceData.name,
+                        servicePort: serviceData.port,
+                        _linkedService: params.target,
+                      }
+                    : p
+                );
+                return {
+                  ...n,
+                  data: {
+                    ...ingressData,
+                    paths: updatedPaths,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
           // Service (source) → Deployment (target)
+          // Update Service with deployment name/port
           if (
             sourceNode?.type === "service" &&
             targetNode?.type === "deployment"
@@ -302,28 +413,6 @@ function WorkflowCanvasContent({
             });
           }
 
-          // Deployment (source) → Service (target)
-          if (
-            sourceNode?.type === "deployment" &&
-            targetNode?.type === "service"
-          ) {
-            return nds.map(n => {
-              if (n.id === params.target) {
-                const deploymentData = sourceNode.data as DeploymentRequest;
-                return {
-                  ...n,
-                  data: {
-                    ...n.data,
-                    targetApp: deploymentData.name,
-                    targetPort: deploymentData.port,
-                    _linkedDeployment: params.source,
-                  },
-                };
-              }
-              return n;
-            });
-          }
-
           return nds;
         });
       }
@@ -331,17 +420,26 @@ function WorkflowCanvasContent({
     [setEdges, setNodes]
   );
 
-  // Handle edge deletion - clear Service's targetApp when disconnected
+  // Handle edge deletion - clear linked fields when disconnected
   const onEdgesDelete = useCallback(
     (deletedEdges: Edge[]) => {
       setNodes(nds => {
         return nds.map(node => {
+          // Check if any deleted edge involves this node
+          const deletedEdgesForNode = deletedEdges.filter(
+            edge => edge.source === node.id || edge.target === node.id
+          );
+
+          if (deletedEdgesForNode.length === 0) return node;
+
+          // Clear Service's linked deployment fields
           if (node.type === "service") {
-            // Check if any deleted edge involves this service node
-            const hasDeletedConnection = deletedEdges.some(
-              edge => edge.source === node.id || edge.target === node.id
-            );
-            if (hasDeletedConnection) {
+            const hasDeploymentEdge = deletedEdgesForNode.some(edge => {
+              const otherNodeId =
+                edge.source === node.id ? edge.target : edge.source;
+              return nds.find(n => n.id === otherNodeId)?.type === "deployment";
+            });
+            if (hasDeploymentEdge) {
               return {
                 ...node,
                 data: {
@@ -353,6 +451,44 @@ function WorkflowCanvasContent({
               };
             }
           }
+
+          // Clear Ingress's linked service fields for specific paths
+          if (node.type === "ingress") {
+            const ingressData = node.data as IngressNodeData;
+            // Find which path handles were disconnected
+            const disconnectedPathIds = new Set<string>();
+            deletedEdgesForNode.forEach(edge => {
+              // targetHandle is the path ID when Service → Ingress
+              if (edge.target === node.id && edge.targetHandle) {
+                disconnectedPathIds.add(edge.targetHandle);
+              }
+              // sourceHandle is the path ID when Ingress → Service
+              if (edge.source === node.id && edge.sourceHandle) {
+                disconnectedPathIds.add(edge.sourceHandle);
+              }
+            });
+
+            if (disconnectedPathIds.size > 0 && ingressData.paths) {
+              const updatedPaths = ingressData.paths.map(p =>
+                disconnectedPathIds.has(p.id)
+                  ? {
+                      ...p,
+                      serviceName: "",
+                      servicePort: undefined,
+                      _linkedService: undefined,
+                    }
+                  : p
+              );
+              return {
+                ...node,
+                data: {
+                  ...ingressData,
+                  paths: updatedPaths,
+                },
+              };
+            }
+          }
+
           return node;
         });
       });
@@ -403,6 +539,30 @@ function WorkflowCanvasContent({
             serviceType: "ClusterIP",
             targetApp: "",
             port: 80,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "ingress") {
+        const initialPath: IngressPath = {
+          id: `path-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+          path: "/",
+          pathType: "Prefix",
+        };
+        const newNode: Node<IngressNodeData> = {
+          id: nodeIdStr,
+          type: "ingress",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `ingress-${nodeId}`,
+            namespace: "default",
+            host: "",
+            paths: [initialPath],
+            ingressClassName: "nginx",
             templateId: template.id,
           },
         };
@@ -572,6 +732,7 @@ function WorkflowCanvasContent({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onEdgesDelete={onEdgesDelete}
+        isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         fitView
         className="bg-background"
@@ -581,7 +742,7 @@ function WorkflowCanvasContent({
         <Controls />
       </ReactFlow>
 
-      {/* Title bar in top-left */}
+      {/* Top bar with title and actions */}
       <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
         <Button
           onClick={() => router.push("/dashboard/workflow")}
@@ -602,7 +763,7 @@ function WorkflowCanvasContent({
         <Button
           onClick={() => {
             setWorkflowSettingsOpen(true);
-            setSettingsPanelOpen(false); // Close node settings when opening workflow settings
+            setSettingsPanelOpen(false);
           }}
           size="sm"
           variant="ghost"
@@ -610,10 +771,11 @@ function WorkflowCanvasContent({
         >
           <Settings className="h-4 w-4" />
         </Button>
-      </div>
 
-      {/* Action buttons in top-right */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        {/* Separator */}
+        <div className="h-6 w-px bg-border" />
+
+        {/* Action buttons */}
         {editable && (
           <Button
             onClick={saveWorkflow}
@@ -678,7 +840,11 @@ function WorkflowCanvasContent({
           nodeId={selectedNodeId}
           data={selectedNodeData}
           nodeType={
-            "serviceType" in selectedNodeData ? "service" : "deployment"
+            "serviceType" in selectedNodeData
+              ? "service"
+              : "ingressClassName" in selectedNodeData
+                ? "ingress"
+                : "deployment"
           }
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}
@@ -708,8 +874,24 @@ function WorkflowCanvasContent({
             onCloseSettings?.();
           }}
           onArchive={onArchive}
+          onWorkflowRestore={(restoredNodes, restoredEdges) => {
+            // Update the canvas with restored version
+            setNodes(restoredNodes as Node[]);
+            setEdges(restoredEdges as Edge[]);
+            // Notify parent of the change
+            onNodesChangeProp?.(restoredNodes as Node[]);
+            onEdgesChangeProp?.(restoredEdges as Edge[]);
+            toast.success("Workflow restored to previous version");
+          }}
         />
       )}
+
+      {/* Mini logs panel for execution feedback */}
+      <MiniLogsPanel
+        logs={executionLogs}
+        isVisible={showLogs}
+        onClose={() => onCloseLogs?.()}
+      />
     </div>
   );
 }
