@@ -31,7 +31,7 @@ function CompareCanvasContent({ nodes, edges }: CompareCanvasProps) {
 
   // Convert workflow nodes/edges to React Flow format
   const flowNodes: Node[] = useMemo(() => {
-    return nodes.map((node) => ({
+    return nodes.map(node => ({
       id: node.id,
       type: node.type,
       position: node.position,
@@ -45,7 +45,7 @@ function CompareCanvasContent({ nodes, edges }: CompareCanvasProps) {
   }, [nodes]);
 
   const flowEdges: Edge[] = useMemo(() => {
-    return edges.map((edge) => ({
+    return edges.map(edge => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,

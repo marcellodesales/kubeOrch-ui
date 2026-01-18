@@ -37,8 +37,10 @@ export default function WorkflowComparePage() {
   // Settings panel state (centralized for both canvases)
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedNodeData, setSelectedNodeData] = useState<WorkflowNodeData | null>(null);
-  const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("deployment");
+  const [selectedNodeData, setSelectedNodeData] =
+    useState<WorkflowNodeData | null>(null);
+  const [selectedNodeType, setSelectedNodeType] =
+    useState<NodeType>("deployment");
 
   const { setSettingsOpenHandler, setEditable } = useWorkflowStore();
 
@@ -60,7 +62,7 @@ export default function WorkflowComparePage() {
 
     setSettingsOpenHandler((nodeId: string, data: any) => {
       // Find the node in either version to get its type
-      const node = allNodes.find((n) => n.id === nodeId);
+      const node = allNodes.find(n => n.id === nodeId);
       if (node) {
         setSelectedNodeId(nodeId);
         setSelectedNodeData(data);
@@ -160,10 +162,7 @@ export default function WorkflowComparePage() {
             </div>
           </div>
           <div className="flex-1">
-            <CompareCanvas
-              nodes={version1.nodes}
-              edges={version1.edges}
-            />
+            <CompareCanvas nodes={version1.nodes} edges={version1.edges} />
           </div>
         </div>
 
@@ -181,10 +180,7 @@ export default function WorkflowComparePage() {
             </div>
           </div>
           <div className="flex-1">
-            <CompareCanvas
-              nodes={version2.nodes}
-              edges={version2.edges}
-            />
+            <CompareCanvas nodes={version2.nodes} edges={version2.edges} />
           </div>
         </div>
       </div>

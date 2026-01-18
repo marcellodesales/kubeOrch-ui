@@ -18,7 +18,11 @@ import {
 interface CreateVersionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (data: { name?: string; tag?: string; description?: string }) => void;
+  onConfirm: (data: {
+    name?: string;
+    tag?: string;
+    description?: string;
+  }) => void;
   loading: boolean;
 }
 
@@ -70,7 +74,7 @@ export default function CreateVersionDialog({
                 id="version-name"
                 placeholder="e.g., Production release"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 disabled={loading}
               />
             </div>
@@ -81,7 +85,7 @@ export default function CreateVersionDialog({
                 id="version-tag"
                 placeholder="e.g., v1.0"
                 value={tag}
-                onChange={(e) => setTag(e.target.value)}
+                onChange={e => setTag(e.target.value)}
                 disabled={loading}
               />
             </div>
@@ -92,7 +96,7 @@ export default function CreateVersionDialog({
                 id="version-description"
                 placeholder="Describe what changed in this version..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
                 rows={3}
                 disabled={loading}
               />

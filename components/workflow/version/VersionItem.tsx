@@ -1,7 +1,16 @@
 "use client";
 
 import React from "react";
-import { RotateCcw, Clock, Zap, User, CheckCircle2, XCircle, Loader2, Eye } from "lucide-react";
+import {
+  RotateCcw,
+  Clock,
+  Zap,
+  User,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Eye,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { WorkflowVersion } from "@/lib/services/workflow";

@@ -36,7 +36,8 @@ export default function VersionHistory({
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<WorkflowVersion | null>(null);
+  const [selectedVersion, setSelectedVersion] =
+    useState<WorkflowVersion | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const totalPages = Math.ceil(total / limit);
@@ -165,7 +166,7 @@ export default function VersionHistory({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1 || loading}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -177,7 +178,7 @@ export default function VersionHistory({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages || loading}
           >
             Next

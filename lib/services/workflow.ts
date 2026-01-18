@@ -194,7 +194,9 @@ export async function getWorkflowVersion(
   workflowId: string,
   version: number
 ): Promise<WorkflowVersion> {
-  const response = await api.get(`/workflows/${workflowId}/versions/${version}`);
+  const response = await api.get(
+    `/workflows/${workflowId}/versions/${version}`
+  );
   return response.data;
 }
 

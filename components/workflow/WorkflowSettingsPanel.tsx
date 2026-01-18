@@ -101,10 +101,18 @@ export default function WorkflowSettingsPanel({
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col"
+        >
           <TabsList className="mx-4 mt-2">
-            <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
-            <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1">
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1">
+              History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="flex-1 flex flex-col mt-0">
@@ -178,7 +186,9 @@ export default function WorkflowSettingsPanel({
                     <h3 className="text-sm font-medium mb-3">Run Statistics</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Successful</span>
+                        <span className="text-muted-foreground">
+                          Successful
+                        </span>
                         <span className="text-green-600">
                           {workflow.success_count || 0}
                         </span>
@@ -190,7 +200,9 @@ export default function WorkflowSettingsPanel({
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Success Rate</span>
+                        <span className="text-muted-foreground">
+                          Success Rate
+                        </span>
                         <span>
                           {workflow.run_count > 0
                             ? `${Math.round((workflow.success_count / workflow.run_count) * 100)}%`
@@ -224,7 +236,10 @@ export default function WorkflowSettingsPanel({
             </div>
           </TabsContent>
 
-          <TabsContent value="history" className="flex-1 flex flex-col mt-0 overflow-hidden">
+          <TabsContent
+            value="history"
+            className="flex-1 flex flex-col mt-0 overflow-hidden"
+          >
             <VersionHistory
               workflowId={workflow?.id}
               onRestore={onWorkflowRestore}
