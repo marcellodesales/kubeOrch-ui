@@ -74,6 +74,55 @@ export interface ServiceNodeData {
   };
 }
 
+/** Represents a single path rule in an Ingress */
+export interface IngressPath {
+  id: string;
+  path: string;
+  pathType: "Prefix" | "Exact" | "ImplementationSpecific";
+  serviceName?: string;
+  servicePort?: number;
+  /** Internal field: ID of linked service node (set when connected via edge) */
+  _linkedService?: string;
+}
+
+export interface IngressNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+
+  // Routing
+  host?: string;
+
+  // Multiple paths support
+  paths: IngressPath[];
+
+  // Ingress class
+  ingressClassName?: string;
+
+  // TLS
+  tlsEnabled?: boolean;
+  tlsSecretName?: string;
+  tlsHosts?: string[];
+
+  // Annotations for controller-specific settings
+  annotations?: Record<string, string>;
+
+  // Template reference
+  templateId?: string;
+
+  // Validation
+  hasValidationError?: boolean;
+
+  /** Runtime status fields (populated after deployment) */
+  _status?: {
+    state?: "healthy" | "pending" | "error";
+    loadBalancerIP?: string;
+    loadBalancerHostname?: string;
+    rulesCount?: number;
+    message?: string;
+  };
+}
+
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
@@ -100,6 +149,7 @@ export interface WebhookNodeData {
 export type WorkflowNodeData =
   | DeploymentNodeData
   | ServiceNodeData
+  | IngressNodeData
   | ConditionalNodeData
   | ParallelNodeData
   | WebhookNodeData;

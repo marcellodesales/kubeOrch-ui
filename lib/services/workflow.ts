@@ -29,6 +29,7 @@ export interface Workflow {
   success_count: number;
   failure_count: number;
   last_run_at?: string;
+  current_version?: number;
 }
 
 export interface CreateWorkflowRequest {
@@ -83,11 +84,18 @@ export async function saveWorkflow(
   return response.data;
 }
 
+export interface RunWorkflowResponse {
+  message: string;
+  run_id: string;
+  status: string;
+  logs: string[];
+}
+
 // Run workflow (creates version and executes)
 export async function runWorkflow(
   id: string,
   triggerData?: Record<string, any>
-) {
+): Promise<RunWorkflowResponse> {
   const response = await api.post(`/workflows/${id}/run`, {
     trigger_data: triggerData || {},
   });
@@ -119,4 +127,118 @@ export async function updateWorkflowStatus(
 export async function getWorkflowRuns(id: string, limit: number = 10) {
   const response = await api.get(`/workflows/${id}/runs?limit=${limit}`);
   return response.data.runs || [];
+}
+
+// Version types
+export interface WorkflowVersion {
+  id: string;
+  workflow_id: string;
+  version: number;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  name?: string;
+  tag?: string;
+  description: string;
+  created_at: string;
+  created_by: string;
+  restored_from?: number;
+  is_automatic: boolean;
+  run_id?: string;
+  run_status?: "running" | "completed" | "failed";
+}
+
+export interface VersionsResponse {
+  versions: WorkflowVersion[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface NodeDiff {
+  node_id: string;
+  type: string;
+  old_data?: Record<string, any>;
+  new_data?: Record<string, any>;
+}
+
+export interface EdgeDiff {
+  edge_id: string;
+  source: string;
+  target: string;
+}
+
+export interface VersionDiff {
+  from_version: number;
+  to_version: number;
+  added_nodes: NodeDiff[];
+  removed_nodes: NodeDiff[];
+  modified_nodes: NodeDiff[];
+  added_edges: EdgeDiff[];
+  removed_edges: EdgeDiff[];
+}
+
+// Get workflow versions with pagination
+export async function getWorkflowVersions(
+  workflowId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<VersionsResponse> {
+  const response = await api.get(
+    `/workflows/${workflowId}/versions?page=${page}&limit=${limit}`
+  );
+  return response.data;
+}
+
+// Get a specific version
+export async function getWorkflowVersion(
+  workflowId: string,
+  version: number
+): Promise<WorkflowVersion> {
+  const response = await api.get(`/workflows/${workflowId}/versions/${version}`);
+  return response.data;
+}
+
+// Create a manual version
+export async function createWorkflowVersion(
+  workflowId: string,
+  data: { name?: string; tag?: string; description?: string }
+): Promise<{ message: string; version: WorkflowVersion }> {
+  const response = await api.post(`/workflows/${workflowId}/versions`, data);
+  return response.data;
+}
+
+// Update version metadata
+export async function updateWorkflowVersion(
+  workflowId: string,
+  version: number,
+  data: { name?: string; tag?: string; description?: string }
+): Promise<{ message: string; version: WorkflowVersion }> {
+  const response = await api.put(
+    `/workflows/${workflowId}/versions/${version}`,
+    data
+  );
+  return response.data;
+}
+
+// Restore a previous version
+export async function restoreWorkflowVersion(
+  workflowId: string,
+  version: number
+): Promise<{ message: string; version: WorkflowVersion; workflow: Workflow }> {
+  const response = await api.post(
+    `/workflows/${workflowId}/versions/${version}/restore`
+  );
+  return response.data;
+}
+
+// Compare two versions
+export async function compareWorkflowVersions(
+  workflowId: string,
+  v1: number,
+  v2: number
+): Promise<VersionDiff> {
+  const response = await api.get(
+    `/workflows/${workflowId}/versions/compare?v1=${v1}&v2=${v2}`
+  );
+  return response.data;
 }
