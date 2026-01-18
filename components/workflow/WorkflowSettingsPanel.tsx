@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Workflow } from "@/lib/services/workflow";
+import { Workflow, WorkflowNode, WorkflowEdge } from "@/lib/services/workflow";
+import VersionHistory from "@/components/workflow/version/VersionHistory";
 
 interface WorkflowSettingsPanelProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ interface WorkflowSettingsPanelProps {
   onClose: () => void;
   onUpdate: (workflow: Workflow) => Promise<void>;
   onArchive?: () => void;
+  onWorkflowRestore?: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
 }
 
 export default function WorkflowSettingsPanel({
@@ -33,6 +36,7 @@ export default function WorkflowSettingsPanel({
   onClose,
   onUpdate,
   onArchive,
+  onWorkflowRestore,
 }: WorkflowSettingsPanelProps) {
   const [formData, setFormData] = useState({
     name: workflow?.name || "",
@@ -40,6 +44,7 @@ export default function WorkflowSettingsPanel({
     status: workflow?.status || "draft",
   });
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("settings");
 
   useEffect(() => {
     if (workflow) {
@@ -96,120 +101,151 @@ export default function WorkflowSettingsPanel({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                className="mt-1.5"
-                value={formData.name}
-                onChange={e =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Workflow name"
-              />
-            </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col"
+        >
+          <TabsList className="mx-4 mt-2">
+            <TabsTrigger value="settings" className="flex-1">
+              Settings
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1">
+              History
+            </TabsTrigger>
+          </TabsList>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                className="mt-1.5"
-                value={formData.description}
-                onChange={e =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Describe what this workflow does..."
-                rows={4}
-              />
-            </div>
+          <TabsContent value="settings" className="flex-1 flex flex-col mt-0">
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    className="mt-1.5"
+                    value={formData.name}
+                    onChange={e =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Workflow name"
+                  />
+                </div>
 
-            <div className="pt-4 border-t">
-              <h3 className="text-sm font-medium mb-3">Metadata</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created</span>
-                  <span>
-                    {workflow?.created_at
-                      ? formatDate(workflow.created_at)
-                      : "-"}
-                  </span>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    className="mt-1.5"
+                    value={formData.description}
+                    onChange={e =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Describe what this workflow does..."
+                    rows={4}
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Updated</span>
-                  <span>
-                    {workflow?.updated_at
-                      ? formatDate(workflow.updated_at)
-                      : "-"}
-                  </span>
+
+                <div className="pt-4 border-t">
+                  <h3 className="text-sm font-medium mb-3">Metadata</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created</span>
+                      <span>
+                        {workflow?.created_at
+                          ? formatDate(workflow.created_at)
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Updated</span>
+                      <span>
+                        {workflow?.updated_at
+                          ? formatDate(workflow.updated_at)
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nodes</span>
+                      <span>{workflow?.nodes?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Runs</span>
+                      <span>{workflow?.run_count || 0}</span>
+                    </div>
+                    {workflow?.last_run_at && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Last Run</span>
+                        <span>{formatDate(workflow.last_run_at)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Nodes</span>
-                  <span>{workflow?.nodes?.length || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Runs</span>
-                  <span>{workflow?.run_count || 0}</span>
-                </div>
-                {workflow?.last_run_at && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Run</span>
-                    <span>{formatDate(workflow.last_run_at)}</span>
+
+                {workflow?.run_count > 0 && (
+                  <div className="pt-4 border-t">
+                    <h3 className="text-sm font-medium mb-3">Run Statistics</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Successful
+                        </span>
+                        <span className="text-green-600">
+                          {workflow.success_count || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Failed</span>
+                        <span className="text-red-600">
+                          {workflow.failure_count || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Success Rate
+                        </span>
+                        <span>
+                          {workflow.run_count > 0
+                            ? `${Math.round((workflow.success_count / workflow.run_count) * 100)}%`
+                            : "0%"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {workflow?.run_count > 0 && (
-              <div className="pt-4 border-t">
-                <h3 className="text-sm font-medium mb-3">Run Statistics</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Successful</span>
-                    <span className="text-green-600">
-                      {workflow.success_count || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Failed</span>
-                    <span className="text-red-600">
-                      {workflow.failure_count || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Success Rate</span>
-                    <span>
-                      {workflow.run_count > 0
-                        ? `${Math.round((workflow.success_count / workflow.run_count) * 100)}%`
-                        : "0%"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            <div className="border-t p-4 space-y-2">
+              <Button
+                onClick={handleUpdate}
+                className="w-full"
+                disabled={!formData.name}
+              >
+                Update Workflow
+              </Button>
+              {workflow?.status !== "archived" && onArchive && (
+                <Button
+                  onClick={() => setArchiveDialogOpen(true)}
+                  variant="outline"
+                  className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archive Workflow
+                </Button>
+              )}
+            </div>
+          </TabsContent>
 
-        <div className="border-t p-4 space-y-2">
-          <Button
-            onClick={handleUpdate}
-            className="w-full"
-            disabled={!formData.name}
+          <TabsContent
+            value="history"
+            className="flex-1 flex flex-col mt-0 overflow-hidden"
           >
-            Update Workflow
-          </Button>
-          {workflow?.status !== "archived" && onArchive && (
-            <Button
-              onClick={() => setArchiveDialogOpen(true)}
-              variant="outline"
-              className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Archive className="h-4 w-4 mr-2" />
-              Archive Workflow
-            </Button>
-          )}
-        </div>
+            <VersionHistory
+              workflowId={workflow?.id}
+              onRestore={onWorkflowRestore}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Archive Confirmation Dialog */}

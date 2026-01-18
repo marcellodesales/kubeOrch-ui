@@ -1,8 +1,25 @@
 import React, { memo, useCallback } from "react";
-import { NodeProps as ReactFlowNodeProps } from "reactflow";
-import Node, { NodeField } from "./Node";
+import { Handle, Position, NodeProps as ReactFlowNodeProps } from "reactflow";
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import { ServiceNodeData } from "@/lib/types/nodes";
+import {
+  CompactCard,
+  CompactCardContent,
+  CompactCardHeader,
+  CompactCardTitle,
+} from "@/components/ui/compact-card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Settings } from "lucide-react";
+import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export type { ServiceNodeData };
 
@@ -12,22 +29,10 @@ const ServiceNode = memo(
 
     const handleUpdate = useCallback(
       (field: string, value: string | number | boolean) => {
-        const paths = field.split(".");
-        const updatedData = { ...data } as ServiceNodeData;
-        let current: Record<string, unknown> = updatedData as unknown as Record<
-          string,
-          unknown
-        >;
-
-        for (let i = 0; i < paths.length - 1; i++) {
-          if (!current[paths[i]]) {
-            current[paths[i]] = {};
-          }
-          current = current[paths[i]] as Record<string, unknown>;
-        }
-
-        current[paths[paths.length - 1]] = value;
-        updateNodeData(id, updatedData as unknown as WorkflowNodeData);
+        updateNodeData(id, {
+          ...data,
+          [field]: value,
+        } as unknown as WorkflowNodeData);
       },
       [data, id, updateNodeData]
     );
@@ -37,63 +42,135 @@ const ServiceNode = memo(
     }, [id, data, openNodeSettings]);
 
     // Check if Service is linked to a Deployment via edge
-    const isLinked = !!data._linkedDeployment;
+    const isLinkedToDeployment = !!data._linkedDeployment;
 
-    const fields: NodeField[] = [
-      // Only show targetApp field if not linked via edge
-      ...(!isLinked
-        ? [
-            {
-              id: `targetApp-${id}`,
-              label: "Target App",
-              type: "text" as const,
-              value: data.targetApp || "",
-              placeholder: "my-app",
-              hasError: data.hasValidationError && !data.targetApp,
-              onChange: (value: string | number | boolean) =>
-                handleUpdate("targetApp", value),
-            },
-          ]
-        : []),
-      {
-        id: `group-${id}`,
-        label: "",
-        type: "group",
-        fields: [
-          {
-            id: `serviceType-${id}`,
-            label: "Type",
-            type: "select",
-            value: data.serviceType || "ClusterIP",
-            options: [
-              { value: "ClusterIP", label: "ClusterIP" },
-              { value: "NodePort", label: "NodePort" },
-              { value: "LoadBalancer", label: "LB" },
-            ],
-            onChange: value => handleUpdate("serviceType", value),
-          },
-          {
-            id: `port-${id}`,
-            label: "Port",
-            type: "number",
-            value: data.port ?? 80,
-            placeholder: "80",
-            min: 1,
-            max: 65535,
-            required: false,
-            onChange: value => handleUpdate("port", value),
-          },
-        ],
-      },
-    ];
+    const cardContent = (
+      <CompactCard className="w-[280px] shadow-md border relative">
+        <CompactCardHeader className="flex flex-row items-center justify-between relative">
+          {/* Left connector - receives from Ingress */}
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="input"
+            className="w-2 h-2 absolute"
+            style={{
+              background: "var(--handle-color)",
+              left: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+
+          {/* Right connector - outputs to Deployment */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            className="w-2 h-2 absolute"
+            style={{
+              background: isLinkedToDeployment
+                ? "var(--primary)"
+                : "var(--handle-color)",
+              right: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 10,
+            }}
+          />
+
+          <CompactCardTitle>Service</CompactCardTitle>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-5 w-5 p-0"
+            onClick={openSettings}
+          >
+            <Settings className="h-3 w-3" />
+          </Button>
+        </CompactCardHeader>
+
+        <CompactCardContent className="space-y-2">
+          {/* Target App field - completely hidden when linked via edge */}
+          {!isLinkedToDeployment && (
+            <div className="space-y-1">
+              <Label
+                htmlFor={`targetApp-${id}`}
+                className="text-[10px] text-muted-foreground"
+              >
+                Target App
+              </Label>
+              <Input
+                id={`targetApp-${id}`}
+                value={data.targetApp || ""}
+                placeholder="my-app"
+                onChange={e => handleUpdate("targetApp", e.target.value)}
+                disabled={!editable}
+                className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
+                  data.hasValidationError && !data.targetApp
+                    ? "border-red-500"
+                    : ""
+                }`}
+              />
+            </div>
+          )}
+
+          {/* Type and Port in a row */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label
+                htmlFor={`serviceType-${id}`}
+                className="text-[10px] text-muted-foreground"
+              >
+                Type
+              </Label>
+              <Select
+                value={data.serviceType || "ClusterIP"}
+                onValueChange={value => handleUpdate("serviceType", value)}
+                disabled={!editable}
+              >
+                <SelectTrigger
+                  className="!h-7 w-full min-w-0 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0"
+                  disabled={!editable}
+                >
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ClusterIP">ClusterIP</SelectItem>
+                  <SelectItem value="NodePort">NodePort</SelectItem>
+                  <SelectItem value="LoadBalancer">LB</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label
+                htmlFor={`port-${id}`}
+                className="text-[10px] text-muted-foreground"
+              >
+                Port
+              </Label>
+              <Input
+                id={`port-${id}`}
+                type="number"
+                min={1}
+                max={65535}
+                value={data.port ?? 80}
+                placeholder="80"
+                onChange={e => handleUpdate("port", parseInt(e.target.value))}
+                disabled={!editable}
+                className="h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0"
+              />
+            </div>
+          </div>
+        </CompactCardContent>
+      </CompactCard>
+    );
 
     return (
-      <Node
-        title="Service"
-        fields={fields}
-        onSettingsClick={openSettings}
-        disabled={!editable}
-      />
+      <DisabledInputWrapper disabled={!editable}>
+        {cardContent}
+      </DisabledInputWrapper>
     );
   }
 );

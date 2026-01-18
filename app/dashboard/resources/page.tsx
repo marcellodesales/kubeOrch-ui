@@ -52,6 +52,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
+import { useResourcesStore } from "@/stores/ResourcesStore";
 
 interface Resource {
   id: string;
@@ -162,7 +163,9 @@ export default function ResourcesPage() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [hideSystemResources, setHideSystemResources] = useState(true);
+
+  // Use persisted store for hide system resources preference
+  const { hideSystemResources, setHideSystemResources } = useResourcesStore();
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -226,9 +229,21 @@ export default function ResourcesPage() {
     fetchResources(true); // Sync when manually refreshing
   };
 
-  // System namespaces to filter out
+  // System namespaces to filter out (infrastructure namespaces)
   const systemNamespaces = useMemo(
-    () => ["kube-system", "kube-public", "kube-node-lease", "kube-flannel"],
+    () => [
+      "kube-system",
+      "kube-public",
+      "kube-node-lease",
+      "kube-flannel",
+      "ingress-nginx",
+      "kubernetes-dashboard",
+      "metallb-system",
+      "cert-manager",
+      "monitoring",
+      "istio-system",
+      "linkerd",
+    ],
     []
   );
 
@@ -266,6 +281,17 @@ export default function ResourcesPage() {
         if (resource.type === "Service" && resource.name === "kubernetes") {
           return false;
         }
+        // Hide Node resources (cluster infrastructure)
+        if (resource.type === "Node") {
+          return false;
+        }
+        // Hide system Namespace resources
+        if (
+          resource.type === "Namespace" &&
+          systemNamespaces.includes(resource.name)
+        ) {
+          return false;
+        }
       }
 
       const matchesSearch =
@@ -278,26 +304,32 @@ export default function ResourcesPage() {
     });
   }, [resources, hideSystemResources, searchQuery, systemNamespaces]);
 
-  // Group resources by type for statistics
+  // Group resources by type for statistics (uses filtered resources)
   const resourceStats = useMemo(() => {
-    return resources.reduce(
+    return filteredResources.reduce(
       (acc, resource) => {
         acc[resource.type] = (acc[resource.type] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>
     );
-  }, [resources]);
+  }, [filteredResources]);
 
   const statusStats = useMemo(() => {
-    return resources.reduce(
+    return filteredResources.reduce(
       (acc, resource) => {
         acc[resource.status] = (acc[resource.status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>
     );
-  }, [resources]);
+  }, [filteredResources]);
+
+  // Get unique clusters from filtered resources for statistics
+  const filteredClusters = useMemo(
+    () => [...new Set(filteredResources.map(r => r.clusterName))],
+    [filteredResources]
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -573,8 +605,8 @@ export default function ResourcesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                {clusters.map(cluster => {
-                  const count = resources.filter(
+                {filteredClusters.map(cluster => {
+                  const count = filteredResources.filter(
                     r => r.clusterName === cluster
                   ).length;
                   return (

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { usePanelStore } from "./PanelStore";
 import { useSidebarStore } from "./SidebarStore";
+import { useResourcesStore } from "./ResourcesStore";
 
 type User = {
   id: string;
@@ -50,6 +51,9 @@ export const useAuthStore = create<AuthStore>()(
 
         // Clear sidebar folder states
         useSidebarStore.getState().clearSidebarState();
+
+        // Clear resources preferences
+        useResourcesStore.getState().clearResourcesState();
       },
       isTokenExpired: () => {
         const state = get();
