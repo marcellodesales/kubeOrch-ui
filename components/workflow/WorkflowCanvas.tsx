@@ -840,11 +840,10 @@ function WorkflowCanvasContent({
           nodeId={selectedNodeId}
           data={selectedNodeData}
           nodeType={
-            "serviceType" in selectedNodeData
-              ? "service"
-              : "ingressClassName" in selectedNodeData
-                ? "ingress"
-                : "deployment"
+            (nodes.find(n => n.id === selectedNodeId)?.type as
+              | "deployment"
+              | "service"
+              | "ingress") || "deployment"
           }
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}

@@ -126,6 +126,7 @@ export interface IngressNodeData {
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
+  name: string;
   condition: string;
   trueOutput?: string;
   falseOutput?: string;
@@ -133,12 +134,14 @@ export interface ConditionalNodeData {
 
 export interface ParallelNodeData {
   id: string;
+  name: string;
   branches: string[];
   waitForAll?: boolean;
 }
 
 export interface WebhookNodeData {
   id: string;
+  name: string;
   url: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
   headers?: Record<string, string>;

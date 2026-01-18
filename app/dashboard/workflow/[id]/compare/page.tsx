@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import CompareCanvas from "@/components/workflow/CompareCanvas";
 import NodeSettingsPanel from "@/components/workflow/NodeSettingsPanel";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
+import type { WorkflowNodeData } from "@/lib/types/nodes";
 
 type NodeType = "deployment" | "service" | "ingress";
 
@@ -36,7 +37,7 @@ export default function WorkflowComparePage() {
   // Settings panel state (centralized for both canvases)
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedNodeData, setSelectedNodeData] = useState<any>(null);
+  const [selectedNodeData, setSelectedNodeData] = useState<WorkflowNodeData | null>(null);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>("deployment");
 
   const { setSettingsOpenHandler, setEditable } = useWorkflowStore();
@@ -93,7 +94,8 @@ export default function WorkflowComparePage() {
         setWorkflow(workflowData);
         setVersion1(ver1Data);
         setVersion2(ver2Data);
-      } catch {
+      } catch (error) {
+        console.error("Failed to load versions for comparison:", error);
         toast.error("Failed to load versions");
         router.push(`/dashboard/workflow/${workflowId}`);
       } finally {

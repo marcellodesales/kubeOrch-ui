@@ -1,9 +1,12 @@
 import { create } from "zustand";
-import { DeploymentNodeData } from "@/lib/types/nodes";
+import {
+  DeploymentNodeData,
+  WorkflowNodeData as WorkflowNodeDataType,
+} from "@/lib/types/nodes";
 
 // Re-export types for convenience
 export type { DeploymentNodeData };
-export type WorkflowNodeData = DeploymentNodeData;
+export type WorkflowNodeData = WorkflowNodeDataType;
 export type DeploymentRequest = DeploymentNodeData;
 
 interface WorkflowState {

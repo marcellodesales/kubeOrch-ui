@@ -29,7 +29,7 @@ export function MiniLogsPanel({
   const [displayedLogs, setDisplayedLogs] = useState<LogLine[]>([]);
   const logIdRef = useRef(0);
   const processedLogsRef = useRef(0);
-  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset auto-close timer whenever new logs arrive
   const resetAutoCloseTimer = () => {
