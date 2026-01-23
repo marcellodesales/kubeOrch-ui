@@ -13,8 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NodeSettingsConfig } from "../NodeSettingsPanel";
-import { SecretNodeData } from "@/lib/types/nodes";
+import { SecretNodeData, SecretKeyEntry } from "@/lib/types/nodes";
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
+
+// Generate a stable unique ID for a key entry
+const generateKeyId = () =>
+  `key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Status renderer for Secret nodes
 function SecretStatus({ data }: { data: SecretNodeData }) {
@@ -78,7 +82,6 @@ function SecretKeysEditor({
     updateNodeData,
     secretValues: allSecretValues,
     setSecretValue,
-    renameSecretKey,
     removeSecretKey,
   } = useWorkflowStore();
   const keys = useMemo(() => data.keys || [], [data.keys]);
@@ -87,53 +90,56 @@ function SecretKeysEditor({
   const secretValues = allSecretValues[nodeId] || {};
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
 
-  const handleKeyChange = useCallback(
-    (oldKey: string, newKey: string) => {
-      if (oldKey === newKey) return;
-      const newKeys = keys.map(k => (k === oldKey ? newKey : k));
+  const handleKeyNameChange = useCallback(
+    (entryId: string, newName: string) => {
+      const newKeys = keys.map(entry =>
+        entry.id === entryId ? { ...entry, name: newName } : entry
+      );
       updateNodeData(nodeId, {
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      // Update secret values in store
-      renameSecretKey(nodeId, oldKey, newKey);
+      // No need to rename in store since we key by entry.id, not name
     },
-    [data, keys, nodeId, updateNodeData, renameSecretKey]
+    [data, keys, nodeId, updateNodeData]
   );
 
   const handleValueChange = useCallback(
-    (key: string, value: string) => {
-      setSecretValue(nodeId, key, value);
+    (entryId: string, value: string) => {
+      setSecretValue(nodeId, entryId, value);
     },
     [nodeId, setSecretValue]
   );
 
   const handleAddKey = useCallback(() => {
-    // Generate a unique temporary key to avoid collisions
-    const tempKey = `_new_${Date.now()}`;
+    const newEntry: SecretKeyEntry = {
+      id: generateKeyId(),
+      name: "", // Start with empty name
+    };
     updateNodeData(nodeId, {
       ...data,
-      keys: [...keys, tempKey],
+      keys: [...keys, newEntry],
     } as unknown as WorkflowNodeData);
-    setSecretValue(nodeId, tempKey, "");
+    // Initialize empty value in store (keyed by entry.id)
+    setSecretValue(nodeId, newEntry.id, "");
   }, [data, keys, nodeId, updateNodeData, setSecretValue]);
 
   const handleRemoveKey = useCallback(
-    (key: string) => {
+    (entryId: string) => {
       // Prevent removing the last key - must have at least 1
       if (keys.length <= 1) return;
-      const newKeys = keys.filter(k => k !== key);
+      const newKeys = keys.filter(entry => entry.id !== entryId);
       updateNodeData(nodeId, {
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      removeSecretKey(nodeId, key);
+      removeSecretKey(nodeId, entryId);
     },
     [data, keys, nodeId, updateNodeData, removeSecretKey]
   );
 
-  const toggleShowValue = useCallback((key: string) => {
-    setShowValues(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleShowValue = useCallback((entryId: string) => {
+    setShowValues(prev => ({ ...prev, [entryId]: !prev[entryId] }));
   }, []);
 
   return (
@@ -165,16 +171,16 @@ function SecretKeysEditor({
             No secret keys. Click &quot;Add Key&quot; to create one.
           </div>
         ) : (
-          keys.map((key, index) => (
-            <div key={index} className="p-3 border rounded-md space-y-2">
+          keys.map(entry => (
+            <div key={entry.id} className="p-3 border rounded-md space-y-2">
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground w-12">
                   Key
                 </Label>
                 <Input
-                  value={key.startsWith("_new_") ? "" : key}
+                  value={entry.name}
                   placeholder="SECRET_KEY"
-                  onChange={e => handleKeyChange(key, e.target.value)}
+                  onChange={e => handleKeyNameChange(entry.id, e.target.value)}
                   disabled={!editable}
                   className="h-8 text-sm font-mono"
                 />
@@ -183,7 +189,7 @@ function SecretKeysEditor({
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 shrink-0"
-                    onClick={() => handleRemoveKey(key)}
+                    onClick={() => handleRemoveKey(entry.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -195,10 +201,10 @@ function SecretKeysEditor({
                 </Label>
                 <div className="flex-1 relative">
                   <Input
-                    type={showValues[key] ? "text" : "password"}
-                    value={secretValues[key] || ""}
+                    type={showValues[entry.id] ? "text" : "password"}
+                    value={secretValues[entry.id] || ""}
                     placeholder="Enter secret value..."
-                    onChange={e => handleValueChange(key, e.target.value)}
+                    onChange={e => handleValueChange(entry.id, e.target.value)}
                     disabled={!editable}
                     className="h-8 text-sm font-mono pr-10"
                   />
@@ -207,9 +213,9 @@ function SecretKeysEditor({
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6 absolute right-1 top-1"
-                    onClick={() => toggleShowValue(key)}
+                    onClick={() => toggleShowValue(entry.id)}
                   >
-                    {showValues[key] ? (
+                    {showValues[entry.id] ? (
                       <EyeOff className="h-3 w-3" />
                     ) : (
                       <Eye className="h-3 w-3" />

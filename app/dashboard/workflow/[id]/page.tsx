@@ -16,6 +16,7 @@ import {
 import { Logo } from "@/components/ui/logo";
 import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
+import { SecretKeyEntry } from "@/lib/types/nodes";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
@@ -108,7 +109,23 @@ export default function WorkflowDetailPage() {
       setShowLogs(true);
 
       // Collect secret values from store (pass-through to K8s, not stored in DB)
-      const secretValues = useWorkflowStore.getState().getSecretValues();
+      // Transform from { nodeId: { entryId: value } } to { nodeId: { keyName: value } }
+      const rawSecretValues = useWorkflowStore.getState().getSecretValues();
+      const secretValues: Record<string, Record<string, string>> = {};
+
+      for (const nodeId of Object.keys(rawSecretValues)) {
+        const node = nodes.find(n => n.id === nodeId);
+        if (node?.type === "secret" && node.data?.keys) {
+          const keyEntries = node.data.keys as SecretKeyEntry[];
+          secretValues[nodeId] = {};
+          for (const entry of keyEntries) {
+            const value = rawSecretValues[nodeId][entry.id];
+            if (entry.name && value !== undefined) {
+              secretValues[nodeId][entry.name] = value;
+            }
+          }
+        }
+      }
 
       const result = await runWorkflow(workflowId, { secrets: secretValues });
 
