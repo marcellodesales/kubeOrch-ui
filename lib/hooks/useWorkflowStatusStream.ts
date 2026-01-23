@@ -257,7 +257,7 @@ export function useWorkflowStatusStream(
         }, RECONNECT_DELAY_MS);
       }
     }
-  }, [enabled, workflowId, cleanup]);
+  }, [enabled, workflowId]);
 
   const reconnect = useCallback(() => {
     cleanup();

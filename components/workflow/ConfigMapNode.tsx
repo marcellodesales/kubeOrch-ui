@@ -24,16 +24,6 @@ const ConfigMapNode = memo(
     const configData = useMemo(() => data.data || {}, [data.data]);
     const entries = Object.entries(configData);
 
-    const handleNameChange = useCallback(
-      (value: string) => {
-        updateNodeData(id, {
-          ...data,
-          name: value,
-        } as unknown as WorkflowNodeData);
-      },
-      [data, id, updateNodeData]
-    );
-
     const handleKeyChange = useCallback(
       (oldKey: string, newKey: string) => {
         if (oldKey === newKey) return;

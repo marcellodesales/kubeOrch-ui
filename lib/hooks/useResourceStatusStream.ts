@@ -236,7 +236,7 @@ export function useResourceStatusStream(
         }, RECONNECT_DELAY_MS);
       }
     }
-  }, [enabled, resourceId, cleanup]);
+  }, [enabled, resourceId]);
 
   const reconnect = useCallback(() => {
     cleanup();
