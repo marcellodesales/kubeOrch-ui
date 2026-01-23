@@ -155,6 +155,12 @@ export interface ConfigMapNodeData {
   };
 }
 
+/** Secret key entry with stable ID for React reconciliation */
+export interface SecretKeyEntry {
+  id: string; // Stable unique ID (doesn't change when name is edited)
+  name: string; // The actual key name
+}
+
 /** Secret node data - stores only metadata, values are pass-through to K8s */
 export interface SecretNodeData {
   id: string;
@@ -166,7 +172,7 @@ export interface SecretNodeData {
     | "kubernetes.io/tls"
     | "kubernetes.io/dockerconfigjson";
   /** Only key names are stored in MongoDB (NO values for security) */
-  keys: string[];
+  keys: SecretKeyEntry[];
   /** Mount path in containers (default: /etc/secrets) */
   mountPath?: string;
   templateId?: string;

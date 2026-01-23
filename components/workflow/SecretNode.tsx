@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import { Handle, Position, NodeProps as ReactFlowNodeProps } from "reactflow";
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
-import { SecretNodeData } from "@/lib/types/nodes";
+import { SecretNodeData, SecretKeyEntry } from "@/lib/types/nodes";
 import {
   CompactCard,
   CompactCardContent,
@@ -11,76 +11,82 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Settings, Plus, X, Lock } from "lucide-react";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export type { SecretNodeData };
 
-const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
-  const { updateNodeData, openNodeSettings, editable } = useWorkflowStore();
+// Generate a stable unique ID for a key entry
+const generateKeyId = () =>
+  `key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Local state for secret values (not stored in workflow data)
-  const [secretValues, setSecretValues] = useState<Record<string, string>>({});
+const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
+  const {
+    updateNodeData,
+    openNodeSettings,
+    editable,
+    secretValues: allSecretValues,
+    setSecretValue,
+    removeSecretKey,
+  } = useWorkflowStore();
+
+  // Get secret values for this node from store (not stored in DB)
+  const secretValues = allSecretValues[id] || {};
 
   // Keys from the workflow data - memoized to avoid dependency issues
   const keys = useMemo(() => data.keys || [], [data.keys]);
 
-  const handleNameChange = useCallback(
-    (value: string) => {
-      updateNodeData(id, {
-        ...data,
-        name: value,
-      } as unknown as WorkflowNodeData);
-    },
-    [data, id, updateNodeData]
-  );
-
   const handleAddKey = useCallback(() => {
-    const newKey = `SECRET_KEY_${keys.length + 1}`;
+    const newEntry: SecretKeyEntry = {
+      id: generateKeyId(),
+      name: "", // Start with empty name
+    };
     updateNodeData(id, {
       ...data,
-      keys: [...keys, newKey],
+      keys: [...keys, newEntry],
     } as unknown as WorkflowNodeData);
-    setSecretValues(prev => ({ ...prev, [newKey]: "" }));
-  }, [data, id, keys, updateNodeData]);
+    // Initialize empty value in store (keyed by entry.id)
+    setSecretValue(id, newEntry.id, "");
+  }, [data, id, keys, updateNodeData, setSecretValue]);
 
-  const handleKeyChange = useCallback(
-    (oldKey: string, newKey: string) => {
-      if (oldKey === newKey) return;
-      const newKeys = keys.map(k => (k === oldKey ? newKey : k));
+  const handleKeyNameChange = useCallback(
+    (entryId: string, newName: string) => {
+      const newKeys = keys.map(entry =>
+        entry.id === entryId ? { ...entry, name: newName } : entry
+      );
       updateNodeData(id, {
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      // Update local values
-      setSecretValues(prev => {
-        const newValues = { ...prev };
-        newValues[newKey] = newValues[oldKey] || "";
-        delete newValues[oldKey];
-        return newValues;
-      });
+      // No need to rename in store since we key by entry.id, not name
     },
     [data, id, keys, updateNodeData]
   );
 
-  const handleValueChange = useCallback((key: string, value: string) => {
-    setSecretValues(prev => ({ ...prev, [key]: value }));
-  }, []);
+  const handleValueChange = useCallback(
+    (entryId: string, value: string) => {
+      setSecretValue(id, entryId, value);
+    },
+    [id, setSecretValue]
+  );
 
   const handleRemoveKey = useCallback(
-    (key: string) => {
-      const newKeys = keys.filter(k => k !== key);
+    (entryId: string) => {
+      // Prevent removing the last key - must have at least 1
+      if (keys.length <= 1) return;
+      const newKeys = keys.filter(entry => entry.id !== entryId);
       updateNodeData(id, {
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      setSecretValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[key];
-        return newValues;
-      });
+      removeSecretKey(id, entryId);
     },
-    [data, id, keys, updateNodeData]
+    [data, id, keys, updateNodeData, removeSecretKey]
   );
 
   const openSettings = useCallback(() => {
@@ -106,7 +112,14 @@ const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
         />
 
         <div className="flex items-center gap-1">
-          <Lock className="h-3 w-3 text-muted-foreground" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Lock className="h-3 w-3 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[200px]">
+              Values are sent directly to K8s. Only key names are stored.
+            </TooltipContent>
+          </Tooltip>
           <CompactCardTitle>Secret</CompactCardTitle>
         </div>
 
@@ -121,26 +134,6 @@ const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
       </CompactCardHeader>
 
       <CompactCardContent className="space-y-2">
-        {/* Name field */}
-        <div className="space-y-1">
-          <Label
-            htmlFor={`name-${id}`}
-            className="text-[10px] text-muted-foreground"
-          >
-            Name
-          </Label>
-          <Input
-            id={`name-${id}`}
-            value={data.name || ""}
-            placeholder="app-secrets"
-            onChange={e => handleNameChange(e.target.value)}
-            disabled={!editable}
-            className={`h-7 text-sm rounded-sm py-1 focus:ring-1 focus:ring-offset-0 ${
-              data.hasValidationError && !data.name ? "border-red-500" : ""
-            }`}
-          />
-        </div>
-
         {/* Secret key entries */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
@@ -163,29 +156,31 @@ const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
                 No keys. Click + to add.
               </p>
             ) : (
-              keys.map(key => (
-                <div key={key} className="flex items-center gap-1">
+              keys.map(entry => (
+                <div key={entry.id} className="flex items-center gap-1">
                   <Input
-                    value={key}
+                    value={entry.name}
                     placeholder="KEY"
-                    onChange={e => handleKeyChange(key, e.target.value)}
+                    onChange={e =>
+                      handleKeyNameChange(entry.id, e.target.value)
+                    }
                     disabled={!editable}
-                    className="h-6 text-xs rounded-sm py-0.5 w-24 flex-shrink-0"
+                    className="h-6 text-xs rounded-sm py-0.5 w-24 flex-shrink-0 leading-normal focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   <Input
                     type="password"
-                    value={secretValues[key] || ""}
+                    value={secretValues[entry.id] || ""}
                     placeholder="value"
-                    onChange={e => handleValueChange(key, e.target.value)}
+                    onChange={e => handleValueChange(entry.id, e.target.value)}
                     disabled={!editable}
-                    className="h-6 text-xs rounded-sm py-0.5 flex-1"
+                    className="h-6 text-xs rounded-sm py-0.5 flex-1 leading-normal focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
-                  {editable && (
+                  {editable && keys.length > 1 && (
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-5 w-5 p-0 shrink-0"
-                      onClick={() => handleRemoveKey(key)}
+                      onClick={() => handleRemoveKey(entry.id)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -194,11 +189,6 @@ const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
               ))
             )}
           </div>
-        </div>
-
-        {/* Info note */}
-        <div className="text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
-          Values are sent directly to K8s. Only key names are stored.
         </div>
       </CompactCardContent>
     </CompactCard>
