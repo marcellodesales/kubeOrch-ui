@@ -15,6 +15,7 @@ import {
 } from "@/lib/services/workflow";
 import { Logo } from "@/components/ui/logo";
 import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
+import { useWorkflowStore } from "@/stores/WorkflowStore";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
@@ -106,7 +107,10 @@ export default function WorkflowDetailPage() {
       setExecutionLogs([]);
       setShowLogs(true);
 
-      const result = await runWorkflow(workflowId);
+      // Collect secret values from store (pass-through to K8s, not stored in DB)
+      const secretValues = useWorkflowStore.getState().getSecretValues();
+
+      const result = await runWorkflow(workflowId, { secrets: secretValues });
 
       // Update logs from the response
       if (result.logs && result.logs.length > 0) {

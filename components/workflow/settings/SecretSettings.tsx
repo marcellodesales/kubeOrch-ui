@@ -74,11 +74,17 @@ function SecretKeysEditor({
   nodeId: string;
   editable: boolean;
 }) {
-  const { updateNodeData } = useWorkflowStore();
+  const {
+    updateNodeData,
+    secretValues: allSecretValues,
+    setSecretValue,
+    renameSecretKey,
+    removeSecretKey,
+  } = useWorkflowStore();
   const keys = useMemo(() => data.keys || [], [data.keys]);
 
-  // Local state for secret values (not stored in workflow)
-  const [secretValues, setSecretValues] = useState<Record<string, string>>({});
+  // Get secret values for this node from store (not stored in DB)
+  const secretValues = allSecretValues[nodeId] || {};
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
 
   const handleKeyChange = useCallback(
@@ -89,44 +95,41 @@ function SecretKeysEditor({
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      // Update local values
-      setSecretValues(prev => {
-        const newValues = { ...prev };
-        newValues[newKey] = newValues[oldKey] || "";
-        delete newValues[oldKey];
-        return newValues;
-      });
+      // Update secret values in store
+      renameSecretKey(nodeId, oldKey, newKey);
     },
-    [data, keys, nodeId, updateNodeData]
+    [data, keys, nodeId, updateNodeData, renameSecretKey]
   );
 
-  const handleValueChange = useCallback((key: string, value: string) => {
-    setSecretValues(prev => ({ ...prev, [key]: value }));
-  }, []);
+  const handleValueChange = useCallback(
+    (key: string, value: string) => {
+      setSecretValue(nodeId, key, value);
+    },
+    [nodeId, setSecretValue]
+  );
 
   const handleAddKey = useCallback(() => {
-    const newKey = `SECRET_KEY_${keys.length + 1}`;
+    // Generate a unique temporary key to avoid collisions
+    const tempKey = `_new_${Date.now()}`;
     updateNodeData(nodeId, {
       ...data,
-      keys: [...keys, newKey],
+      keys: [...keys, tempKey],
     } as unknown as WorkflowNodeData);
-    setSecretValues(prev => ({ ...prev, [newKey]: "" }));
-  }, [data, keys, nodeId, updateNodeData]);
+    setSecretValue(nodeId, tempKey, "");
+  }, [data, keys, nodeId, updateNodeData, setSecretValue]);
 
   const handleRemoveKey = useCallback(
     (key: string) => {
+      // Prevent removing the last key - must have at least 1
+      if (keys.length <= 1) return;
       const newKeys = keys.filter(k => k !== key);
       updateNodeData(nodeId, {
         ...data,
         keys: newKeys,
       } as unknown as WorkflowNodeData);
-      setSecretValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[key];
-        return newValues;
-      });
+      removeSecretKey(nodeId, key);
     },
-    [data, keys, nodeId, updateNodeData]
+    [data, keys, nodeId, updateNodeData, removeSecretKey]
   );
 
   const toggleShowValue = useCallback((key: string) => {
@@ -162,20 +165,20 @@ function SecretKeysEditor({
             No secret keys. Click &quot;Add Key&quot; to create one.
           </div>
         ) : (
-          keys.map(key => (
-            <div key={key} className="p-3 border rounded-md space-y-2">
+          keys.map((key, index) => (
+            <div key={index} className="p-3 border rounded-md space-y-2">
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground w-12">
                   Key
                 </Label>
                 <Input
-                  value={key}
+                  value={key.startsWith("_new_") ? "" : key}
                   placeholder="SECRET_KEY"
                   onChange={e => handleKeyChange(key, e.target.value)}
                   disabled={!editable}
                   className="h-8 text-sm font-mono"
                 />
-                {editable && (
+                {editable && keys.length > 1 && (
                   <Button
                     size="icon"
                     variant="ghost"

@@ -755,7 +755,7 @@ function WorkflowCanvasContent({
             name: `secret-${nodeId}`,
             namespace: "default",
             secretType: "Opaque",
-            keys: [],
+            keys: [`_new_${Date.now()}`],
             mountPath: "/etc/secrets",
             templateId: template.id,
           },
