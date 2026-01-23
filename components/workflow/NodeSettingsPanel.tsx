@@ -17,6 +17,8 @@ import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 import { deploymentSettingsConfig } from "./settings/DeploymentSettings";
 import { serviceSettingsConfig } from "./settings/ServiceSettings";
 import { ingressSettingsConfig } from "./settings/IngressSettings";
+import { configMapSettingsConfig } from "./settings/ConfigMapSettings";
+import { secretSettingsConfig } from "./settings/SecretSettings";
 import { usePanelStore } from "@/stores/PanelStore";
 import { ResizablePanel } from "@/components/ui/ResizablePanel";
 
@@ -56,7 +58,7 @@ interface NodeSettingsPanelProps {
   isOpen: boolean;
   nodeId: string | null;
   data: WorkflowNodeData | null;
-  nodeType: "deployment" | "service" | "ingress";
+  nodeType: "deployment" | "service" | "ingress" | "configmap" | "secret";
   onClose: () => void;
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
@@ -108,7 +110,11 @@ export default function NodeSettingsPanel({
       ? deploymentSettingsConfig
       : nodeType === "service"
         ? serviceSettingsConfig
-        : ingressSettingsConfig;
+        : nodeType === "ingress"
+          ? ingressSettingsConfig
+          : nodeType === "configmap"
+            ? configMapSettingsConfig
+            : secretSettingsConfig;
 
   const handleFieldUpdate = (
     field: string,

@@ -32,7 +32,7 @@ export function Loader({ size = "md", className, text }: LoaderProps) {
 
 export function PageLoader({ text = "Loading..." }: { text?: string }) {
   return (
-    <div className="min-h-[400px] flex items-center justify-center">
+    <div className="min-h-[400px] flex items-center justify-center bg-background">
       <Loader size="lg" text={text} />
     </div>
   );

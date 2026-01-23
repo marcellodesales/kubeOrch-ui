@@ -31,11 +31,16 @@ import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 import DeploymentNode from "./DeploymentNode";
 import ServiceNode from "./ServiceNode";
 import IngressNode from "./IngressNode";
+import ConfigMapNode from "./ConfigMapNode";
+import SecretNode from "./SecretNode";
 import {
   DeploymentRequest,
   ServiceNodeData,
   IngressNodeData,
   IngressPath,
+  ConfigMapNodeData,
+  SecretNodeData,
+  VolumeMount,
 } from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
@@ -48,6 +53,8 @@ const nodeTypes = {
   deployment: DeploymentNode,
   service: ServiceNode,
   ingress: IngressNode,
+  configmap: ConfigMapNode,
+  secret: SecretNode,
 };
 
 interface WorkflowCanvasProps {
@@ -125,14 +132,13 @@ function WorkflowCanvasContent({
   // Initialize with provided nodes and edges when they become available
   useEffect(() => {
     if (!isInitializedRef.current) {
-      if (initialNodes.length > 0 || initialEdges.length > 0) {
-        setNodes(initialNodes);
-        setEdges(initialEdges);
-        setNodeId(getNextNodeId(initialNodes));
-        setInitialSnapshot(
-          JSON.stringify({ nodes: initialNodes, edges: initialEdges })
-        );
-      }
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+      setNodeId(getNextNodeId(initialNodes));
+      // Always set initial snapshot, even for empty workflows
+      setInitialSnapshot(
+        JSON.stringify({ nodes: initialNodes, edges: initialEdges })
+      );
       // Mark as initialized even for empty workflows
       isInitializedRef.current = true;
     }
@@ -328,14 +334,19 @@ function WorkflowCanvasContent({
       const targetType = targetNode.type;
 
       // Valid connections:
-      // 1. Deployment ↔ Service
-      // 2. Service ↔ Ingress
+      // 1. Deployment ↔ Service (traffic routing)
+      // 2. Service ↔ Ingress (traffic routing)
+      // 3. ConfigMap → Deployment (config mounting)
+      // 4. Secret → Deployment (secret mounting)
       // Invalid: Deployment ↔ Ingress (must go through Service)
 
       // Traffic flow: Ingress → Service → Deployment
+      // Config flow: ConfigMap/Secret → Deployment
       const validPairs = [
         ["ingress", "service"], // Ingress routes to Service
         ["service", "deployment"], // Service routes to Deployment
+        ["configmap", "deployment"], // ConfigMap mounts to Deployment
+        ["secret", "deployment"], // Secret mounts to Deployment
       ];
 
       return validPairs.some(
@@ -406,6 +417,82 @@ function WorkflowCanvasContent({
                     targetApp: deploymentData.name,
                     targetPort: deploymentData.port,
                     _linkedDeployment: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // ConfigMap (source) → Deployment (target)
+          // Add volume mount to deployment
+          if (
+            sourceNode?.type === "configmap" &&
+            targetNode?.type === "deployment"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const configMapData = sourceNode.data as ConfigMapNodeData;
+                const deploymentData = n.data as DeploymentRequest;
+                const existingMounts = deploymentData.volumeMounts || [];
+                const existingLinked = deploymentData._linkedConfigMaps || [];
+
+                // Check if already linked
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "configMap",
+                  name: configMapData.name,
+                  mountPath: configMapData.mountPath || "/etc/config",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...deploymentData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedConfigMaps: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Secret (source) → Deployment (target)
+          // Add volume mount to deployment
+          if (
+            sourceNode?.type === "secret" &&
+            targetNode?.type === "deployment"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const secretData = sourceNode.data as SecretNodeData;
+                const deploymentData = n.data as DeploymentRequest;
+                const existingMounts = deploymentData.volumeMounts || [];
+                const existingLinked = deploymentData._linkedSecrets || [];
+
+                // Check if already linked
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "secret",
+                  name: secretData.name,
+                  mountPath: secretData.mountPath || "/etc/secrets",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...deploymentData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedSecrets: [...existingLinked, params.source!],
                   },
                 };
               }
@@ -489,6 +576,76 @@ function WorkflowCanvasContent({
             }
           }
 
+          // Clear Deployment's linked ConfigMap/Secret fields
+          if (node.type === "deployment") {
+            const deploymentData = node.data as DeploymentRequest;
+            let updated = false;
+            let newLinkedConfigMaps = deploymentData._linkedConfigMaps || [];
+            let newLinkedSecrets = deploymentData._linkedSecrets || [];
+            let newVolumeMounts = deploymentData.volumeMounts || [];
+
+            // Check for deleted ConfigMap edges
+            const deletedConfigMapIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type === "configmap"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedConfigMapIds.length > 0) {
+              newLinkedConfigMaps = newLinkedConfigMaps.filter(
+                id => !deletedConfigMapIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    m.type === "configMap" &&
+                    deletedConfigMapIds.includes(m.nodeId)
+                  )
+              );
+              updated = true;
+            }
+
+            // Check for deleted Secret edges
+            const deletedSecretIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return nds.find(n => n.id === otherNodeId)?.type === "secret";
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedSecretIds.length > 0) {
+              newLinkedSecrets = newLinkedSecrets.filter(
+                id => !deletedSecretIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(m.type === "secret" && deletedSecretIds.includes(m.nodeId))
+              );
+              updated = true;
+            }
+
+            if (updated) {
+              return {
+                ...node,
+                data: {
+                  ...deploymentData,
+                  _linkedConfigMaps: newLinkedConfigMaps,
+                  _linkedSecrets: newLinkedSecrets,
+                  volumeMounts: newVolumeMounts,
+                },
+              };
+            }
+          }
+
           return node;
         });
       });
@@ -563,6 +720,43 @@ function WorkflowCanvasContent({
             host: "",
             paths: [initialPath],
             ingressClassName: "nginx",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "configmap") {
+        const newNode: Node<ConfigMapNodeData> = {
+          id: nodeIdStr,
+          type: "configmap",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `configmap-${nodeId}`,
+            namespace: "default",
+            data: { [`_new_${Date.now()}`]: "" },
+            mountPath: "/etc/config",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "secret") {
+        const newNode: Node<SecretNodeData> = {
+          id: nodeIdStr,
+          type: "secret",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `secret-${nodeId}`,
+            namespace: "default",
+            secretType: "Opaque",
+            keys: [],
+            mountPath: "/etc/secrets",
             templateId: template.id,
           },
         };
@@ -843,7 +1037,9 @@ function WorkflowCanvasContent({
             (nodes.find(n => n.id === selectedNodeId)?.type as
               | "deployment"
               | "service"
-              | "ingress") || "deployment"
+              | "ingress"
+              | "configmap"
+              | "secret") || "deployment"
           }
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}

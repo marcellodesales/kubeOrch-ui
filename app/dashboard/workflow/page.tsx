@@ -275,7 +275,7 @@ export default function WorkflowPage() {
                         {workflow.name}
                       </CardTitle>
                       <CardDescription>
-                        {workflow.description || "No description"}
+                        {workflow.description || "\u00A0"}
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -342,22 +342,22 @@ export default function WorkflowPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-muted-foreground">
-                    {workflow.cluster_id && (
-                      <div className="flex items-center justify-between">
-                        <span>Cluster</span>
+                    <div className="flex items-center justify-between">
+                      {workflow.cluster_id && (
                         <div className="flex items-center gap-1">
+                          <span>Cluster</span>
                           <Server className="h-3 w-3" />
                           <span className="font-medium">
                             {workflow.cluster_id}
                           </span>
                         </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <span>Nodes</span>
+                        <span className="font-medium">
+                          {workflow.nodes?.length || 0}
+                        </span>
                       </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span>Nodes</span>
-                      <span className="font-medium">
-                        {workflow.nodes?.length || 0}
-                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Runs</span>
