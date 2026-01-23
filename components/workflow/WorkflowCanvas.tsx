@@ -40,6 +40,7 @@ import {
   IngressPath,
   ConfigMapNodeData,
   SecretNodeData,
+  SecretKeyEntry,
   VolumeMount,
 } from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
@@ -755,7 +756,7 @@ function WorkflowCanvasContent({
             name: `secret-${nodeId}`,
             namespace: "default",
             secretType: "Opaque",
-            keys: [`_new_${Date.now()}`],
+            keys: [{ id: `key_${Date.now()}`, name: "" }] as SecretKeyEntry[],
             mountPath: "/etc/secrets",
             templateId: template.id,
           },
