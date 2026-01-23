@@ -1,6 +1,14 @@
 // Node type definitions for workflow system
 // These match the backend's WorkflowNode.Data structure
 
+/** Volume mount configuration for ConfigMap/Secret mounting */
+export interface VolumeMount {
+  type: "configMap" | "secret";
+  name: string;
+  mountPath: string;
+  nodeId: string;
+}
+
 export interface DeploymentNodeData {
   id: string;
   name: string;
@@ -28,6 +36,12 @@ export interface DeploymentNodeData {
     port?: number;
   };
   hasValidationError?: boolean;
+  /** Volume mounts from linked ConfigMaps/Secrets */
+  volumeMounts?: VolumeMount[];
+  /** Internal field: IDs of linked ConfigMap nodes */
+  _linkedConfigMaps?: string[];
+  /** Internal field: IDs of linked Secret nodes */
+  _linkedSecrets?: string[];
   /** Runtime status fields (populated after deployment) */
   _status?: {
     state?: "healthy" | "partial" | "error";
@@ -123,6 +137,49 @@ export interface IngressNodeData {
   };
 }
 
+/** ConfigMap node data - stores non-sensitive configuration */
+export interface ConfigMapNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Key-value pairs stored in MongoDB and created in K8s on workflow run */
+  data: Record<string, string>;
+  /** Mount path in containers (default: /etc/config) */
+  mountPath?: string;
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "created" | "pending" | "error";
+    message?: string;
+  };
+}
+
+/** Secret node data - stores only metadata, values are pass-through to K8s */
+export interface SecretNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Secret type (default: Opaque) */
+  secretType?:
+    | "Opaque"
+    | "kubernetes.io/tls"
+    | "kubernetes.io/dockerconfigjson";
+  /** Only key names are stored in MongoDB (NO values for security) */
+  keys: string[];
+  /** Mount path in containers (default: /etc/secrets) */
+  mountPath?: string;
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Track if K8s secret has been created */
+  _secretCreated?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "created" | "pending" | "error";
+    message?: string;
+  };
+}
+
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
@@ -153,6 +210,8 @@ export type WorkflowNodeData =
   | DeploymentNodeData
   | ServiceNodeData
   | IngressNodeData
+  | ConfigMapNodeData
+  | SecretNodeData
   | ConditionalNodeData
   | ParallelNodeData
   | WebhookNodeData;

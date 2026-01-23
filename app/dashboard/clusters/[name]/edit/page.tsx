@@ -46,6 +46,7 @@ export default function EditClusterPage() {
     authType: "serviceAccount" as string,
     token: "",
     singleNode: false,
+    insecure: false,
   });
 
   const breadcrumbs = [
@@ -84,6 +85,7 @@ export default function EditClusterPage() {
         authType: mappedAuthType,
         token: "", // Never show existing token for security
         singleNode: cluster.singleNode || false,
+        insecure: cluster.insecure || false,
       };
 
       setFormData(newFormData);
@@ -115,6 +117,7 @@ export default function EditClusterPage() {
         server: formData.server,
         authType: formData.authType,
         singleNode: formData.singleNode,
+        insecure: formData.insecure,
       };
 
       // Only include credentials if token is provided
@@ -317,6 +320,40 @@ export default function EditClusterPage() {
                     Single-node mode will remove control-plane taints, allowing
                     pods to be scheduled on control-plane nodes. This is
                     suitable for development or single-node clusters only.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex items-start space-x-3 pt-4 border-t">
+                <Checkbox
+                  id="insecure"
+                  checked={formData.insecure}
+                  onCheckedChange={checked =>
+                    setFormData(prev => ({
+                      ...prev,
+                      insecure: checked as boolean,
+                    }))
+                  }
+                />
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="insecure"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Skip TLS Verification (Insecure)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Skip TLS certificate verification when connecting to the
+                    cluster
+                  </p>
+                </div>
+              </div>
+              {formData.insecure && (
+                <Alert variant="destructive" className="mt-2">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Warning: Skipping TLS verification is insecure and should
+                    only be used for testing or development environments.
                   </AlertDescription>
                 </Alert>
               )}

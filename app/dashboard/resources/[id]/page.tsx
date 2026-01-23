@@ -34,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 import { LogsTab } from "@/components/resources/LogsTab";
 import { TerminalTab } from "@/components/resources/TerminalTab";
+import { useResourceStatusStream } from "@/lib/hooks/useResourceStatusStream";
 
 interface Resource {
   id: string;
@@ -116,6 +117,15 @@ export default function ResourceDetailPage() {
   const [uptime, setUptime] = useState<string>("");
 
   const resourceId = params.id as string;
+
+  // Subscribe to real-time status updates
+  const { resourceStatus } = useResourceStatusStream(
+    resourceId,
+    !loading && !!resource
+  );
+
+  // Derive the current status from real-time updates or fall back to resource.status
+  const currentStatus = resourceStatus?.state || resource?.status || "unknown";
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -249,7 +259,7 @@ export default function ResourceDetailPage() {
   }
 
   const Icon = resourceIcons[resource.type] || Box;
-  const status = statusConfig[resource.status] || statusConfig.unknown;
+  const status = statusConfig[currentStatus] || statusConfig.unknown;
 
   const pageActions = (
     <div className="flex items-center gap-2">
@@ -304,6 +314,11 @@ export default function ResourceDetailPage() {
                 <Badge variant={status.variant} className="text-sm">
                   {status.text}
                 </Badge>
+                {resourceStatus?.message && (
+                  <span className="text-xs text-muted-foreground">
+                    {resourceStatus.message}
+                  </span>
+                )}
                 {uptime && (
                   <Badge variant="secondary" className="text-sm">
                     {uptime}
