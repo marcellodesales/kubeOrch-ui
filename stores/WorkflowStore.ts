@@ -20,6 +20,10 @@ interface WorkflowState {
   // These are NOT persisted to DB - only used at runtime for pass-through to K8s
   secretValues: Record<string, Record<string, string>>;
 
+  // Env var values storage (nodeId -> { key: value })
+  // These are NOT persisted to DB - only used at runtime for pass-through to K8s
+  envValues: Record<string, Record<string, string>>;
+
   setNodeUpdateHandler: (
     handler: ((nodeId: string, data: WorkflowNodeData) => void) | null
   ) => void;
@@ -38,6 +42,12 @@ interface WorkflowState {
   renameSecretKey: (nodeId: string, oldKey: string, newKey: string) => void;
   getSecretValues: () => Record<string, Record<string, string>>;
   clearSecretValues: () => void;
+
+  // Env var value methods (pass-through - not persisted)
+  setEnvValue: (nodeId: string, key: string, value: string) => void;
+  removeEnvKey: (nodeId: string, oldKey: string) => void;
+  getEnvValues: () => Record<string, Record<string, string>>;
+  clearEnvValues: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -45,6 +55,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   settingsOpenHandler: null,
   editable: true,
   secretValues: {},
+  envValues: {},
 
   setNodeUpdateHandler: handler => set({ nodeUpdateHandler: handler }),
   setSettingsOpenHandler: handler => set({ settingsOpenHandler: handler }),
@@ -108,6 +119,36 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   getSecretValues: () => get().secretValues,
 
   clearSecretValues: () => set({ secretValues: {} }),
+
+  // Env var value methods - these values are NOT persisted to DB
+  setEnvValue: (nodeId: string, key: string, value: string) => {
+    set(state => ({
+      envValues: {
+        ...state.envValues,
+        [nodeId]: {
+          ...(state.envValues[nodeId] || {}),
+          [key]: value,
+        },
+      },
+    }));
+  },
+
+  removeEnvKey: (nodeId: string, oldKey: string) => {
+    set(state => {
+      const nodeEnvs = { ...(state.envValues[nodeId] || {}) };
+      delete nodeEnvs[oldKey];
+      return {
+        envValues: {
+          ...state.envValues,
+          [nodeId]: nodeEnvs,
+        },
+      };
+    });
+  },
+
+  getEnvValues: () => get().envValues,
+
+  clearEnvValues: () => set({ envValues: {} }),
 }));
 
 export default useWorkflowStore;

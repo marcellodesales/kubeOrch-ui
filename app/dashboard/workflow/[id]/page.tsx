@@ -16,7 +16,7 @@ import {
 import { Logo } from "@/components/ui/logo";
 import { useWorkflowStatusStream } from "@/lib/hooks/useWorkflowStatusStream";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
-import { SecretKeyEntry } from "@/lib/types/nodes";
+import { SecretKeyEntry, EnvVarEntry } from "@/lib/types/nodes";
 
 // Inline loading component for instant display
 const LoadingComponent = () => (
@@ -127,7 +127,32 @@ export default function WorkflowDetailPage() {
         }
       }
 
-      const result = await runWorkflow(workflowId, { secrets: secretValues });
+      // Collect env values from store (pass-through to K8s, not stored in DB)
+      // Transform from { nodeId: { entryId: value } } to { nodeId: { keyName: value } }
+      const rawEnvValues = useWorkflowStore.getState().getEnvValues();
+      const envValues: Record<string, Record<string, string>> = {};
+
+      for (const nodeId of Object.keys(rawEnvValues)) {
+        const node = nodes.find(n => n.id === nodeId);
+        if (
+          (node?.type === "deployment" || node?.type === "statefulset") &&
+          node.data?.envKeys
+        ) {
+          const keyEntries = node.data.envKeys as EnvVarEntry[];
+          envValues[nodeId] = {};
+          for (const entry of keyEntries) {
+            const value = rawEnvValues[nodeId][entry.id];
+            if (entry.name && value !== undefined) {
+              envValues[nodeId][entry.name] = value;
+            }
+          }
+        }
+      }
+
+      const result = await runWorkflow(workflowId, {
+        secrets: secretValues,
+        envVars: envValues,
+      });
 
       // Update logs from the response
       if (result.logs && result.logs.length > 0) {

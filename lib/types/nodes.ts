@@ -17,7 +17,10 @@ export interface DeploymentNodeData {
   image: string;
   replicas: number;
   port: number;
+  /** Environment variables - populated at runtime from envKeys + values */
   env?: Record<string, string>;
+  /** Environment variable keys only (values stored transiently, not in DB) */
+  envKeys?: EnvVarEntry[];
   resources?: {
     limits?: {
       cpu?: string;
@@ -163,6 +166,12 @@ export interface SecretKeyEntry {
   name: string; // The actual key name
 }
 
+/** Environment variable entry with stable ID for React reconciliation */
+export interface EnvVarEntry {
+  id: string; // Stable unique ID (doesn't change when name is edited)
+  name: string; // The env var name (e.g., "DATABASE_URL")
+}
+
 /** Secret node data - stores only metadata, values are pass-through to K8s */
 export interface SecretNodeData {
   id: string;
@@ -246,8 +255,10 @@ export interface StatefulSetNodeData {
   replicas: number;
   /** Container port */
   port: number;
-  /** Environment variables */
+  /** Environment variables - populated at runtime from envKeys + values */
   env?: Record<string, string>;
+  /** Environment variable keys only (values stored transiently, not in DB) */
+  envKeys?: EnvVarEntry[];
   /** Resource limits and requests */
   resources?: {
     limits?: {
