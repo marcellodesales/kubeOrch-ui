@@ -33,6 +33,8 @@ import ServiceNode from "./ServiceNode";
 import IngressNode from "./IngressNode";
 import ConfigMapNode from "./ConfigMapNode";
 import SecretNode from "./SecretNode";
+import PersistentVolumeClaimNode from "./PersistentVolumeClaimNode";
+import StatefulSetNode from "./StatefulSetNode";
 import {
   DeploymentRequest,
   ServiceNodeData,
@@ -42,6 +44,8 @@ import {
   SecretNodeData,
   SecretKeyEntry,
   VolumeMount,
+  PersistentVolumeClaimNodeData,
+  StatefulSetNodeData,
 } from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
@@ -56,6 +60,8 @@ const nodeTypes = {
   ingress: IngressNode,
   configmap: ConfigMapNode,
   secret: SecretNode,
+  persistentvolumeclaim: PersistentVolumeClaimNode,
+  statefulset: StatefulSetNode,
 };
 
 interface WorkflowCanvasProps {
@@ -341,13 +347,19 @@ function WorkflowCanvasContent({
       // 4. Secret → Deployment (secret mounting)
       // Invalid: Deployment ↔ Ingress (must go through Service)
 
-      // Traffic flow: Ingress → Service → Deployment
-      // Config flow: ConfigMap/Secret → Deployment
+      // Traffic flow: Ingress → Service → Deployment/StatefulSet
+      // Config flow: ConfigMap/Secret → Deployment/StatefulSet
+      // Storage flow: PVC → Deployment/StatefulSet
       const validPairs = [
         ["ingress", "service"], // Ingress routes to Service
         ["service", "deployment"], // Service routes to Deployment
+        ["service", "statefulset"], // Service routes to StatefulSet
         ["configmap", "deployment"], // ConfigMap mounts to Deployment
+        ["configmap", "statefulset"], // ConfigMap mounts to StatefulSet
         ["secret", "deployment"], // Secret mounts to Deployment
+        ["secret", "statefulset"], // Secret mounts to StatefulSet
+        ["persistentvolumeclaim", "deployment"], // PVC mounts to Deployment
+        ["persistentvolumeclaim", "statefulset"], // PVC mounts to StatefulSet
       ];
 
       return validPairs.some(
@@ -425,6 +437,29 @@ function WorkflowCanvasContent({
             });
           }
 
+          // Service (source) → StatefulSet (target)
+          // Update Service with statefulset name/port
+          if (
+            sourceNode?.type === "service" &&
+            targetNode?.type === "statefulset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const statefulSetData = targetNode.data as StatefulSetNodeData;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: statefulSetData.name,
+                    targetPort: statefulSetData.port,
+                    _linkedDeployment: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
           // ConfigMap (source) → Deployment (target)
           // Add volume mount to deployment
           if (
@@ -454,6 +489,44 @@ function WorkflowCanvasContent({
                   ...n,
                   data: {
                     ...deploymentData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedConfigMaps: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // ConfigMap (source) → StatefulSet (target)
+          // Add volume mount to statefulset
+          if (
+            sourceNode?.type === "configmap" &&
+            targetNode?.type === "statefulset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const configMapData = sourceNode.data as ConfigMapNodeData;
+                const statefulSetData = n.data as StatefulSetNodeData;
+                const existingMounts = statefulSetData.volumeMounts || [];
+                const existingLinked = statefulSetData._linkedConfigMaps || [];
+
+                // Check if already linked
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "configMap",
+                  name: configMapData.name,
+                  mountPath: configMapData.mountPath || "/etc/config",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...statefulSetData,
                     volumeMounts: [...existingMounts, newMount],
                     _linkedConfigMaps: [...existingLinked, params.source!],
                   },
@@ -501,6 +574,122 @@ function WorkflowCanvasContent({
             });
           }
 
+          // Secret (source) → StatefulSet (target)
+          // Add volume mount to statefulset
+          if (
+            sourceNode?.type === "secret" &&
+            targetNode?.type === "statefulset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const secretData = sourceNode.data as SecretNodeData;
+                const statefulSetData = n.data as StatefulSetNodeData;
+                const existingMounts = statefulSetData.volumeMounts || [];
+                const existingLinked = statefulSetData._linkedSecrets || [];
+
+                // Check if already linked
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "secret",
+                  name: secretData.name,
+                  mountPath: secretData.mountPath || "/etc/secrets",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...statefulSetData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedSecrets: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // PersistentVolumeClaim (source) → Deployment (target)
+          // Add PVC volume mount to deployment
+          if (
+            sourceNode?.type === "persistentvolumeclaim" &&
+            targetNode?.type === "deployment"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const pvcData =
+                  sourceNode.data as PersistentVolumeClaimNodeData;
+                const deploymentData = n.data as DeploymentRequest;
+                const existingMounts = deploymentData.volumeMounts || [];
+                const existingLinkedPVCs = deploymentData._linkedPVCs || [];
+
+                // Check if already linked
+                if (existingLinkedPVCs.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "persistentVolumeClaim",
+                  name: pvcData.name,
+                  mountPath: `/data/${pvcData.name}`,
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...deploymentData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedPVCs: [...existingLinkedPVCs, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // PersistentVolumeClaim (source) → StatefulSet (target)
+          // Add PVC volume mount to statefulset
+          if (
+            sourceNode?.type === "persistentvolumeclaim" &&
+            targetNode?.type === "statefulset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const pvcData =
+                  sourceNode.data as PersistentVolumeClaimNodeData;
+                const statefulSetData = n.data as StatefulSetNodeData;
+                const existingMounts = statefulSetData.volumeMounts || [];
+                const existingLinkedPVCs = statefulSetData._linkedPVCs || [];
+
+                // Check if already linked
+                if (existingLinkedPVCs.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "persistentVolumeClaim",
+                  name: pvcData.name,
+                  mountPath: `/data/${pvcData.name}`,
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...statefulSetData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedPVCs: [...existingLinkedPVCs, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
           return nds;
         });
       }
@@ -520,14 +709,15 @@ function WorkflowCanvasContent({
 
           if (deletedEdgesForNode.length === 0) return node;
 
-          // Clear Service's linked deployment fields
+          // Clear Service's linked deployment/statefulset fields
           if (node.type === "service") {
-            const hasDeploymentEdge = deletedEdgesForNode.some(edge => {
+            const hasWorkloadEdge = deletedEdgesForNode.some(edge => {
               const otherNodeId =
                 edge.source === node.id ? edge.target : edge.source;
-              return nds.find(n => n.id === otherNodeId)?.type === "deployment";
+              const otherType = nds.find(n => n.id === otherNodeId)?.type;
+              return otherType === "deployment" || otherType === "statefulset";
             });
-            if (hasDeploymentEdge) {
+            if (hasWorkloadEdge) {
               return {
                 ...node,
                 data: {
@@ -634,6 +824,36 @@ function WorkflowCanvasContent({
               updated = true;
             }
 
+            // Check for deleted PVC edges
+            const deletedPVCIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type ===
+                  "persistentvolumeclaim"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedPVCIds.length > 0) {
+              let newLinkedPVCs = (deploymentData as any)._linkedPVCs || [];
+              newLinkedPVCs = newLinkedPVCs.filter(
+                (id: string) => !deletedPVCIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    (m.type as string) === "persistentVolumeClaim" &&
+                    deletedPVCIds.includes(m.nodeId)
+                  )
+              );
+              (deploymentData as any)._linkedPVCs = newLinkedPVCs;
+              updated = true;
+            }
+
             if (updated) {
               return {
                 ...node,
@@ -641,6 +861,108 @@ function WorkflowCanvasContent({
                   ...deploymentData,
                   _linkedConfigMaps: newLinkedConfigMaps,
                   _linkedSecrets: newLinkedSecrets,
+                  _linkedPVCs: (deploymentData as any)._linkedPVCs,
+                  volumeMounts: newVolumeMounts,
+                },
+              };
+            }
+          }
+
+          // Clear StatefulSet's linked ConfigMap/Secret/PVC fields
+          if (node.type === "statefulset") {
+            const statefulSetData = node.data as StatefulSetNodeData;
+            let updated = false;
+            let newLinkedConfigMaps = statefulSetData._linkedConfigMaps || [];
+            let newLinkedSecrets = statefulSetData._linkedSecrets || [];
+            let newVolumeMounts = statefulSetData.volumeMounts || [];
+
+            // Check for deleted ConfigMap edges
+            const deletedConfigMapIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type === "configmap"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedConfigMapIds.length > 0) {
+              newLinkedConfigMaps = newLinkedConfigMaps.filter(
+                id => !deletedConfigMapIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    m.type === "configMap" &&
+                    deletedConfigMapIds.includes(m.nodeId)
+                  )
+              );
+              updated = true;
+            }
+
+            // Check for deleted Secret edges
+            const deletedSecretIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return nds.find(n => n.id === otherNodeId)?.type === "secret";
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedSecretIds.length > 0) {
+              newLinkedSecrets = newLinkedSecrets.filter(
+                id => !deletedSecretIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(m.type === "secret" && deletedSecretIds.includes(m.nodeId))
+              );
+              updated = true;
+            }
+
+            // Check for deleted PVC edges
+            const deletedPVCIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type ===
+                  "persistentvolumeclaim"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedPVCIds.length > 0) {
+              let newLinkedPVCs = (statefulSetData as any)._linkedPVCs || [];
+              newLinkedPVCs = newLinkedPVCs.filter(
+                (id: string) => !deletedPVCIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    (m.type as string) === "persistentVolumeClaim" &&
+                    deletedPVCIds.includes(m.nodeId)
+                  )
+              );
+              (statefulSetData as any)._linkedPVCs = newLinkedPVCs;
+              updated = true;
+            }
+
+            if (updated) {
+              return {
+                ...node,
+                data: {
+                  ...statefulSetData,
+                  _linkedConfigMaps: newLinkedConfigMaps,
+                  _linkedSecrets: newLinkedSecrets,
+                  _linkedPVCs: (statefulSetData as any)._linkedPVCs,
                   volumeMounts: newVolumeMounts,
                 },
               };
@@ -758,6 +1080,45 @@ function WorkflowCanvasContent({
             secretType: "Opaque",
             keys: [{ id: `key_${Date.now()}`, name: "" }] as SecretKeyEntry[],
             mountPath: "/etc/secrets",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "persistentvolumeclaim") {
+        const newNode: Node<PersistentVolumeClaimNodeData> = {
+          id: nodeIdStr,
+          type: "persistentvolumeclaim",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `pvc-${nodeId}`,
+            namespace: "default",
+            storage: "10Gi",
+            accessModes: ["ReadWriteOnce"],
+            volumeMode: "Filesystem",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "statefulset") {
+        const newNode: Node<StatefulSetNodeData> = {
+          id: nodeIdStr,
+          type: "statefulset",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `statefulset-${nodeId}`,
+            namespace: "default",
+            serviceName: `statefulset-${nodeId}-headless`,
+            image: "",
+            replicas: 1,
+            port: 5432,
             templateId: template.id,
           },
         };
@@ -1040,7 +1401,9 @@ function WorkflowCanvasContent({
               | "service"
               | "ingress"
               | "configmap"
-              | "secret") || "deployment"
+              | "secret"
+              | "persistentvolumeclaim"
+              | "statefulset") || "deployment"
           }
           onClose={handleCloseSettings}
           onUpdate={handleSettingsUpdate}

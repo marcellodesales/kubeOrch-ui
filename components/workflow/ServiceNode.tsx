@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings } from "lucide-react";
+import { Settings, Network } from "lucide-react";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export type { ServiceNodeData };
@@ -78,7 +78,12 @@ const ServiceNode = memo(
             }}
           />
 
-          <CompactCardTitle>Service</CompactCardTitle>
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded bg-cyan-500/10">
+              <Network className="h-3.5 w-3.5 text-cyan-600" />
+            </div>
+            <CompactCardTitle>Service</CompactCardTitle>
+          </div>
 
           <Button
             size="icon"

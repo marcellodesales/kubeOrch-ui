@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings } from "lucide-react";
+import { Settings, LucideIcon } from "lucide-react";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export interface NodeField {
@@ -41,6 +41,9 @@ export interface NodeProps {
   onSettingsClick?: () => void;
   className?: string;
   disabled?: boolean;
+  icon?: LucideIcon;
+  iconColor?: string;
+  iconBgColor?: string;
 }
 
 export default function Node({
@@ -49,6 +52,9 @@ export default function Node({
   onSettingsClick,
   className,
   disabled = false,
+  icon: Icon,
+  iconColor = "text-blue-600",
+  iconBgColor = "bg-blue-500/10",
 }: NodeProps) {
   const cardContent = (
     <CompactCard
@@ -68,7 +74,14 @@ export default function Node({
           }}
         />
 
-        <CompactCardTitle>{title}</CompactCardTitle>
+        <div className="flex items-center gap-2">
+          {Icon && (
+            <div className={`p-1 rounded ${iconBgColor}`}>
+              <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
+            </div>
+          )}
+          <CompactCardTitle>{title}</CompactCardTitle>
+        </div>
 
         {onSettingsClick && (
           <Button
