@@ -25,10 +25,17 @@ function DatabaseAuthInfo({ data }: { data: StatefulSetNodeData }) {
         <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-sm">
           <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-blue-500 font-medium">Auto-configured for development</p>
+            <p className="text-blue-500 font-medium">
+              Auto-configured for development
+            </p>
             <p className="text-muted-foreground text-xs mt-1">
-              No password set. Using <code className="bg-muted px-1 rounded">POSTGRES_HOST_AUTH_METHOD=trust</code> (allows all connections).
-              For production, add <code className="bg-muted px-1 rounded">POSTGRES_PASSWORD</code> via Environment Variables or connect a Secret.
+              No password set. Using{" "}
+              <code className="bg-muted px-1 rounded">
+                POSTGRES_HOST_AUTH_METHOD=trust
+              </code>{" "}
+              (allows all connections). For production, add{" "}
+              <code className="bg-muted px-1 rounded">POSTGRES_PASSWORD</code>{" "}
+              via Environment Variables or connect a Secret.
             </p>
           </div>
         </div>
@@ -47,10 +54,17 @@ function DatabaseAuthInfo({ data }: { data: StatefulSetNodeData }) {
         <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-sm">
           <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
           <div>
-            <p className="text-blue-500 font-medium">Auto-configured for development</p>
+            <p className="text-blue-500 font-medium">
+              Auto-configured for development
+            </p>
             <p className="text-muted-foreground text-xs mt-1">
-              No password set. Using <code className="bg-muted px-1 rounded">MYSQL_ALLOW_EMPTY_PASSWORD=yes</code>.
-              For production, add <code className="bg-muted px-1 rounded">MYSQL_ROOT_PASSWORD</code> via Environment Variables or connect a Secret.
+              No password set. Using{" "}
+              <code className="bg-muted px-1 rounded">
+                MYSQL_ALLOW_EMPTY_PASSWORD=yes
+              </code>
+              . For production, add{" "}
+              <code className="bg-muted px-1 rounded">MYSQL_ROOT_PASSWORD</code>{" "}
+              via Environment Variables or connect a Secret.
             </p>
           </div>
         </div>

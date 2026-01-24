@@ -624,8 +624,7 @@ function WorkflowCanvasContent({
                   sourceNode.data as PersistentVolumeClaimNodeData;
                 const deploymentData = n.data as DeploymentRequest;
                 const existingMounts = deploymentData.volumeMounts || [];
-                const existingLinkedPVCs =
-                  (deploymentData as any)._linkedPVCs || [];
+                const existingLinkedPVCs = deploymentData._linkedPVCs || [];
 
                 // Check if already linked
                 if (existingLinkedPVCs.includes(params.source!)) {
@@ -633,7 +632,7 @@ function WorkflowCanvasContent({
                 }
 
                 const newMount: VolumeMount = {
-                  type: "persistentVolumeClaim" as any,
+                  type: "persistentVolumeClaim",
                   name: pvcData.name,
                   mountPath: `/data/${pvcData.name}`,
                   nodeId: params.source!,
@@ -664,8 +663,7 @@ function WorkflowCanvasContent({
                   sourceNode.data as PersistentVolumeClaimNodeData;
                 const statefulSetData = n.data as StatefulSetNodeData;
                 const existingMounts = statefulSetData.volumeMounts || [];
-                const existingLinkedPVCs =
-                  (statefulSetData as any)._linkedPVCs || [];
+                const existingLinkedPVCs = statefulSetData._linkedPVCs || [];
 
                 // Check if already linked
                 if (existingLinkedPVCs.includes(params.source!)) {
@@ -673,7 +671,7 @@ function WorkflowCanvasContent({
                 }
 
                 const newMount: VolumeMount = {
-                  type: "persistentVolumeClaim" as any,
+                  type: "persistentVolumeClaim",
                   name: pvcData.name,
                   mountPath: `/data/${pvcData.name}`,
                   nodeId: params.source!,
@@ -1001,6 +999,7 @@ function WorkflowCanvasContent({
             namespace: "default",
             image: "",
             replicas: 1,
+            port: 8080,
             templateId: template.id,
           },
         };
@@ -1119,6 +1118,7 @@ function WorkflowCanvasContent({
             serviceName: `statefulset-${nodeId}-headless`,
             image: "",
             replicas: 1,
+            port: 5432,
             templateId: template.id,
           },
         };

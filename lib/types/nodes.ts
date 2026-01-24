@@ -1,9 +1,9 @@
 // Node type definitions for workflow system
 // These match the backend's WorkflowNode.Data structure
 
-/** Volume mount configuration for ConfigMap/Secret mounting */
+/** Volume mount configuration for ConfigMap/Secret/PVC mounting */
 export interface VolumeMount {
-  type: "configMap" | "secret";
+  type: "configMap" | "secret" | "persistentVolumeClaim";
   name: string;
   mountPath: string;
   nodeId: string;
@@ -42,6 +42,8 @@ export interface DeploymentNodeData {
   _linkedConfigMaps?: string[];
   /** Internal field: IDs of linked Secret nodes */
   _linkedSecrets?: string[];
+  /** Internal field: IDs of linked PVC nodes */
+  _linkedPVCs?: string[];
   /** Runtime status fields (populated after deployment) */
   _status?: {
     state?: "healthy" | "partial" | "error";
@@ -268,6 +270,8 @@ export interface StatefulSetNodeData {
   _linkedConfigMaps?: string[];
   /** Internal field: IDs of linked Secret nodes */
   _linkedSecrets?: string[];
+  /** Internal field: IDs of linked PVC nodes */
+  _linkedPVCs?: string[];
   /** Runtime status fields */
   _status?: {
     state?: "healthy" | "partial" | "error";
