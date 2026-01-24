@@ -130,9 +130,9 @@ export default function VersionHistory({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b shrink-0">
         <h3 className="text-sm font-medium">Version History</h3>
         <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1" />
@@ -141,7 +141,10 @@ export default function VersionHistory({
       </div>
 
       {/* Version List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0"
+        style={{ overscrollBehaviorY: "contain" }}
+      >
         {versions.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             No versions yet. Click &quot;Save Version&quot; to create one.
@@ -162,7 +165,7 @@ export default function VersionHistory({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-4 border-t">
+        <div className="flex items-center justify-between p-4 border-t shrink-0">
           <Button
             variant="outline"
             size="sm"
