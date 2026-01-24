@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Settings, Plus, X } from "lucide-react";
+import { Settings, Plus, X, FileSliders } from "lucide-react";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export type { ConfigMapNodeData };
@@ -100,7 +100,12 @@ const ConfigMapNode = memo(
             }}
           />
 
-          <CompactCardTitle>ConfigMap</CompactCardTitle>
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded bg-slate-500/10">
+              <FileSliders className="h-3.5 w-3.5 text-slate-600" />
+            </div>
+            <CompactCardTitle>ConfigMap</CompactCardTitle>
+          </div>
 
           <Button
             size="icon"

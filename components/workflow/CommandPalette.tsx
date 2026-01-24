@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import {
+  Search,
+  X,
+  Package,
+  Network,
+  Globe,
+  FileSliders,
+  Lock,
+  Database,
+  HardDrive,
+  LucideIcon,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +26,48 @@ import {
 } from "@/lib/services/templates";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+
+// Icon mapping from template icon name to Lucide component and colors
+const ICON_MAP: Record<
+  string,
+  { icon: LucideIcon; color: string; bgColor: string }
+> = {
+  Package: {
+    icon: Package,
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+  },
+  Network: {
+    icon: Network,
+    color: "text-cyan-600",
+    bgColor: "bg-cyan-500/10",
+  },
+  Globe: {
+    icon: Globe,
+    color: "text-sky-600",
+    bgColor: "bg-sky-500/10",
+  },
+  FileSliders: {
+    icon: FileSliders,
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10",
+  },
+  Lock: {
+    icon: Lock,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+  },
+  Database: {
+    icon: Database,
+    color: "text-violet-600",
+    bgColor: "bg-violet-500/10",
+  },
+  HardDrive: {
+    icon: HardDrive,
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-500/10",
+  },
+};
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -197,8 +250,14 @@ export default function CommandPalette({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {template.icon && (
-                          <span className="text-lg">{template.icon}</span>
+                        {template.icon && ICON_MAP[template.icon] && (
+                          <div
+                            className={`p-1 rounded ${ICON_MAP[template.icon].bgColor}`}
+                          >
+                            {React.createElement(ICON_MAP[template.icon].icon, {
+                              className: `h-4 w-4 ${ICON_MAP[template.icon].color}`,
+                            })}
+                          </div>
                         )}
                         <h3 className="font-semibold text-sm">
                           {template.displayName}

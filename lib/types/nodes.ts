@@ -186,6 +186,98 @@ export interface SecretNodeData {
   };
 }
 
+/** PersistentVolumeClaim node data - storage requests for stateful workloads */
+export interface PersistentVolumeClaimNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Storage class name (optional, uses cluster default if not specified) */
+  storageClassName?: string;
+  /** Access modes for the volume */
+  accessModes: (
+    | "ReadWriteOnce"
+    | "ReadOnlyMany"
+    | "ReadWriteMany"
+    | "ReadWriteOncePod"
+  )[];
+  /** Storage size (e.g., "10Gi", "500Mi") */
+  storage: string;
+  /** Volume mode (default: Filesystem) */
+  volumeMode?: "Filesystem" | "Block";
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "Bound" | "Pending" | "Lost" | "error";
+    /** Actual capacity allocated */
+    capacity?: string;
+    /** Name of the bound PersistentVolume */
+    volumeName?: string;
+    message?: string;
+  };
+}
+
+/** Volume claim template for StatefulSet */
+export interface VolumeClaimTemplate {
+  /** Stable unique ID for React reconciliation */
+  id: string;
+  /** Name of the volume claim template */
+  name: string;
+  /** Storage class name (optional) */
+  storageClassName?: string;
+  /** Access modes for the volume */
+  accessModes: ("ReadWriteOnce" | "ReadOnlyMany" | "ReadWriteMany")[];
+  /** Storage size (e.g., "10Gi") */
+  storage: string;
+}
+
+/** StatefulSet node data - for stateful applications like databases */
+export interface StatefulSetNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Headless service name (required for DNS and stable network identities) */
+  serviceName: string;
+  /** Container image */
+  image: string;
+  /** Number of replicas */
+  replicas: number;
+  /** Container port */
+  port: number;
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Resource limits and requests */
+  resources?: {
+    limits?: {
+      cpu?: string;
+      memory?: string;
+    };
+    requests?: {
+      cpu?: string;
+      memory?: string;
+    };
+  };
+  /** Volume claim templates for persistent storage */
+  volumeClaimTemplates?: VolumeClaimTemplate[];
+  /** Volume mounts from linked ConfigMaps/Secrets */
+  volumeMounts?: VolumeMount[];
+  labels?: Record<string, string>;
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Internal field: IDs of linked ConfigMap nodes */
+  _linkedConfigMaps?: string[];
+  /** Internal field: IDs of linked Secret nodes */
+  _linkedSecrets?: string[];
+  /** Runtime status fields */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    replicas?: number;
+    readyReplicas?: number;
+    currentReplicas?: number;
+    message?: string;
+  };
+}
+
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
@@ -218,6 +310,8 @@ export type WorkflowNodeData =
   | IngressNodeData
   | ConfigMapNodeData
   | SecretNodeData
+  | PersistentVolumeClaimNodeData
+  | StatefulSetNodeData
   | ConditionalNodeData
   | ParallelNodeData
   | WebhookNodeData;

@@ -19,6 +19,8 @@ import { serviceSettingsConfig } from "./settings/ServiceSettings";
 import { ingressSettingsConfig } from "./settings/IngressSettings";
 import { configMapSettingsConfig } from "./settings/ConfigMapSettings";
 import { secretSettingsConfig } from "./settings/SecretSettings";
+import { persistentVolumeClaimSettingsConfig } from "./settings/PersistentVolumeClaimSettings";
+import { statefulSetSettingsConfig } from "./settings/StatefulSetSettings";
 import { usePanelStore } from "@/stores/PanelStore";
 import { ResizablePanel } from "@/components/ui/ResizablePanel";
 
@@ -58,7 +60,14 @@ interface NodeSettingsPanelProps {
   isOpen: boolean;
   nodeId: string | null;
   data: WorkflowNodeData | null;
-  nodeType: "deployment" | "service" | "ingress" | "configmap" | "secret";
+  nodeType:
+    | "deployment"
+    | "service"
+    | "ingress"
+    | "configmap"
+    | "secret"
+    | "persistentvolumeclaim"
+    | "statefulset";
   onClose: () => void;
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
@@ -114,7 +123,11 @@ export default function NodeSettingsPanel({
           ? ingressSettingsConfig
           : nodeType === "configmap"
             ? configMapSettingsConfig
-            : secretSettingsConfig;
+            : nodeType === "persistentvolumeclaim"
+              ? persistentVolumeClaimSettingsConfig
+              : nodeType === "statefulset"
+                ? statefulSetSettingsConfig
+                : secretSettingsConfig;
 
   const handleFieldUpdate = (
     field: string,

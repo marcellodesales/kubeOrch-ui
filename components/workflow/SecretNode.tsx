@@ -111,10 +111,12 @@ const SecretNode = memo(({ data, id }: ReactFlowNodeProps<SecretNodeData>) => {
           }}
         />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Lock className="h-3 w-3 text-muted-foreground cursor-help" />
+              <div className="p-1 rounded bg-amber-500/10 cursor-help">
+                <Lock className="h-3.5 w-3.5 text-amber-600" />
+              </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[200px]">
               Values are sent directly to K8s. Only key names are stored.

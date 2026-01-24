@@ -12,12 +12,6 @@ export interface TemplateParameter {
   max?: number;
 }
 
-export interface TemplateExample {
-  name: string;
-  description: string;
-  config: Record<string, any>;
-}
-
 export interface TemplateMetadata {
   id: string;
   name: string;
@@ -31,7 +25,6 @@ export interface TemplateMetadata {
   difficulty: string;
   dependencies: string[];
   parameters: TemplateParameter[];
-  examples: TemplateExample[];
 }
 
 export interface GetTemplatesResponse {

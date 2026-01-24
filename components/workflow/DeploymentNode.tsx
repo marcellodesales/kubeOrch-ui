@@ -3,6 +3,7 @@ import { NodeProps as ReactFlowNodeProps } from "reactflow";
 import Node, { NodeField } from "./Node";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
 import { DeploymentNodeData } from "@/lib/types/nodes";
+import { Package } from "lucide-react";
 
 export type { DeploymentNodeData };
 
@@ -55,7 +56,7 @@ const DeploymentNode = memo(
             id: `replicas-${id}`,
             label: "Replicas",
             type: "number",
-            value: data.replicas ?? 1,
+            value: data.replicas,
             placeholder: "1",
             min: 0,
             required: false,
@@ -65,7 +66,7 @@ const DeploymentNode = memo(
             id: `port-${id}`,
             label: "Port",
             type: "number",
-            value: data.port ?? 8080,
+            value: data.port,
             placeholder: "8080",
             min: 1,
             max: 65535,
@@ -82,6 +83,9 @@ const DeploymentNode = memo(
         fields={fields}
         onSettingsClick={openSettings}
         disabled={!editable}
+        icon={Package}
+        iconColor="text-blue-600"
+        iconBgColor="bg-blue-500/10"
       />
     );
   }

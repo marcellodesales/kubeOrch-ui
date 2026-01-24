@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Settings, Plus, X } from "lucide-react";
+import { Settings, Plus, X, Globe } from "lucide-react";
 import { DisabledInputWrapper } from "@/components/ui/disabled-input-wrapper";
 
 export type { IngressNodeData };
@@ -97,7 +97,12 @@ const IngressNode = memo(
             }}
           />
 
-          <CompactCardTitle>Ingress</CompactCardTitle>
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded bg-sky-500/10">
+              <Globe className="h-3.5 w-3.5 text-sky-600" />
+            </div>
+            <CompactCardTitle>Ingress</CompactCardTitle>
+          </div>
 
           <Button
             size="icon"
