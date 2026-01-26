@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { Plus, X, Variable } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,7 @@ import {
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 
 // Generate a stable unique ID for a key entry
-const generateKeyId = () =>
-  `env_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateKeyId = () => `env_${uuidv4()}`;
 
 interface EnvVarsEditorProps {
   data: DeploymentNodeData | StatefulSetNodeData;

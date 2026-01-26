@@ -130,24 +130,29 @@ export default function WorkflowDetailPage() {
       // Collect env values from store (pass-through to K8s, not stored in DB)
       // Transform from { nodeId: { entryId: value } } to { nodeId: { keyName: value } }
       const rawEnvValues = useWorkflowStore.getState().getEnvValues();
-      const envValues: Record<string, Record<string, string>> = {};
-
-      for (const nodeId of Object.keys(rawEnvValues)) {
-        const node = nodes.find(n => n.id === nodeId);
-        if (
-          (node?.type === "deployment" || node?.type === "statefulset") &&
-          node.data?.envKeys
-        ) {
-          const keyEntries = node.data.envKeys as EnvVarEntry[];
-          envValues[nodeId] = {};
-          for (const entry of keyEntries) {
-            const value = rawEnvValues[nodeId][entry.id];
-            if (entry.name && value !== undefined) {
-              envValues[nodeId][entry.name] = value;
-            }
+      const envValues = Object.keys(rawEnvValues).reduce(
+        (acc, nodeId) => {
+          const node = nodes.find(n => n.id === nodeId);
+          if (
+            (node?.type === "deployment" || node?.type === "statefulset") &&
+            node.data?.envKeys
+          ) {
+            const keyEntries = node.data.envKeys as EnvVarEntry[];
+            acc[nodeId] = keyEntries.reduce(
+              (envAcc, entry) => {
+                const value = rawEnvValues[nodeId][entry.id];
+                if (entry.name && value !== undefined) {
+                  envAcc[entry.name] = value;
+                }
+                return envAcc;
+              },
+              {} as Record<string, string>
+            );
           }
-        }
-      }
+          return acc;
+        },
+        {} as Record<string, Record<string, string>>
+      );
 
       const result = await runWorkflow(workflowId, {
         secrets: secretValues,
