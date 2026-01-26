@@ -9,16 +9,22 @@ import {
 import { NodeSettingsConfig } from "../NodeSettingsPanel";
 import { StatefulSetNodeData } from "@/lib/types/nodes";
 import { VolumeClaimTemplatesEditor } from "./VolumeClaimTemplatesEditor";
+import { EnvVarsEditor } from "./EnvVarsEditor";
 
 // Database auth info component - shows auto-configured auth settings
 function DatabaseAuthInfo({ data }: { data: StatefulSetNodeData }) {
   const image = data.image?.toLowerCase() || "";
   const env = data.env || {};
+  const envKeys = data.envKeys || [];
+
+  // Helper to check if an env key exists (in env object or envKeys array)
+  const hasEnvKey = (key: string) =>
+    key in env || envKeys.some(entry => entry.name === key);
 
   // Check for postgres
   if (image.includes("postgres")) {
-    const hasPassword = "POSTGRES_PASSWORD" in env;
-    const hasAuthMethod = "POSTGRES_HOST_AUTH_METHOD" in env;
+    const hasPassword = hasEnvKey("POSTGRES_PASSWORD");
+    const hasAuthMethod = hasEnvKey("POSTGRES_HOST_AUTH_METHOD");
 
     if (!hasPassword && !hasAuthMethod) {
       return (
@@ -45,9 +51,9 @@ function DatabaseAuthInfo({ data }: { data: StatefulSetNodeData }) {
 
   // Check for mysql/mariadb
   if (image.includes("mysql") || image.includes("mariadb")) {
-    const hasRootPassword = "MYSQL_ROOT_PASSWORD" in env;
-    const hasAllowEmpty = "MYSQL_ALLOW_EMPTY_PASSWORD" in env;
-    const hasRandomRoot = "MYSQL_RANDOM_ROOT_PASSWORD" in env;
+    const hasRootPassword = hasEnvKey("MYSQL_ROOT_PASSWORD");
+    const hasAllowEmpty = hasEnvKey("MYSQL_ALLOW_EMPTY_PASSWORD");
+    const hasRandomRoot = hasEnvKey("MYSQL_RANDOM_ROOT_PASSWORD");
 
     if (!hasRootPassword && !hasAllowEmpty && !hasRandomRoot) {
       return (
@@ -255,12 +261,6 @@ export const statefulSetSettingsConfig: NodeSettingsConfig = {
         },
       ],
     },
-    {
-      id: "env",
-      title: "Environment Variables",
-      description: "Add environment variables as key-value pairs",
-      fields: [],
-    },
   ],
   statusRenderer: (data, editable) => (
     <StatefulSetStatus data={data as StatefulSetNodeData} editable={editable} />
@@ -268,6 +268,11 @@ export const statefulSetSettingsConfig: NodeSettingsConfig = {
   extraContent: (data, { nodeId, editable }) => (
     <>
       <DatabaseAuthInfo data={data as StatefulSetNodeData} />
+      <EnvVarsEditor
+        data={data as StatefulSetNodeData}
+        nodeId={nodeId}
+        editable={editable}
+      />
       <VolumeClaimTemplatesEditor
         data={data as StatefulSetNodeData}
         nodeId={nodeId}

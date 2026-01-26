@@ -27,6 +27,9 @@ export function VolumeClaimTemplatesEditor({
 
   const templates = data.volumeClaimTemplates || [];
 
+  // Check if external PVC is attached (checked after hooks to follow React rules)
+  const hasLinkedPVCs = (data._linkedPVCs?.length ?? 0) > 0;
+
   const handleTemplateChange = useCallback(
     (
       templateId: string,
@@ -111,6 +114,11 @@ export function VolumeClaimTemplatesEditor({
       description: "Many nodes read-write",
     },
   ];
+
+  // Don't show volume claim templates if an external PVC is attached
+  if (hasLinkedPVCs) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">

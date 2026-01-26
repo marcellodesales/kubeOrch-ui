@@ -11,6 +11,8 @@ export interface WorkflowEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string; // source handle ID (for multi-handle nodes like Ingress paths)
+  targetHandle?: string; // target handle ID
   type?: string;
 }
 
@@ -165,6 +167,8 @@ export interface EdgeDiff {
   edge_id: string;
   source: string;
   target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
 }
 
 export interface VersionDiff {

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { NodeSettingsConfig } from "../NodeSettingsPanel";
 import { DeploymentNodeData } from "@/lib/types/nodes";
+import { EnvVarsEditor } from "./EnvVarsEditor";
 
 // Status renderer for Deployment nodes
 function DeploymentStatus({
@@ -161,14 +162,15 @@ export const deploymentSettingsConfig: NodeSettingsConfig = {
         },
       ],
     },
-    {
-      id: "env",
-      title: "Environment Variables",
-      description: "Add environment variables as key-value pairs",
-      fields: [],
-    },
   ],
   statusRenderer: (data, editable) => (
     <DeploymentStatus data={data as DeploymentNodeData} editable={editable} />
+  ),
+  extraContent: (data, { nodeId, editable }) => (
+    <EnvVarsEditor
+      data={data as DeploymentNodeData}
+      nodeId={nodeId}
+      editable={editable}
+    />
   ),
 };

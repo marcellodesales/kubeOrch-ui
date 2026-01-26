@@ -76,11 +76,11 @@ export default function WorkflowSettingsPanel({
 
   return (
     <div
-      className={`fixed right-0 top-0 h-full w-96 bg-card border-l shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+      className={`fixed right-0 top-0 h-full w-96 bg-card border-l shadow-lg transform transition-transform duration-300 ease-in-out z-50 overflow-hidden ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Workflow Settings</h2>
@@ -104,7 +104,7 @@ export default function WorkflowSettingsPanel({
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="flex-1 flex flex-col"
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
         >
           <TabsList className="mx-4 mt-2">
             <TabsTrigger value="settings" className="flex-1">
@@ -238,7 +238,7 @@ export default function WorkflowSettingsPanel({
 
           <TabsContent
             value="history"
-            className="flex-1 flex flex-col mt-0 overflow-hidden"
+            className="flex-1 flex flex-col mt-0 overflow-hidden min-h-0"
           >
             <VersionHistory
               workflowId={workflow?.id}

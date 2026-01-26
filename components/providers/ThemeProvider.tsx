@@ -13,7 +13,6 @@ function ToasterWithTheme() {
       duration={2000}
       richColors
       theme={resolvedTheme as "light" | "dark"}
-      closeButton
     />
   );
 }
