@@ -78,15 +78,21 @@ describe("WorkflowStore", () => {
   describe("secret values", () => {
     describe("setSecretValue", () => {
       it("should set a secret value for a node", () => {
-        useWorkflowStore.getState().setSecretValue("node-1", "API_KEY", "secret123");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "API_KEY", "secret123");
 
         const values = useWorkflowStore.getState().getSecretValues();
         expect(values["node-1"]).toEqual({ API_KEY: "secret123" });
       });
 
       it("should add multiple secrets to the same node", () => {
-        useWorkflowStore.getState().setSecretValue("node-1", "API_KEY", "secret123");
-        useWorkflowStore.getState().setSecretValue("node-1", "DB_PASS", "password");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "API_KEY", "secret123");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "DB_PASS", "password");
 
         const values = useWorkflowStore.getState().getSecretValues();
         expect(values["node-1"]).toEqual({
@@ -115,8 +121,12 @@ describe("WorkflowStore", () => {
 
     describe("removeSecretKey", () => {
       it("should remove a secret key from a node", () => {
-        useWorkflowStore.getState().setSecretValue("node-1", "API_KEY", "secret123");
-        useWorkflowStore.getState().setSecretValue("node-1", "DB_PASS", "password");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "API_KEY", "secret123");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "DB_PASS", "password");
 
         useWorkflowStore.getState().removeSecretKey("node-1", "API_KEY");
 
@@ -134,9 +144,13 @@ describe("WorkflowStore", () => {
 
     describe("renameSecretKey", () => {
       it("should rename a secret key preserving the value", () => {
-        useWorkflowStore.getState().setSecretValue("node-1", "OLD_KEY", "myvalue");
+        useWorkflowStore
+          .getState()
+          .setSecretValue("node-1", "OLD_KEY", "myvalue");
 
-        useWorkflowStore.getState().renameSecretKey("node-1", "OLD_KEY", "NEW_KEY");
+        useWorkflowStore
+          .getState()
+          .renameSecretKey("node-1", "OLD_KEY", "NEW_KEY");
 
         const values = useWorkflowStore.getState().getSecretValues();
         expect(values["node-1"]["NEW_KEY"]).toBe("myvalue");
@@ -144,7 +158,9 @@ describe("WorkflowStore", () => {
       });
 
       it("should handle renaming non-existent key (creates empty string)", () => {
-        useWorkflowStore.getState().renameSecretKey("node-1", "NONEXISTENT", "NEW_KEY");
+        useWorkflowStore
+          .getState()
+          .renameSecretKey("node-1", "NONEXISTENT", "NEW_KEY");
 
         const values = useWorkflowStore.getState().getSecretValues();
         expect(values["node-1"]["NEW_KEY"]).toBe("");

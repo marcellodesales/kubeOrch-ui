@@ -6,6 +6,7 @@ import {
   UpdateRegistryRequest,
   RegistryType,
 } from "@/lib/types/registry";
+import { getErrorMessage } from "@/lib/utils/errorHandling";
 
 interface RegistryStore {
   // State
@@ -16,13 +17,18 @@ interface RegistryStore {
   // Actions
   fetchRegistries: () => Promise<void>;
   createRegistry: (data: CreateRegistryRequest) => Promise<Registry>;
-  updateRegistry: (id: string, data: UpdateRegistryRequest) => Promise<Registry>;
+  updateRegistry: (
+    id: string,
+    data: UpdateRegistryRequest
+  ) => Promise<Registry>;
   deleteRegistry: (id: string) => Promise<void>;
   testConnection: (id: string) => Promise<{ status: string; message: string }>;
   setDefault: (id: string) => Promise<void>;
-  lookupRegistryForImage: (
-    image: string
-  ) => Promise<{ found: boolean; registry?: Registry; registryType?: RegistryType }>;
+  lookupRegistryForImage: (image: string) => Promise<{
+    found: boolean;
+    registry?: Registry;
+    registryType?: RegistryType;
+  }>;
 
   // Selectors
   getRegistryById: (id: string) => Registry | undefined;
@@ -43,8 +49,7 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
       const response = await api.get("/registries");
       set({ registries: response.data.registries || [], isLoading: false });
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch registries";
+      const errorMessage = getErrorMessage(error, "Failed to fetch registries");
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -56,14 +61,13 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     try {
       const response = await api.post("/admin/registries", data);
       const newRegistry = response.data.registry;
-      set((state) => ({
+      set(state => ({
         registries: [newRegistry, ...state.registries],
         isLoading: false,
       }));
       return newRegistry;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create registry";
+      const errorMessage = getErrorMessage(error, "Failed to create registry");
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -75,16 +79,15 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     try {
       const response = await api.put(`/admin/registries/${id}`, data);
       const updatedRegistry = response.data.registry;
-      set((state) => ({
-        registries: state.registries.map((r) =>
+      set(state => ({
+        registries: state.registries.map(r =>
           r.id === id ? updatedRegistry : r
         ),
         isLoading: false,
       }));
       return updatedRegistry;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update registry";
+      const errorMessage = getErrorMessage(error, "Failed to update registry");
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -95,13 +98,12 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await api.delete(`/admin/registries/${id}`);
-      set((state) => ({
-        registries: state.registries.filter((r) => r.id !== id),
+      set(state => ({
+        registries: state.registries.filter(r => r.id !== id),
         isLoading: false,
       }));
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete registry";
+      const errorMessage = getErrorMessage(error, "Failed to delete registry");
       set({ error: errorMessage, isLoading: false });
       throw error;
     }
@@ -113,8 +115,8 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
       const response = await api.post(`/admin/registries/${id}/test`);
       // Update the registry status and updatedAt in the store
       const now = new Date().toISOString();
-      set((state) => ({
-        registries: state.registries.map((r) =>
+      set(state => ({
+        registries: state.registries.map(r =>
           r.id === id
             ? { ...r, status: "connected" as const, updatedAt: now }
             : r
@@ -124,13 +126,12 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     } catch (error: unknown) {
       // Update the registry status to error and updatedAt
       const now = new Date().toISOString();
-      set((state) => ({
-        registries: state.registries.map((r) =>
+      set(state => ({
+        registries: state.registries.map(r =>
           r.id === id ? { ...r, status: "error" as const, updatedAt: now } : r
         ),
       }));
-      const errorMessage =
-        error instanceof Error ? error.message : "Connection test failed";
+      const errorMessage = getErrorMessage(error, "Connection test failed");
       return { status: "error", message: errorMessage };
     }
   },
@@ -140,10 +141,10 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     try {
       await api.put(`/admin/registries/${id}/default`);
       // Update the store to reflect the new default
-      const registry = get().registries.find((r) => r.id === id);
+      const registry = get().registries.find(r => r.id === id);
       if (registry) {
-        set((state) => ({
-          registries: state.registries.map((r) => {
+        set(state => ({
+          registries: state.registries.map(r => {
             if (r.registryType === registry.registryType) {
               return { ...r, isDefault: r.id === id };
             }
@@ -152,8 +153,10 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
         }));
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to set default registry";
+      const errorMessage = getErrorMessage(
+        error,
+        "Failed to set default registry"
+      );
       throw new Error(errorMessage);
     }
   },
@@ -161,25 +164,26 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
   // Lookup registry for an image (returns the matching registry or detection info)
   lookupRegistryForImage: async (image: string) => {
     try {
-      const response = await api.get(`/registries/lookup?image=${encodeURIComponent(image)}`);
+      const response = await api.get(
+        `/registries/lookup?image=${encodeURIComponent(image)}`
+      );
       return response.data;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to lookup registry";
+      const errorMessage = getErrorMessage(error, "Failed to lookup registry");
       throw new Error(errorMessage);
     }
   },
 
   // Selectors
   getRegistryById: (id: string) => {
-    return get().registries.find((r) => r.id === id);
+    return get().registries.find(r => r.id === id);
   },
 
   getRegistriesByType: (type: RegistryType) => {
-    return get().registries.filter((r) => r.registryType === type);
+    return get().registries.filter(r => r.registryType === type);
   },
 
   getDefaultRegistry: (type: RegistryType) => {
-    return get().registries.find((r) => r.registryType === type && r.isDefault);
+    return get().registries.find(r => r.registryType === type && r.isDefault);
   },
 }));

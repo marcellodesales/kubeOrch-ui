@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 // Mock window.matchMedia for components that use media queries
 Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
