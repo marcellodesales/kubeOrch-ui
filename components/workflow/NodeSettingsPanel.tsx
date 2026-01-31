@@ -21,6 +21,11 @@ import { configMapSettingsConfig } from "./settings/ConfigMapSettings";
 import { secretSettingsConfig } from "./settings/SecretSettings";
 import { persistentVolumeClaimSettingsConfig } from "./settings/PersistentVolumeClaimSettings";
 import { statefulSetSettingsConfig } from "./settings/StatefulSetSettings";
+import { jobSettingsConfig } from "./settings/JobSettings";
+import { cronJobSettingsConfig } from "./settings/CronJobSettings";
+import { daemonSetSettingsConfig } from "./settings/DaemonSetSettings";
+import { hpaSettingsConfig } from "./settings/HPASettings";
+import { networkPolicySettingsConfig } from "./settings/NetworkPolicySettings";
 import { usePanelStore } from "@/stores/PanelStore";
 import { ResizablePanel } from "@/components/ui/ResizablePanel";
 
@@ -67,7 +72,12 @@ interface NodeSettingsPanelProps {
     | "configmap"
     | "secret"
     | "persistentvolumeclaim"
-    | "statefulset";
+    | "statefulset"
+    | "job"
+    | "cronjob"
+    | "daemonset"
+    | "hpa"
+    | "networkpolicy";
   onClose: () => void;
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;
@@ -114,20 +124,22 @@ export default function NodeSettingsPanel({
 
   if (!isOpen || !data || !nodeId) return null;
 
-  const config =
-    nodeType === "deployment"
-      ? deploymentSettingsConfig
-      : nodeType === "service"
-        ? serviceSettingsConfig
-        : nodeType === "ingress"
-          ? ingressSettingsConfig
-          : nodeType === "configmap"
-            ? configMapSettingsConfig
-            : nodeType === "persistentvolumeclaim"
-              ? persistentVolumeClaimSettingsConfig
-              : nodeType === "statefulset"
-                ? statefulSetSettingsConfig
-                : secretSettingsConfig;
+  const settingsConfigMap: Record<string, NodeSettingsConfig> = {
+    deployment: deploymentSettingsConfig,
+    service: serviceSettingsConfig,
+    ingress: ingressSettingsConfig,
+    configmap: configMapSettingsConfig,
+    secret: secretSettingsConfig,
+    persistentvolumeclaim: persistentVolumeClaimSettingsConfig,
+    statefulset: statefulSetSettingsConfig,
+    job: jobSettingsConfig,
+    cronjob: cronJobSettingsConfig,
+    daemonset: daemonSetSettingsConfig,
+    hpa: hpaSettingsConfig,
+    networkpolicy: networkPolicySettingsConfig,
+  };
+
+  const config = settingsConfigMap[nodeType] || deploymentSettingsConfig;
 
   const handleFieldUpdate = (
     field: string,

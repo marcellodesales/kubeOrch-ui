@@ -34,6 +34,7 @@ export interface Registry {
   name: string;
   registryType: RegistryType;
   registryUrl: string;
+  previewUrl?: string; // User-friendly URL preview (e.g., "ghcr.io/username")
   status: RegistryStatus;
   isDefault: boolean;
   lastCheck?: string;
@@ -129,10 +130,11 @@ export const REGISTRY_TYPES: RegistryTypeInfo[] = [
         type: "password",
         placeholder: "ghp_...",
         required: true,
+        helpText: "Required scopes: repo (private repos), write:packages (push), read:packages (pull)",
         helpLink: {
-          prefix: "Create a PAT at",
-          linkText: "github.com/settings/tokens",
-          url: "https://github.com/settings/tokens/new?scopes=read:packages",
+          prefix: "Create a PAT with required scopes at",
+          linkText: "github.com/settings/tokens/new",
+          url: "https://github.com/settings/tokens/new?scopes=repo,write:packages,read:packages&description=KubeOrch",
         },
       },
     ],

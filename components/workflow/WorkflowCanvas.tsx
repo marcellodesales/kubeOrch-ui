@@ -35,6 +35,13 @@ import ConfigMapNode from "./ConfigMapNode";
 import SecretNode from "./SecretNode";
 import PersistentVolumeClaimNode from "./PersistentVolumeClaimNode";
 import StatefulSetNode from "./StatefulSetNode";
+import GenericPluginNode from "./GenericPluginNode";
+import JobNode from "./JobNode";
+import CronJobNode from "./CronJobNode";
+import DaemonSetNode from "./DaemonSetNode";
+import HPANode from "./HPANode";
+import NetworkPolicyNode from "./NetworkPolicyNode";
+import { PluginNodeData, PluginFieldDefinition } from "@/lib/types/nodes";
 import {
   DeploymentRequest,
   ServiceNodeData,
@@ -46,13 +53,20 @@ import {
   VolumeMount,
   PersistentVolumeClaimNodeData,
   StatefulSetNodeData,
+  JobNodeData,
+  CronJobNodeData,
+  DaemonSetNodeData,
+  HPANodeData,
+  NetworkPolicyNodeData,
 } from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
 import CommandPalette from "./CommandPalette";
 import { MiniLogsPanel } from "./MiniLogsPanel";
+import { ImportDialog } from "./ImportDialog";
 import { Workflow } from "@/lib/services/workflow";
 import { TemplateMetadata } from "@/lib/services/templates";
+import { ImportAnalysis } from "@/lib/services/import";
 
 const nodeTypes = {
   deployment: DeploymentNode,
@@ -62,6 +76,12 @@ const nodeTypes = {
   secret: SecretNode,
   persistentvolumeclaim: PersistentVolumeClaimNode,
   statefulset: StatefulSetNode,
+  plugin: GenericPluginNode,
+  job: JobNode,
+  cronjob: CronJobNode,
+  daemonset: DaemonSetNode,
+  hpa: HPANode,
+  networkpolicy: NetworkPolicyNode,
 };
 
 interface WorkflowCanvasProps {
@@ -110,6 +130,7 @@ function WorkflowCanvasContent({
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const [workflowSettingsOpen, setWorkflowSettingsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeData, setSelectedNodeData] =
     useState<WorkflowNodeData | null>(null);
@@ -351,15 +372,32 @@ function WorkflowCanvasContent({
       // Config flow: ConfigMap/Secret → Deployment/StatefulSet
       // Storage flow: PVC → Deployment/StatefulSet
       const validPairs = [
+        // Traffic flow
         ["ingress", "service"], // Ingress routes to Service
         ["service", "deployment"], // Service routes to Deployment
         ["service", "statefulset"], // Service routes to StatefulSet
+        ["service", "daemonset"], // Service routes to DaemonSet
+        // Config flow
         ["configmap", "deployment"], // ConfigMap mounts to Deployment
         ["configmap", "statefulset"], // ConfigMap mounts to StatefulSet
+        ["configmap", "job"], // ConfigMap mounts to Job
+        ["configmap", "cronjob"], // ConfigMap mounts to CronJob
+        ["configmap", "daemonset"], // ConfigMap mounts to DaemonSet
         ["secret", "deployment"], // Secret mounts to Deployment
         ["secret", "statefulset"], // Secret mounts to StatefulSet
+        ["secret", "job"], // Secret mounts to Job
+        ["secret", "cronjob"], // Secret mounts to CronJob
+        ["secret", "daemonset"], // Secret mounts to DaemonSet
+        // Storage flow
         ["persistentvolumeclaim", "deployment"], // PVC mounts to Deployment
         ["persistentvolumeclaim", "statefulset"], // PVC mounts to StatefulSet
+        // HPA scales workloads (HPA is source)
+        ["hpa", "deployment"], // HPA scales Deployment
+        ["hpa", "statefulset"], // HPA scales StatefulSet
+        // NetworkPolicy applies to workloads (NetworkPolicy is source)
+        ["networkpolicy", "deployment"], // NetworkPolicy applies to Deployment
+        ["networkpolicy", "statefulset"], // NetworkPolicy applies to StatefulSet
+        ["networkpolicy", "daemonset"], // NetworkPolicy applies to DaemonSet
       ];
 
       return validPairs.some(
@@ -690,6 +728,302 @@ function WorkflowCanvasContent({
             });
           }
 
+          // Service (source) → DaemonSet (target)
+          // Update Service with daemonset name/port
+          if (
+            sourceNode?.type === "service" &&
+            targetNode?.type === "daemonset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const daemonSetData = targetNode.data as DaemonSetNodeData;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    targetApp: daemonSetData.name,
+                    targetPort: daemonSetData.port,
+                    _linkedDeployment: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // ConfigMap (source) → Job (target)
+          // Add volume mount to job
+          if (sourceNode?.type === "configmap" && targetNode?.type === "job") {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const configMapData = sourceNode.data as ConfigMapNodeData;
+                const jobData = n.data as JobNodeData;
+                const existingMounts = jobData.volumeMounts || [];
+                const existingLinked = jobData._linkedConfigMaps || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "configMap",
+                  name: configMapData.name,
+                  mountPath: configMapData.mountPath || "/etc/config",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...jobData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedConfigMaps: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // ConfigMap (source) → CronJob (target)
+          // Add volume mount to cronjob
+          if (
+            sourceNode?.type === "configmap" &&
+            targetNode?.type === "cronjob"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const configMapData = sourceNode.data as ConfigMapNodeData;
+                const cronJobData = n.data as CronJobNodeData;
+                const existingMounts = cronJobData.volumeMounts || [];
+                const existingLinked = cronJobData._linkedConfigMaps || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "configMap",
+                  name: configMapData.name,
+                  mountPath: configMapData.mountPath || "/etc/config",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...cronJobData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedConfigMaps: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // ConfigMap (source) → DaemonSet (target)
+          // Add volume mount to daemonset
+          if (
+            sourceNode?.type === "configmap" &&
+            targetNode?.type === "daemonset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const configMapData = sourceNode.data as ConfigMapNodeData;
+                const daemonSetData = n.data as DaemonSetNodeData;
+                const existingMounts = daemonSetData.volumeMounts || [];
+                const existingLinked = daemonSetData._linkedConfigMaps || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "configMap",
+                  name: configMapData.name,
+                  mountPath: configMapData.mountPath || "/etc/config",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...daemonSetData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedConfigMaps: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Secret (source) → Job (target)
+          // Add volume mount to job
+          if (sourceNode?.type === "secret" && targetNode?.type === "job") {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const secretData = sourceNode.data as SecretNodeData;
+                const jobData = n.data as JobNodeData;
+                const existingMounts = jobData.volumeMounts || [];
+                const existingLinked = jobData._linkedSecrets || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "secret",
+                  name: secretData.name,
+                  mountPath: secretData.mountPath || "/etc/secrets",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...jobData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedSecrets: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Secret (source) → CronJob (target)
+          // Add volume mount to cronjob
+          if (sourceNode?.type === "secret" && targetNode?.type === "cronjob") {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const secretData = sourceNode.data as SecretNodeData;
+                const cronJobData = n.data as CronJobNodeData;
+                const existingMounts = cronJobData.volumeMounts || [];
+                const existingLinked = cronJobData._linkedSecrets || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "secret",
+                  name: secretData.name,
+                  mountPath: secretData.mountPath || "/etc/secrets",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...cronJobData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedSecrets: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // Secret (source) → DaemonSet (target)
+          // Add volume mount to daemonset
+          if (
+            sourceNode?.type === "secret" &&
+            targetNode?.type === "daemonset"
+          ) {
+            return nds.map(n => {
+              if (n.id === params.target) {
+                const secretData = sourceNode.data as SecretNodeData;
+                const daemonSetData = n.data as DaemonSetNodeData;
+                const existingMounts = daemonSetData.volumeMounts || [];
+                const existingLinked = daemonSetData._linkedSecrets || [];
+
+                if (existingLinked.includes(params.source!)) {
+                  return n;
+                }
+
+                const newMount: VolumeMount = {
+                  type: "secret",
+                  name: secretData.name,
+                  mountPath: secretData.mountPath || "/etc/secrets",
+                  nodeId: params.source!,
+                };
+
+                return {
+                  ...n,
+                  data: {
+                    ...daemonSetData,
+                    volumeMounts: [...existingMounts, newMount],
+                    _linkedSecrets: [...existingLinked, params.source!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // HPA (source) → Deployment/StatefulSet (target)
+          // Auto-populate HPA's scaleTargetRef fields
+          if (
+            sourceNode?.type === "hpa" &&
+            (targetNode?.type === "deployment" ||
+              targetNode?.type === "statefulset")
+          ) {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const targetData = targetNode.data as
+                  | DeploymentRequest
+                  | StatefulSetNodeData;
+                const targetKind =
+                  targetNode.type === "deployment"
+                    ? "Deployment"
+                    : "StatefulSet";
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    scaleTargetKind: targetKind,
+                    scaleTargetName: targetData.name,
+                    _linkedTarget: params.target,
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
+          // NetworkPolicy (source) → Deployment/StatefulSet/DaemonSet (target)
+          // Auto-populate NetworkPolicy's podSelector
+          if (
+            sourceNode?.type === "networkpolicy" &&
+            (targetNode?.type === "deployment" ||
+              targetNode?.type === "statefulset" ||
+              targetNode?.type === "daemonset")
+          ) {
+            return nds.map(n => {
+              if (n.id === params.source) {
+                const targetData = targetNode.data as
+                  | DeploymentRequest
+                  | StatefulSetNodeData
+                  | DaemonSetNodeData;
+                const existingLinked =
+                  (n.data as NetworkPolicyNodeData)._linkedWorkloads || [];
+                if (existingLinked.includes(params.target!)) return n;
+                return {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    podSelector: { app: targetData.name },
+                    _linkedWorkloads: [...existingLinked, params.target!],
+                  },
+                };
+              }
+              return n;
+            });
+          }
+
           return nds;
         });
       }
@@ -969,6 +1303,270 @@ function WorkflowCanvasContent({
             }
           }
 
+          // Clear Job's linked ConfigMap/Secret fields
+          if (node.type === "job") {
+            const jobData = node.data as JobNodeData;
+            let updated = false;
+            let newLinkedConfigMaps = jobData._linkedConfigMaps || [];
+            let newLinkedSecrets = jobData._linkedSecrets || [];
+            let newVolumeMounts = jobData.volumeMounts || [];
+
+            const deletedConfigMapIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type === "configmap"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedConfigMapIds.length > 0) {
+              newLinkedConfigMaps = newLinkedConfigMaps.filter(
+                id => !deletedConfigMapIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    m.type === "configMap" &&
+                    deletedConfigMapIds.includes(m.nodeId)
+                  )
+              );
+              updated = true;
+            }
+
+            const deletedSecretIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return nds.find(n => n.id === otherNodeId)?.type === "secret";
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedSecretIds.length > 0) {
+              newLinkedSecrets = newLinkedSecrets.filter(
+                id => !deletedSecretIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(m.type === "secret" && deletedSecretIds.includes(m.nodeId))
+              );
+              updated = true;
+            }
+
+            if (updated) {
+              return {
+                ...node,
+                data: {
+                  ...jobData,
+                  _linkedConfigMaps: newLinkedConfigMaps,
+                  _linkedSecrets: newLinkedSecrets,
+                  volumeMounts: newVolumeMounts,
+                },
+              };
+            }
+          }
+
+          // Clear CronJob's linked ConfigMap/Secret fields
+          if (node.type === "cronjob") {
+            const cronJobData = node.data as CronJobNodeData;
+            let updated = false;
+            let newLinkedConfigMaps = cronJobData._linkedConfigMaps || [];
+            let newLinkedSecrets = cronJobData._linkedSecrets || [];
+            let newVolumeMounts = cronJobData.volumeMounts || [];
+
+            const deletedConfigMapIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type === "configmap"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedConfigMapIds.length > 0) {
+              newLinkedConfigMaps = newLinkedConfigMaps.filter(
+                id => !deletedConfigMapIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    m.type === "configMap" &&
+                    deletedConfigMapIds.includes(m.nodeId)
+                  )
+              );
+              updated = true;
+            }
+
+            const deletedSecretIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return nds.find(n => n.id === otherNodeId)?.type === "secret";
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedSecretIds.length > 0) {
+              newLinkedSecrets = newLinkedSecrets.filter(
+                id => !deletedSecretIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(m.type === "secret" && deletedSecretIds.includes(m.nodeId))
+              );
+              updated = true;
+            }
+
+            if (updated) {
+              return {
+                ...node,
+                data: {
+                  ...cronJobData,
+                  _linkedConfigMaps: newLinkedConfigMaps,
+                  _linkedSecrets: newLinkedSecrets,
+                  volumeMounts: newVolumeMounts,
+                },
+              };
+            }
+          }
+
+          // Clear DaemonSet's linked ConfigMap/Secret fields
+          if (node.type === "daemonset") {
+            const daemonSetData = node.data as DaemonSetNodeData;
+            let updated = false;
+            let newLinkedConfigMaps = daemonSetData._linkedConfigMaps || [];
+            let newLinkedSecrets = daemonSetData._linkedSecrets || [];
+            let newVolumeMounts = daemonSetData.volumeMounts || [];
+
+            const deletedConfigMapIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return (
+                  nds.find(n => n.id === otherNodeId)?.type === "configmap"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedConfigMapIds.length > 0) {
+              newLinkedConfigMaps = newLinkedConfigMaps.filter(
+                id => !deletedConfigMapIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(
+                    m.type === "configMap" &&
+                    deletedConfigMapIds.includes(m.nodeId)
+                  )
+              );
+              updated = true;
+            }
+
+            const deletedSecretIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                return nds.find(n => n.id === otherNodeId)?.type === "secret";
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedSecretIds.length > 0) {
+              newLinkedSecrets = newLinkedSecrets.filter(
+                id => !deletedSecretIds.includes(id)
+              );
+              newVolumeMounts = newVolumeMounts.filter(
+                m =>
+                  !(m.type === "secret" && deletedSecretIds.includes(m.nodeId))
+              );
+              updated = true;
+            }
+
+            if (updated) {
+              return {
+                ...node,
+                data: {
+                  ...daemonSetData,
+                  _linkedConfigMaps: newLinkedConfigMaps,
+                  _linkedSecrets: newLinkedSecrets,
+                  volumeMounts: newVolumeMounts,
+                },
+              };
+            }
+          }
+
+          // Clear HPA's linked workload fields
+          if (node.type === "hpa") {
+            const hpaData = node.data as HPANodeData;
+            const hasWorkloadEdge = deletedEdgesForNode.some(edge => {
+              const otherNodeId =
+                edge.source === node.id ? edge.target : edge.source;
+              const otherType = nds.find(n => n.id === otherNodeId)?.type;
+              return otherType === "deployment" || otherType === "statefulset";
+            });
+
+            if (hasWorkloadEdge) {
+              return {
+                ...node,
+                data: {
+                  ...hpaData,
+                  scaleTargetKind: undefined,
+                  scaleTargetName: "",
+                  _linkedTarget: undefined,
+                },
+              };
+            }
+          }
+
+          // Clear NetworkPolicy's linked workload fields
+          if (node.type === "networkpolicy") {
+            const networkPolicyData = node.data as NetworkPolicyNodeData;
+            const deletedWorkloadIds = deletedEdgesForNode
+              .filter(edge => {
+                const otherNodeId =
+                  edge.source === node.id ? edge.target : edge.source;
+                const otherType = nds.find(n => n.id === otherNodeId)?.type;
+                return (
+                  otherType === "deployment" ||
+                  otherType === "statefulset" ||
+                  otherType === "daemonset"
+                );
+              })
+              .map(edge =>
+                edge.source === node.id ? edge.target : edge.source
+              );
+
+            if (deletedWorkloadIds.length > 0) {
+              const remainingLinked = (
+                networkPolicyData._linkedWorkloads || []
+              ).filter(id => !deletedWorkloadIds.includes(id));
+              return {
+                ...node,
+                data: {
+                  ...networkPolicyData,
+                  podSelector:
+                    remainingLinked.length > 0
+                      ? networkPolicyData.podSelector
+                      : {},
+                  _linkedWorkloads:
+                    remainingLinked.length > 0 ? remainingLinked : undefined,
+                },
+              };
+            }
+          }
+
           return node;
         });
       });
@@ -979,6 +1577,58 @@ function WorkflowCanvasContent({
   const handleCommandPaletteClose = useCallback(() => {
     setCommandPaletteOpen(false);
   }, []);
+
+  const handleImport = useCallback(
+    (analysis: ImportAnalysis) => {
+      // Calculate offset to avoid overlapping with existing nodes
+      const existingMaxX = nodes.reduce(
+        (max, n) => Math.max(max, n.position.x),
+        0
+      );
+      const offsetX = existingMaxX > 0 ? existingMaxX + 300 : 0;
+
+      // Find max node ID to avoid collisions
+      let maxId = getNextNodeId(nodes);
+
+      // Map old node IDs to new node IDs
+      const idMap: Record<string, string> = {};
+      const newNodes: Node[] = analysis.suggestedNodes.map(node => {
+        const newId = `node-${maxId}`;
+        idMap[node.id] = newId;
+        maxId++;
+
+        return {
+          ...node,
+          id: newId,
+          position: {
+            x: node.position.x + offsetX,
+            y: node.position.y,
+          },
+          data: {
+            ...node.data,
+            id: newId,
+          },
+        };
+      });
+
+      // Update edges to use new node IDs
+      const newEdges: Edge[] = analysis.suggestedEdges.map(edge => ({
+        ...edge,
+        id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        source: idMap[edge.source] || edge.source,
+        target: idMap[edge.target] || edge.target,
+      }));
+
+      setNodes(nds => [...nds, ...newNodes]);
+      setEdges(eds => [...eds, ...newEdges]);
+      setNodeId(maxId);
+
+      toast.success(
+        `Imported ${newNodes.length} nodes and ${newEdges.length} connections`
+      );
+    },
+    [nodes, getNextNodeId, setNodes, setEdges]
+  );
 
   const handleSelectTemplate = useCallback(
     (template: TemplateMetadata) => {
@@ -1121,6 +1771,150 @@ function WorkflowCanvasContent({
             port: 5432,
             templateId: template.id,
           },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "job") {
+        const newNode: Node<JobNodeData> = {
+          id: nodeIdStr,
+          type: "job",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `job-${nodeId}`,
+            namespace: "default",
+            image: "",
+            completions: 1,
+            parallelism: 1,
+            backoffLimit: 6,
+            restartPolicy: "Never",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "cronjob") {
+        const newNode: Node<CronJobNodeData> = {
+          id: nodeIdStr,
+          type: "cronjob",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `cronjob-${nodeId}`,
+            namespace: "default",
+            schedule: "0 * * * *",
+            image: "",
+            concurrencyPolicy: "Allow",
+            suspend: false,
+            successfulJobsHistoryLimit: 3,
+            failedJobsHistoryLimit: 1,
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "daemonset") {
+        const newNode: Node<DaemonSetNodeData> = {
+          id: nodeIdStr,
+          type: "daemonset",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `daemonset-${nodeId}`,
+            namespace: "default",
+            image: "",
+            port: 8080,
+            updateStrategy: "RollingUpdate",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "hpa") {
+        const newNode: Node<HPANodeData> = {
+          id: nodeIdStr,
+          type: "hpa",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `hpa-${nodeId}`,
+            namespace: "default",
+            minReplicas: 1,
+            maxReplicas: 10,
+            targetCPUUtilization: 80,
+            scaleTargetKind: "Deployment",
+            scaleTargetName: "",
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.name === "networkpolicy") {
+        const newNode: Node<NetworkPolicyNodeData> = {
+          id: nodeIdStr,
+          type: "networkpolicy",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: {
+            id: nodeIdStr,
+            name: `networkpolicy-${nodeId}`,
+            namespace: "default",
+            podSelector: {},
+            policyTypes: ["Ingress"],
+            templateId: template.id,
+          },
+        };
+        setNodes(nds => [...nds, newNode]);
+      } else if (template.isPlugin) {
+        // Handle plugin templates dynamically
+        const pluginFields: PluginFieldDefinition[] = template.parameters.map(
+          param => ({
+            id: param.name,
+            label: param.label,
+            type: param.type,
+            required: param.required,
+            default: param.default as string | undefined,
+            options: param.options,
+            placeholder: param.description,
+          })
+        );
+
+        // Build initial data from template parameters
+        const initialData: Record<string, unknown> = {
+          id: nodeIdStr,
+          name: `${template.name}-${nodeId}`,
+          namespace: "default",
+          templateId: template.id,
+          pluginId: template.pluginId,
+          pluginCategory: template.category,
+          displayName: template.displayName,
+          _pluginFields: pluginFields,
+        };
+
+        // Set default values from parameters
+        for (const param of template.parameters) {
+          if (param.default !== undefined) {
+            initialData[param.name] = param.default;
+          }
+        }
+
+        const newNode: Node<PluginNodeData> = {
+          id: nodeIdStr,
+          type: "plugin",
+          position: {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 300 + 100,
+          },
+          data: initialData as PluginNodeData,
         };
         setNodes(nds => [...nds, newNode]);
       }
@@ -1419,6 +2213,12 @@ function WorkflowCanvasContent({
         onSelectTemplate={handleSelectTemplate}
       />
 
+      <ImportDialog
+        isOpen={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImport={handleImport}
+      />
+
       {workflow && (
         <WorkflowSettingsPanel
           isOpen={workflowSettingsOpen}
@@ -1441,6 +2241,10 @@ function WorkflowCanvasContent({
             onNodesChangeProp?.(restoredNodes as Node[]);
             onEdgesChangeProp?.(restoredEdges as Edge[]);
             toast.success("Workflow restored to previous version");
+          }}
+          onImport={() => {
+            setWorkflowSettingsOpen(false);
+            setImportDialogOpen(true);
           }}
         />
       )}

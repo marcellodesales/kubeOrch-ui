@@ -156,7 +156,7 @@ function formatLastTested(date?: string): string {
   return d.toLocaleDateString();
 }
 
-export default function PluginsPage() {
+export default function RegistriesPage() {
   const router = useRouter();
   const {
     registries,
@@ -177,7 +177,8 @@ export default function PluginsPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Plugins" },
+    { label: "Integrations", href: "/dashboard/integrations" },
+    { label: "Registries" },
   ];
 
   useEffect(() => {
@@ -231,7 +232,9 @@ export default function PluginsPage() {
   };
 
   const pageActions = isAdmin ? (
-    <Button onClick={() => router.push("/dashboard/plugins/new")}>
+    <Button
+      onClick={() => router.push("/dashboard/integrations/registries/new")}
+    >
       <Plus className="mr-2 h-4 w-4" />
       Add Registry
     </Button>
@@ -240,7 +243,7 @@ export default function PluginsPage() {
   return (
     <AppLayout>
       <PageContainer
-        title="Plugins"
+        title="Container Registries"
         description="Connect to private container registries to pull images in your workflows"
         breadcrumbs={breadcrumbs}
         actions={pageActions}
@@ -265,7 +268,11 @@ export default function PluginsPage() {
                 : "No container registries have been configured yet. Contact an admin to set them up."}
             </p>
             {isAdmin && (
-              <Button onClick={() => router.push("/dashboard/plugins/new")}>
+              <Button
+                onClick={() =>
+                  router.push("/dashboard/integrations/registries/new")
+                }
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Registry
               </Button>
@@ -321,12 +328,12 @@ export default function PluginsPage() {
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
                       {provider.name}
-                      {registry.registryUrl && (
-                        <span className="ml-2 font-mono text-xs opacity-75">
-                          {registry.registryUrl}
-                        </span>
-                      )}
                     </p>
+                    {registry.previewUrl && (
+                      <p className="font-mono text-xs text-muted-foreground/75 truncate mb-1">
+                        {registry.previewUrl}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground/75">
                       Last tested: {formatLastTested(registry.updatedAt)}
                     </p>
@@ -383,7 +390,7 @@ export default function PluginsPage() {
                           <DropdownMenuItem
                             onClick={() =>
                               router.push(
-                                `/dashboard/plugins/${registry.id}/edit`
+                                `/dashboard/integrations/registries/${registry.id}/edit`
                               )
                             }
                           >
