@@ -46,7 +46,7 @@ import {
   isValidGitUrl,
   detectSourceFromUrl,
 } from "@/lib/services/import";
-import { useImportStream, ImportLog } from "@/lib/hooks/useImportStream";
+import { useImportStream } from "@/lib/hooks/useImportStream";
 import { ImportPreview } from "./ImportPreview";
 
 interface ImportDialogProps {
@@ -508,8 +508,8 @@ export function ImportDialog({
                               log.level === "error"
                                 ? "text-red-500"
                                 : log.level === "warn"
-                                ? "text-yellow-500"
-                                : "text-zinc-400"
+                                  ? "text-yellow-500"
+                                  : "text-zinc-400"
                             }`}
                           >
                             {log.message}

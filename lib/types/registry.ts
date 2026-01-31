@@ -130,7 +130,8 @@ export const REGISTRY_TYPES: RegistryTypeInfo[] = [
         type: "password",
         placeholder: "ghp_...",
         required: true,
-        helpText: "Required scopes: repo (private repos), write:packages (push), read:packages (pull)",
+        helpText:
+          "Required scopes: repo (private repos), write:packages (push), read:packages (pull)",
         helpLink: {
           prefix: "Create a PAT with required scopes at",
           linkText: "github.com/settings/tokens/new",

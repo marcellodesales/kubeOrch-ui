@@ -167,26 +167,30 @@ export function useBuildStream(
                       // Build log line - data can be nested in parsedData.data or directly in parsedData
                       const logData = parsedData.data || parsedData;
                       const logEntry: BuildLog = {
-                        timestamp: parsedData.timestamp || new Date().toISOString(),
+                        timestamp:
+                          parsedData.timestamp || new Date().toISOString(),
                         stage: logData.stage || logData.currentStage || "",
                         message: logData.message || "",
                         level: logData.level || "info",
                         stream: logData.stream,
                       };
-                      setLogs((prev) => [...prev, logEntry]);
+                      setLogs(prev => [...prev, logEntry]);
                       break;
 
                     case "progress":
                       // Status/progress update - data can be nested
                       const progressData = parsedData.data || parsedData;
-                      setBuild((prev) => {
+                      setBuild(prev => {
                         if (!prev) return parsedData;
                         const newStatus = progressData.status || prev.status;
                         buildStatusRef.current = newStatus;
                         return {
                           ...prev,
                           status: newStatus,
-                          currentStage: progressData.current_stage || progressData.currentStage || prev.currentStage,
+                          currentStage:
+                            progressData.current_stage ||
+                            progressData.currentStage ||
+                            prev.currentStage,
                           progress: progressData.progress ?? prev.progress,
                         };
                       });
@@ -196,16 +200,25 @@ export function useBuildStream(
                       // Build finished successfully - data can be nested
                       const completeData = parsedData.data || parsedData;
                       buildStatusRef.current = "completed";
-                      setBuild((prev) => {
+                      setBuild(prev => {
                         if (!prev) return parsedData;
                         return {
                           ...prev,
                           status: "completed" as BuildStatus,
                           currentStage: "Completed",
                           progress: 100,
-                          finalImageRef: completeData.final_image_ref || completeData.finalImageRef || prev.finalImageRef,
-                          imageDigest: completeData.image_digest || completeData.imageDigest || prev.imageDigest,
-                          imageSize: completeData.image_size || completeData.imageSize || prev.imageSize,
+                          finalImageRef:
+                            completeData.final_image_ref ||
+                            completeData.finalImageRef ||
+                            prev.finalImageRef,
+                          imageDigest:
+                            completeData.image_digest ||
+                            completeData.imageDigest ||
+                            prev.imageDigest,
+                          imageSize:
+                            completeData.image_size ||
+                            completeData.imageSize ||
+                            prev.imageSize,
                         };
                       });
                       setIsConnected(false);
@@ -215,14 +228,18 @@ export function useBuildStream(
                       // Build failed - data can be nested
                       const failedData = parsedData.data || parsedData;
                       buildStatusRef.current = "failed";
-                      setBuild((prev) => {
+                      setBuild(prev => {
                         if (!prev) return parsedData;
                         return {
                           ...prev,
                           status: "failed" as BuildStatus,
                           currentStage: "Failed",
-                          errorMessage: failedData.error_message || failedData.errorMessage || failedData.error,
-                          errorStage: failedData.error_stage || failedData.errorStage,
+                          errorMessage:
+                            failedData.error_message ||
+                            failedData.errorMessage ||
+                            failedData.error,
+                          errorStage:
+                            failedData.error_stage || failedData.errorStage,
                         };
                       });
                       setIsConnected(false);
@@ -231,7 +248,7 @@ export function useBuildStream(
                     case "cancelled":
                       // Build cancelled
                       buildStatusRef.current = "cancelled";
-                      setBuild((prev) => {
+                      setBuild(prev => {
                         if (!prev) return parsedData;
                         return {
                           ...prev,
@@ -277,7 +294,11 @@ export function useBuildStream(
       activeConnections.delete(connectionKey);
 
       // Auto-reconnect after delay (only if build is still in progress)
-      if (enabled && buildStatusRef.current && !isBuildTerminal(buildStatusRef.current)) {
+      if (
+        enabled &&
+        buildStatusRef.current &&
+        !isBuildTerminal(buildStatusRef.current)
+      ) {
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, RECONNECT_DELAY_MS);

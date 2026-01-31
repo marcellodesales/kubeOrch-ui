@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Workflow, WorkflowNode, WorkflowEdge } from "@/lib/services/workflow";
 import VersionHistory from "@/components/workflow/version/VersionHistory";
-import { ImportAnalysis } from "@/lib/services/import";
 
 interface WorkflowSettingsPanelProps {
   isOpen: boolean;
@@ -188,11 +187,7 @@ export default function WorkflowSettingsPanel({
 
             <div className="border-t p-4 space-y-2">
               {onImport && (
-                <Button
-                  onClick={onImport}
-                  variant="outline"
-                  className="w-full"
-                >
+                <Button onClick={onImport} variant="outline" className="w-full">
                   <Upload className="h-4 w-4 mr-2" />
                   Import from docker-compose or Git
                 </Button>

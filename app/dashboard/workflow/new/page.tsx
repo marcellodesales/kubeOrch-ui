@@ -92,10 +92,11 @@ export default function NewWorkflowPage() {
   const processedSessionsRef = useRef<Set<string>>(new Set());
 
   // Subscribe to async import stream when we have a session ID
-  const { session: importSession, analysis: asyncAnalysis, error: streamError } = useImportStream(
-    asyncSessionId || "",
-    !!asyncSessionId
-  );
+  const {
+    session: importSession,
+    analysis: asyncAnalysis,
+    error: streamError,
+  } = useImportStream(asyncSessionId || "", !!asyncSessionId);
 
   // File upload state
   const [dragActive, setDragActive] = useState(false);
@@ -126,11 +127,15 @@ export default function NewWorkflowPage() {
       processedSessionsRef.current.add(asyncSessionId);
 
       // Validate the analysis has required data
-      if (asyncAnalysis.suggestedNodes && asyncAnalysis.suggestedNodes.length > 0) {
+      if (
+        asyncAnalysis.suggestedNodes &&
+        asyncAnalysis.suggestedNodes.length > 0
+      ) {
         setAnalyses(prev => {
           // Auto-fill workflow name from first import (when prev is empty)
           if (prev.length === 0 && asyncAnalysis.services?.length > 0) {
-            const firstName = (asyncAnalysis.services[0] as { name: string }).name;
+            const firstName = (asyncAnalysis.services[0] as { name: string })
+              .name;
             setFormData(formPrev => ({
               ...formPrev,
               name: formPrev.name || `${firstName}-workflow`,
@@ -264,7 +269,9 @@ export default function NewWorkflowPage() {
 
       // Validate result has proper analysis data
       if (!result.analysis || !result.analysis.suggestedNodes) {
-        throw new Error("Failed to analyze file - no deployable resources found");
+        throw new Error(
+          "Failed to analyze file - no deployable resources found"
+        );
       }
 
       // Add to analyses array
@@ -321,7 +328,9 @@ export default function NewWorkflowPage() {
       // Extract repo/file name from URL for display
       const urlParts = importUrl.split("/");
       const sourceName =
-        urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2] || importUrl;
+        urlParts[urlParts.length - 1] ||
+        urlParts[urlParts.length - 2] ||
+        importUrl;
 
       // Check if this is an async import (requires SSE streaming)
       if (result.async && result.sessionId) {
@@ -335,7 +344,10 @@ export default function NewWorkflowPage() {
 
       // Sync response - validate result has proper analysis data
       if (!result.analysis || !result.analysis.suggestedNodes) {
-        throw new Error(result.analysis?.errors?.[0]?.message || "Failed to analyze repository - no deployable resources found");
+        throw new Error(
+          result.analysis?.errors?.[0]?.message ||
+            "Failed to analyze repository - no deployable resources found"
+        );
       }
 
       // Add to analyses array
@@ -839,13 +851,15 @@ export default function NewWorkflowPage() {
                         <Alert className="py-2 border-amber-500/50 bg-amber-500/10">
                           <Hammer className="h-4 w-4 text-amber-500" />
                           <AlertDescription className="text-sm">
-                            <strong className="text-amber-600 dark:text-amber-400">Build Required:</strong>{" "}
-                            This repository needs to be built into a container image before deployment.
-                            You&apos;ll be redirected to the build page when you create the workflow.
+                            <strong className="text-amber-600 dark:text-amber-400">
+                              Build Required:
+                            </strong>{" "}
+                            This repository needs to be built into a container
+                            image before deployment. You&apos;ll be redirected
+                            to the build page when you create the workflow.
                           </AlertDescription>
                         </Alert>
                       )}
-
                     </div>
                   </CardContent>
                 </Card>

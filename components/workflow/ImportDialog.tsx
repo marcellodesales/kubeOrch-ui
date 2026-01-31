@@ -303,7 +303,9 @@ export function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            onClick={() => document.getElementById("import-file-input")?.click()}
+            onClick={() =>
+              document.getElementById("import-file-input")?.click()
+            }
           >
             <input
               id="import-file-input"

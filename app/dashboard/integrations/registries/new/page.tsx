@@ -49,28 +49,29 @@ export default function NewRegistryPage() {
     { label: "Add Registry" },
   ];
 
-  const pageActions = step === "select" ? (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => router.push("/dashboard/integrations/registries")}
-    >
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      Back to Registries
-    </Button>
-  ) : (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => {
-        setStep("select");
-        setSelectedType(null);
-      }}
-    >
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      Back to Registry Selection
-    </Button>
-  );
+  const pageActions =
+    step === "select" ? (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => router.push("/dashboard/integrations/registries")}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Registries
+      </Button>
+    ) : (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setStep("select");
+          setSelectedType(null);
+        }}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Registry Selection
+      </Button>
+    );
 
   const handleSelectType = (type: RegistryType) => {
     setSelectedType(type);
@@ -229,10 +230,18 @@ export default function NewRegistryPage() {
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                           <p>
-                            <strong>Required GitHub PAT Scopes:</strong> For building and pushing images,
-                            your token needs <code className="bg-muted px-1 rounded">repo</code> (for private repos),{" "}
-                            <code className="bg-muted px-1 rounded">write:packages</code> (to push images), and{" "}
-                            <code className="bg-muted px-1 rounded">read:packages</code> (to pull images).
+                            <strong>Required GitHub PAT Scopes:</strong> For
+                            building and pushing images, your token needs{" "}
+                            <code className="bg-muted px-1 rounded">repo</code>{" "}
+                            (for private repos),{" "}
+                            <code className="bg-muted px-1 rounded">
+                              write:packages
+                            </code>{" "}
+                            (to push images), and{" "}
+                            <code className="bg-muted px-1 rounded">
+                              read:packages
+                            </code>{" "}
+                            (to pull images).
                           </p>
                         </AlertDescription>
                       </Alert>

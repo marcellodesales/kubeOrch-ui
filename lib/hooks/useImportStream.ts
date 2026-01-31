@@ -222,12 +222,12 @@ export function useImportStream(
                         level:
                           parsedData.data?.level || parsedData.level || "info",
                       };
-                      setLogs((prev) => [...prev, logEntry]);
+                      setLogs(prev => [...prev, logEntry]);
                       break;
 
                     case "progress":
                       // Status/progress update
-                      setSession((prev) => {
+                      setSession(prev => {
                         const newSession: ImportSession = prev
                           ? { ...prev }
                           : {
@@ -264,7 +264,7 @@ export function useImportStream(
                         setAnalysis(completedAnalysis);
                       }
                       sessionStatusRef.current = "completed";
-                      setSession((prev) => ({
+                      setSession(prev => ({
                         ...(prev || {
                           id: sessionId,
                           currentStage: "Completed",
@@ -281,7 +281,7 @@ export function useImportStream(
                     case "failed":
                       // Import failed
                       sessionStatusRef.current = "failed";
-                      setSession((prev) => ({
+                      setSession(prev => ({
                         ...(prev || {
                           id: sessionId,
                           currentStage: "Failed",
@@ -335,7 +335,11 @@ export function useImportStream(
       activeConnections.delete(connectionKey);
 
       // Auto-reconnect after delay (only if import is still in progress)
-      if (enabled && sessionStatusRef.current && !isImportTerminal(sessionStatusRef.current)) {
+      if (
+        enabled &&
+        sessionStatusRef.current &&
+        !isImportTerminal(sessionStatusRef.current)
+      ) {
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, RECONNECT_DELAY_MS);
