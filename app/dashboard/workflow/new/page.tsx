@@ -213,54 +213,7 @@ export default function NewWorkflowPage() {
   }, []);
 
   // File handling
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    setImportError(null);
-    setImportUrl("");
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.name.endsWith(".yml") || file.name.endsWith(".yaml")) {
-        setSelectedFile(file);
-        // Auto-analyze on drop
-        analyzeFile(file);
-      } else {
-        setImportError("Please upload a .yml or .yaml file");
-      }
-    }
-  }, []);
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setImportError(null);
-      setImportUrl("");
-      if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        if (file.name.endsWith(".yml") || file.name.endsWith(".yaml")) {
-          setSelectedFile(file);
-          // Auto-analyze on select
-          analyzeFile(file);
-        } else {
-          setImportError("Please upload a .yml or .yaml file");
-        }
-      }
-    },
-    []
-  );
-
-  const analyzeFile = async (file: File) => {
+  const analyzeFile = useCallback(async (file: File) => {
     setIsAnalyzing(true);
     setImportError(null);
 
@@ -274,24 +227,28 @@ export default function NewWorkflowPage() {
         );
       }
 
-      // Add to analyses array
-      setAnalyses(prev => [
-        ...prev,
-        {
-          id: `file-${Date.now()}`,
-          source: file.name,
-          analysis: result.analysis,
-        },
-      ]);
+      // Add to analyses array and auto-fill workflow name if first import
+      setAnalyses(prev => {
+        const isFirstImport = prev.length === 0;
 
-      // Auto-fill workflow name from first import
-      if (analyses.length === 0 && result.analysis.services?.length > 0) {
-        const firstName = result.analysis.services[0].name;
-        setFormData(prev => ({
+        // Auto-fill workflow name from first import
+        if (isFirstImport && result.analysis.services?.length > 0) {
+          const firstName = result.analysis.services[0].name;
+          setFormData(formPrev => ({
+            ...formPrev,
+            name: formPrev.name || `${firstName}-workflow`,
+          }));
+        }
+
+        return [
           ...prev,
-          name: prev.name || `${firstName}-workflow`,
-        }));
-      }
+          {
+            id: `file-${Date.now()}`,
+            source: file.name,
+            analysis: result.analysis,
+          },
+        ];
+      });
 
       // Clear file input for next import
       setSelectedFile(null);
@@ -308,7 +265,57 @@ export default function NewWorkflowPage() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, []);
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      setImportError(null);
+      setImportUrl("");
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const file = e.dataTransfer.files[0];
+        if (file.name.endsWith(".yml") || file.name.endsWith(".yaml")) {
+          setSelectedFile(file);
+          // Auto-analyze on drop
+          analyzeFile(file);
+        } else {
+          setImportError("Please upload a .yml or .yaml file");
+        }
+      }
+    },
+    [analyzeFile]
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setImportError(null);
+      setImportUrl("");
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        if (file.name.endsWith(".yml") || file.name.endsWith(".yaml")) {
+          setSelectedFile(file);
+          // Auto-analyze on select
+          analyzeFile(file);
+        } else {
+          setImportError("Please upload a .yml or .yaml file");
+        }
+      }
+    },
+    [analyzeFile]
+  );
 
   const handleAnalyzeUrl = async () => {
     if (!importUrl) return;

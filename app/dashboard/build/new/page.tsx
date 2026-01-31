@@ -186,13 +186,23 @@ export default function NewBuildPage() {
 
   const selectedRegistry = registries.find(r => r.id === registryId);
 
-  // Extract repo name for display
+  // Extract repo name for display (handles /tree/branch and /blob/branch URLs)
   const repoName = (() => {
     try {
       const url = new URL(repoUrl.replace(/\.git$/, ""));
-      const pathParts = url.pathname.split("/").filter(Boolean);
+      let pathParts = url.pathname.split("/").filter(Boolean);
+
+      // Remove tree/branch or blob/branch paths
+      const treeIndex = pathParts.indexOf("tree");
+      const blobIndex = pathParts.indexOf("blob");
+      if (treeIndex > 1) {
+        pathParts = pathParts.slice(0, treeIndex);
+      } else if (blobIndex > 1) {
+        pathParts = pathParts.slice(0, blobIndex);
+      }
+
       if (pathParts.length >= 2) {
-        return `${pathParts[pathParts.length - 2]}/${pathParts[pathParts.length - 1]}`;
+        return `${pathParts[0]}/${pathParts[1]}`;
       }
     } catch {
       // ignore

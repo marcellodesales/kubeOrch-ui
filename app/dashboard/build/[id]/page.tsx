@@ -435,7 +435,7 @@ export default function BuildProgressPage() {
                 ) : (
                   <div className="space-y-0.5">
                     {logs.map((log, index) => (
-                      <div key={index} className="flex">
+                      <div key={`${log.timestamp}-${index}`} className="flex">
                         <span className="text-zinc-600 w-20 flex-shrink-0">
                           {new Date(log.timestamp).toLocaleTimeString()}
                         </span>
