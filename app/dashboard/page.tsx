@@ -25,7 +25,12 @@ import {
   Plus,
   Download,
   RefreshCw,
+  Loader2,
+  XCircle,
 } from "lucide-react";
+import { useCluster } from "@/hooks/useCluster";
+import { useClusterMetrics } from "@/hooks/useClusterMetrics";
+import { ComponentHealth } from "@/lib/services/cluster";
 
 const stats = [
   {
@@ -130,13 +135,68 @@ const statusConfig = {
   },
 };
 
+// Helper to get health status badge
+function getHealthBadge(status: ComponentHealth["status"]) {
+  switch (status) {
+    case "healthy":
+      return (
+        <Badge variant="default" className="gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Healthy
+        </Badge>
+      );
+    case "unhealthy":
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <XCircle className="h-3 w-3" />
+          Unhealthy
+        </Badge>
+      );
+    case "unknown":
+    default:
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Unknown
+        </Badge>
+      );
+  }
+}
+
+// Helper to get resource bar color
+function getResourceBarColor(percentage: number) {
+  if (percentage >= 90) return "bg-red-500";
+  if (percentage >= 75) return "bg-orange-500";
+  return "bg-primary";
+}
+
 export default function DashboardPage() {
   const breadcrumbs = [{ label: "Dashboard" }];
+  const { defaultCluster, clusters, isLoading: clusterLoading } = useCluster();
+
+  // Use default cluster, or fall back to first available cluster
+  const activeCluster = defaultCluster || clusters[0] || null;
+
+  const {
+    metrics,
+    isLoading: metricsLoading,
+    error: metricsError,
+    refetch,
+  } = useClusterMetrics(activeCluster?.name);
+
+  const isLoading = clusterLoading || metricsLoading;
 
   const pageActions = (
     <>
-      <Button variant="outline" size="sm">
-        <RefreshCw className="mr-2 h-4 w-4" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => refetch()}
+        disabled={isLoading || !activeCluster}
+      >
+        <RefreshCw
+          className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+        />
         Refresh
       </Button>
       <Button variant="outline" size="sm">
@@ -149,6 +209,21 @@ export default function DashboardPage() {
       </Button>
     </>
   );
+
+  // Default health data when no cluster is connected
+  const defaultHealth: ComponentHealth[] = [
+    { name: "API Server", status: "unknown" },
+    { name: "Scheduler", status: "unknown" },
+    { name: "Controller", status: "unknown" },
+    { name: "etcd", status: "unknown" },
+  ];
+
+  const healthData = metrics?.health || defaultHealth;
+
+  // Resource data - keep as undefined if not available
+  const cpuPercentage = metrics?.resources?.cpu?.percentage;
+  const memoryPercentage = metrics?.resources?.memory?.percentage;
+  const storagePercentage = metrics?.resources?.storage?.percentage;
 
   return (
     <AppLayout>
@@ -294,78 +369,134 @@ export default function DashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>System Health</CardTitle>
-                <CardDescription>Overall cluster status</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>System Health</CardTitle>
+                    <CardDescription>
+                      {activeCluster
+                        ? `Cluster: ${activeCluster.displayName || activeCluster.name}`
+                        : "No cluster connected"}
+                    </CardDescription>
+                  </div>
+                  {isLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">API Server</span>
-                    <Badge variant="default" className="gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Healthy
-                    </Badge>
+                {metricsError ? (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Failed to load metrics</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Scheduler</span>
-                    <Badge variant="default" className="gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Healthy
-                    </Badge>
+                ) : (
+                  <div className="space-y-3">
+                    {healthData.map(component => (
+                      <div
+                        key={component.name}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">{component.name}</span>
+                        {getHealthBadge(component.status)}
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Controller</span>
-                    <Badge variant="default" className="gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Healthy
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">etcd</span>
-                    <Badge variant="secondary" className="gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      Warning
-                    </Badge>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Resource Usage</CardTitle>
-                <CardDescription>Current cluster utilization</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Resource Usage</CardTitle>
+                    <CardDescription>
+                      {metrics
+                        ? `${metrics.nodeCount} nodes, ${metrics.podCount} pods`
+                        : "Current cluster utilization"}
+                    </CardDescription>
+                  </div>
+                  {isLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>CPU Usage</span>
-                      <span className="font-medium">68%</span>
+                {metricsError ? (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Failed to load metrics</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>CPU Usage</span>
+                        <span className="font-medium">
+                          {cpuPercentage !== undefined
+                            ? `${cpuPercentage.toFixed(1)}%`
+                            : "Not available"}
+                        </span>
+                      </div>
+                      {cpuPercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(cpuPercentage)}`}
+                            style={{
+                              width: `${Math.min(cpuPercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
                     </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                      <div className="h-2 w-[68%] rounded-full bg-primary" />
+                    <div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Memory</span>
+                        <span className="font-medium">
+                          {memoryPercentage !== undefined
+                            ? `${memoryPercentage.toFixed(1)}%`
+                            : "Not available"}
+                        </span>
+                      </div>
+                      {memoryPercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(memoryPercentage)}`}
+                            style={{
+                              width: `${Math.min(memoryPercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Storage</span>
+                        <span className="font-medium">
+                          {storagePercentage !== undefined
+                            ? `${storagePercentage.toFixed(1)}%`
+                            : "Not available"}
+                        </span>
+                      </div>
+                      {storagePercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(storagePercentage)}`}
+                            style={{
+                              width: `${Math.min(storagePercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
                     </div>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Memory</span>
-                      <span className="font-medium">45%</span>
-                    </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                      <div className="h-2 w-[45%] rounded-full bg-primary" />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Storage</span>
-                      <span className="font-medium">82%</span>
-                    </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                      <div className="h-2 w-[82%] rounded-full bg-orange-500" />
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -44,6 +44,9 @@ export interface NodeProps {
   icon?: LucideIcon;
   iconColor?: string;
   iconBgColor?: string;
+  children?: React.ReactNode;
+  hideTargetHandle?: boolean;
+  singleSourceHandle?: boolean;
 }
 
 export default function Node({
@@ -55,6 +58,9 @@ export default function Node({
   icon: Icon,
   iconColor = "text-blue-600",
   iconBgColor = "bg-blue-500/10",
+  children,
+  hideTargetHandle = false,
+  singleSourceHandle = false,
 }: NodeProps) {
   const cardContent = (
     <CompactCard
@@ -62,17 +68,36 @@ export default function Node({
     >
       <CompactCardHeader className="flex flex-row items-center justify-between relative">
         {/* Left connector - centered on header */}
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="w-2 h-2 absolute"
-          style={{
-            background: "var(--handle-color)",
-            left: "-12px",
-            top: "50%",
-            transform: "translateY(-50%)",
-          }}
-        />
+        {!hideTargetHandle && (
+          <Handle
+            type="target"
+            position={Position.Left}
+            className="w-2 h-2 absolute"
+            style={{
+              background: "var(--handle-color)",
+              left: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+        )}
+
+        {/* Single right connector on header when singleSourceHandle is set */}
+        {singleSourceHandle && (
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            className="w-2 h-2 absolute"
+            style={{
+              background: "var(--primary)",
+              right: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 10,
+            }}
+          />
+        )}
 
         <div className="flex items-center gap-2">
           {Icon && (
@@ -167,18 +192,20 @@ export default function Node({
                   ))}
                 </div>
                 {/* Connector for grouped fields - centered on the label row */}
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id={`group-${field.id}`}
-                  className="w-2 h-2 absolute"
-                  style={{
-                    background: "var(--handle-color)",
-                    right: "-20px",
-                    top: "12px", // Positioned at label level
-                    zIndex: 10,
-                  }}
-                />
+                {!singleSourceHandle && (
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`group-${field.id}`}
+                    className="w-2 h-2 absolute"
+                    style={{
+                      background: "var(--handle-color)",
+                      right: "-20px",
+                      top: "12px", // Positioned at label level
+                      zIndex: 10,
+                    }}
+                  />
+                )}
               </div>
             );
           }
@@ -242,21 +269,24 @@ export default function Node({
               )}
 
               {/* Connector at label level for single fields */}
-              <Handle
-                type="source"
-                position={Position.Right}
-                id={field.id}
-                className="w-2 h-2 absolute"
-                style={{
-                  background: "var(--handle-color)",
-                  right: "-20px",
-                  top: "0px", // Positioned at label level
-                  zIndex: 10,
-                }}
-              />
+              {!singleSourceHandle && (
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={field.id}
+                  className="w-2 h-2 absolute"
+                  style={{
+                    background: "var(--handle-color)",
+                    right: "-20px",
+                    top: "0px", // Positioned at label level
+                    zIndex: 10,
+                  }}
+                />
+              )}
             </div>
           );
         })}
+        {children}
       </CompactCardContent>
     </CompactCard>
   );

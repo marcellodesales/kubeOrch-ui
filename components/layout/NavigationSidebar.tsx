@@ -34,6 +34,9 @@ import {
   ChevronRight,
   Workflow,
   Plus,
+  Blocks,
+  Container,
+  Plug,
 } from "lucide-react";
 import {
   Collapsible,
@@ -77,9 +80,17 @@ const navItems = [
     href: "/dashboard/resources",
   },
   {
-    title: "Plugins",
-    icon: Package,
-    href: "/dashboard/plugins",
+    title: "Integrations",
+    icon: Blocks,
+    href: "/dashboard/integrations",
+    submenu: [
+      {
+        title: "Registries",
+        href: "/dashboard/integrations/registries",
+        icon: Container,
+      },
+      { title: "Plugins", href: "/dashboard/integrations/plugins", icon: Plug },
+    ],
   },
   {
     title: "Monitoring",

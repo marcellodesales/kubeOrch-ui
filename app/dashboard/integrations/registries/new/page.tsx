@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useRegistryStore } from "@/stores/RegistryStore";
@@ -43,9 +44,34 @@ export default function NewRegistryPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Plugins", href: "/dashboard/plugins" },
+    { label: "Integrations", href: "/dashboard/integrations" },
+    { label: "Registries", href: "/dashboard/integrations/registries" },
     { label: "Add Registry" },
   ];
+
+  const pageActions =
+    step === "select" ? (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => router.push("/dashboard/integrations/registries")}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Registries
+      </Button>
+    ) : (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setStep("select");
+          setSelectedType(null);
+        }}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Registry Selection
+      </Button>
+    );
 
   const handleSelectType = (type: RegistryType) => {
     setSelectedType(type);
@@ -74,7 +100,7 @@ export default function NewRegistryPage() {
         credentials,
       });
       toast.success("Registry created successfully");
-      router.push("/dashboard/plugins");
+      router.push("/dashboard/integrations/registries");
     } catch (error: unknown) {
       console.error("Failed to create registry:", error);
       const message =
@@ -93,6 +119,7 @@ export default function NewRegistryPage() {
         title="Add Container Registry"
         description="Configure credentials for a private container registry"
         breadcrumbs={breadcrumbs}
+        actions={pageActions}
       >
         {step === "select" ? (
           <div className="space-y-6">
@@ -143,18 +170,6 @@ export default function NewRegistryPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStep("select");
-                setSelectedType(null);
-              }}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Registry Selection
-            </Button>
-
             <form onSubmit={handleSubmit}>
               <Card>
                 <CardHeader>
@@ -208,6 +223,30 @@ export default function NewRegistryPage() {
                   {/* Credential fields */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium">Credentials</h4>
+
+                    {/* GHCR scope guidance alert */}
+                    {selectedType === "ghcr" && (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <p>
+                            <strong>Required GitHub PAT Scopes:</strong> For
+                            building and pushing images, your token needs{" "}
+                            <code className="bg-muted px-1 rounded">repo</code>{" "}
+                            (for private repos),{" "}
+                            <code className="bg-muted px-1 rounded">
+                              write:packages
+                            </code>{" "}
+                            (to push images), and{" "}
+                            <code className="bg-muted px-1 rounded">
+                              read:packages
+                            </code>{" "}
+                            (to pull images).
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {typeInfo?.fields.map(field => (
                       <div key={field.key} className="space-y-2">
                         <Label htmlFor={field.key}>
@@ -263,7 +302,9 @@ export default function NewRegistryPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => router.push("/dashboard/plugins")}
+                      onClick={() =>
+                        router.push("/dashboard/integrations/registries")
+                      }
                     >
                       Cancel
                     </Button>

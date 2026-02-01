@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import {
   DeploymentNodeData,
   StatefulSetNodeData,
+  JobNodeData,
+  CronJobNodeData,
+  DaemonSetNodeData,
   EnvVarEntry,
 } from "@/lib/types/nodes";
 import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
@@ -15,7 +18,12 @@ import { useWorkflowStore, WorkflowNodeData } from "@/stores/WorkflowStore";
 const generateKeyId = () => `env_${uuidv4()}`;
 
 interface EnvVarsEditorProps {
-  data: DeploymentNodeData | StatefulSetNodeData;
+  data:
+    | DeploymentNodeData
+    | StatefulSetNodeData
+    | JobNodeData
+    | CronJobNodeData
+    | DaemonSetNodeData;
   nodeId: string;
   editable: boolean;
 }

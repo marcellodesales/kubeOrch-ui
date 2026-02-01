@@ -18,7 +18,20 @@ import NodeSettingsPanel from "@/components/workflow/NodeSettingsPanel";
 import { useWorkflowStore } from "@/stores/WorkflowStore";
 import type { WorkflowNodeData } from "@/lib/types/nodes";
 
-type NodeType = "deployment" | "service" | "ingress";
+type NodeType =
+  | "deployment"
+  | "service"
+  | "ingress"
+  | "configmap"
+  | "secret"
+  | "persistentvolumeclaim"
+  | "statefulset"
+  | "plugin"
+  | "job"
+  | "cronjob"
+  | "daemonset"
+  | "hpa"
+  | "networkpolicy";
 
 export default function WorkflowComparePage() {
   const params = useParams();

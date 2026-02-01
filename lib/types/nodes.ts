@@ -293,6 +293,251 @@ export interface StatefulSetNodeData {
   };
 }
 
+/** Job node data - for run-to-completion tasks */
+export interface JobNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Container image to run */
+  image: string;
+  /** Command to run in container */
+  command?: string[];
+  /** Arguments for the command */
+  args?: string[];
+  /** Number of successful completions required */
+  completions?: number;
+  /** Maximum concurrent pods */
+  parallelism?: number;
+  /** Retry limit before marking failed */
+  backoffLimit?: number;
+  /** Maximum runtime in seconds */
+  activeDeadlineSeconds?: number;
+  /** Auto-delete job after completion (seconds) */
+  ttlSecondsAfterFinished?: number;
+  /** Pod restart policy */
+  restartPolicy?: "Never" | "OnFailure";
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Environment variable keys only */
+  envKeys?: EnvVarEntry[];
+  /** Resource limits and requests */
+  resources?: {
+    limits?: { cpu?: string; memory?: string };
+    requests?: { cpu?: string; memory?: string };
+  };
+  /** Volume mounts from linked ConfigMaps/Secrets */
+  volumeMounts?: VolumeMount[];
+  /** Internal field: IDs of linked ConfigMap nodes */
+  _linkedConfigMaps?: string[];
+  /** Internal field: IDs of linked Secret nodes */
+  _linkedSecrets?: string[];
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "running" | "completed" | "failed" | "pending";
+    succeeded?: number;
+    failed?: number;
+    active?: number;
+    completions?: number;
+    message?: string;
+  };
+}
+
+/** CronJob node data - for scheduled recurring tasks */
+export interface CronJobNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Cron schedule expression (e.g., "0 2 * * *") */
+  schedule: string;
+  /** Container image to run */
+  image: string;
+  /** Command to run in container */
+  command?: string[];
+  /** Arguments for the command */
+  args?: string[];
+  /** How to handle concurrent executions */
+  concurrencyPolicy?: "Allow" | "Forbid" | "Replace";
+  /** Suspend the CronJob */
+  suspend?: boolean;
+  /** Number of successful jobs to keep */
+  successfulJobsHistoryLimit?: number;
+  /** Number of failed jobs to keep */
+  failedJobsHistoryLimit?: number;
+  /** Retry limit for each job */
+  backoffLimit?: number;
+  /** Pod restart policy */
+  restartPolicy?: "Never" | "OnFailure";
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Environment variable keys only */
+  envKeys?: EnvVarEntry[];
+  /** Resource limits and requests */
+  resources?: {
+    limits?: { cpu?: string; memory?: string };
+    requests?: { cpu?: string; memory?: string };
+  };
+  /** Volume mounts from linked ConfigMaps/Secrets */
+  volumeMounts?: VolumeMount[];
+  /** Internal field: IDs of linked ConfigMap nodes */
+  _linkedConfigMaps?: string[];
+  /** Internal field: IDs of linked Secret nodes */
+  _linkedSecrets?: string[];
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "active" | "suspended";
+    lastScheduleTime?: string;
+    lastSuccessfulTime?: string;
+    activeJobs?: number;
+    message?: string;
+  };
+}
+
+/** DaemonSet node data - runs one pod on every node */
+export interface DaemonSetNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Container image to run */
+  image: string;
+  /** Container port */
+  port?: number;
+  /** Update strategy */
+  updateStrategy?: "RollingUpdate" | "OnDelete";
+  /** Max unavailable pods during update */
+  maxUnavailable?: number | string;
+  /** Node selector labels */
+  nodeSelector?: Record<string, string>;
+  /** Pod tolerations for node taints */
+  tolerations?: Array<{
+    key: string;
+    operator?: "Exists" | "Equal";
+    value?: string;
+    effect: "NoSchedule" | "PreferNoSchedule" | "NoExecute";
+    tolerationSeconds?: number;
+  }>;
+  /** Use host network namespace */
+  hostNetwork?: boolean;
+  /** Use host PID namespace */
+  hostPID?: boolean;
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Environment variable keys only */
+  envKeys?: EnvVarEntry[];
+  /** Resource limits and requests */
+  resources?: {
+    limits?: { cpu?: string; memory?: string };
+    requests?: { cpu?: string; memory?: string };
+  };
+  /** Volume mounts from linked ConfigMaps/Secrets */
+  volumeMounts?: VolumeMount[];
+  /** Internal field: IDs of linked ConfigMap nodes */
+  _linkedConfigMaps?: string[];
+  /** Internal field: IDs of linked Secret nodes */
+  _linkedSecrets?: string[];
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "healthy" | "partial" | "error";
+    desiredNumberScheduled?: number;
+    numberReady?: number;
+    numberAvailable?: number;
+    message?: string;
+  };
+}
+
+/** HPA node data - automatically scales workloads */
+export interface HPANodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Kind of workload to scale */
+  scaleTargetKind?: "Deployment" | "StatefulSet";
+  /** Name of workload to scale */
+  scaleTargetName?: string;
+  /** Minimum replicas */
+  minReplicas: number;
+  /** Maximum replicas */
+  maxReplicas: number;
+  /** Target CPU utilization percentage */
+  targetCPUUtilization?: number;
+  /** Target memory utilization percentage */
+  targetMemoryUtilization?: number;
+  /** Scale down stabilization window (seconds) */
+  scaleDownStabilization?: number;
+  /** Scale up stabilization window (seconds) */
+  scaleUpStabilization?: number;
+  /** Internal field: ID of linked workload node */
+  _linkedTarget?: string;
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "scaling" | "stable" | "limited" | "error";
+    currentReplicas?: number;
+    desiredReplicas?: number;
+    currentCPU?: number;
+    currentMemory?: number;
+    message?: string;
+  };
+}
+
+/** NetworkPolicy peer - defines allowed sources/destinations */
+export interface NetworkPolicyPeer {
+  id: string;
+  type: "podSelector" | "namespaceSelector" | "ipBlock";
+  podSelector?: Record<string, string>;
+  namespaceSelector?: Record<string, string>;
+  ipBlock?: {
+    cidr: string;
+    except?: string[];
+  };
+}
+
+/** NetworkPolicy port rule */
+export interface NetworkPolicyPort {
+  id: string;
+  protocol?: "TCP" | "UDP" | "SCTP";
+  port: number | string;
+}
+
+/** NetworkPolicy rule - defines ingress or egress rule */
+export interface NetworkPolicyRule {
+  id: string;
+  from?: NetworkPolicyPeer[]; // For ingress
+  to?: NetworkPolicyPeer[]; // For egress
+  ports?: NetworkPolicyPort[];
+}
+
+/** NetworkPolicy node data - controls network traffic */
+export interface NetworkPolicyNodeData {
+  id: string;
+  name: string;
+  namespace?: string;
+  /** Pod selector - which pods this policy applies to */
+  podSelector?: Record<string, string>;
+  /** Policy types to enforce */
+  policyTypes: ("Ingress" | "Egress")[];
+  /** Ingress rules - who can access these pods */
+  ingressRules?: NetworkPolicyRule[];
+  /** Egress rules - where these pods can connect */
+  egressRules?: NetworkPolicyRule[];
+  /** Internal field: IDs of linked workload nodes */
+  _linkedWorkloads?: string[];
+  templateId?: string;
+  hasValidationError?: boolean;
+  /** Runtime status fields */
+  _status?: {
+    state?: "active" | "pending";
+    affectedPods?: number;
+    message?: string;
+  };
+}
+
 // Future node types can be added here
 export interface ConditionalNodeData {
   id: string;
@@ -318,6 +563,32 @@ export interface WebhookNodeData {
   body?: any;
 }
 
+// Plugin field definition for dynamic plugin nodes
+export interface PluginFieldDefinition {
+  id: string;
+  label: string;
+  type: string;
+  required: boolean;
+  default?: string;
+  options?: Array<{ value: string; label: string }>;
+  placeholder?: string;
+}
+
+// Plugin node data - stores field values and metadata for CRD plugin nodes
+export interface PluginNodeData {
+  id: string;
+  name: string;
+  namespace: string;
+  templateId: string;
+  pluginId: string;
+  pluginCategory: string;
+  displayName: string;
+  // Dynamic fields from plugin definition
+  _pluginFields: PluginFieldDefinition[];
+  // All other fields are dynamic based on the plugin
+  [key: string]: unknown;
+}
+
 // Union type for all node data types
 export type WorkflowNodeData =
   | DeploymentNodeData
@@ -327,6 +598,12 @@ export type WorkflowNodeData =
   | SecretNodeData
   | PersistentVolumeClaimNodeData
   | StatefulSetNodeData
+  | JobNodeData
+  | CronJobNodeData
+  | DaemonSetNodeData
+  | HPANodeData
+  | NetworkPolicyNodeData
   | ConditionalNodeData
   | ParallelNodeData
-  | WebhookNodeData;
+  | WebhookNodeData
+  | PluginNodeData;

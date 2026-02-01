@@ -46,7 +46,8 @@ export default function EditRegistryPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Plugins", href: "/dashboard/plugins" },
+    { label: "Integrations", href: "/dashboard/integrations" },
+    { label: "Registries", href: "/dashboard/integrations/registries" },
     { label: "Edit Registry" },
   ];
 
@@ -92,7 +93,7 @@ export default function EditRegistryPage() {
         ...(hasCredentials ? { credentials } : {}),
       });
       toast.success("Registry updated successfully");
-      router.push("/dashboard/plugins");
+      router.push("/dashboard/integrations/registries");
     } catch (error: unknown) {
       console.error("Failed to update registry:", error);
       const message =
@@ -133,9 +134,11 @@ export default function EditRegistryPage() {
             <p className="mb-6 text-sm text-muted-foreground">
               The registry you&apos;re looking for doesn&apos;t exist.
             </p>
-            <Button onClick={() => router.push("/dashboard/plugins")}>
+            <Button
+              onClick={() => router.push("/dashboard/integrations/registries")}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Plugins
+              Back to Registries
             </Button>
           </div>
         </PageContainer>
@@ -154,10 +157,10 @@ export default function EditRegistryPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/dashboard/plugins")}
+            onClick={() => router.push("/dashboard/integrations/registries")}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Plugins
+            Back to Registries
           </Button>
 
           <form onSubmit={handleSubmit}>
@@ -269,7 +272,9 @@ export default function EditRegistryPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push("/dashboard/plugins")}
+                    onClick={() =>
+                      router.push("/dashboard/integrations/registries")
+                    }
                   >
                     Cancel
                   </Button>

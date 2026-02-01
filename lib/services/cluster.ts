@@ -70,6 +70,31 @@ export interface ClusterLog {
   level: "info" | "warning" | "error";
 }
 
+export interface ComponentHealth {
+  name: string;
+  status: "healthy" | "unhealthy" | "unknown";
+  message?: string;
+}
+
+export interface ResourceMetric {
+  used: number;
+  capacity: number;
+  percentage: number;
+}
+
+export interface ClusterMetrics {
+  clusterName: string;
+  health: ComponentHealth[];
+  resources: {
+    cpu: ResourceMetric;
+    memory: ResourceMetric;
+    storage: ResourceMetric;
+  };
+  nodeCount: number;
+  podCount: number;
+  lastUpdated: string;
+}
+
 class ClusterService {
   async addCluster(cluster: AddClusterRequest) {
     const response = await api.post("/clusters", cluster);
@@ -133,6 +158,11 @@ class ClusterService {
 
   async shareCluster(name: string, shareRequest: ShareClusterRequest) {
     const response = await api.post(`/clusters/${name}/share`, shareRequest);
+    return response.data;
+  }
+
+  async getClusterMetrics(name: string): Promise<ClusterMetrics> {
+    const response = await api.get(`/clusters/${name}/metrics`);
     return response.data;
   }
 }

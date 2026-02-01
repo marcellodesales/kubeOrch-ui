@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Archive } from "lucide-react";
+import { X, Archive, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ interface WorkflowSettingsPanelProps {
   onUpdate: (workflow: Workflow) => Promise<void>;
   onArchive?: () => void;
   onWorkflowRestore?: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
+  onImport?: () => void;
 }
 
 export default function WorkflowSettingsPanel({
@@ -37,6 +38,7 @@ export default function WorkflowSettingsPanel({
   onUpdate,
   onArchive,
   onWorkflowRestore,
+  onImport,
 }: WorkflowSettingsPanelProps) {
   const [formData, setFormData] = useState({
     name: workflow?.name || "",
@@ -180,42 +182,16 @@ export default function WorkflowSettingsPanel({
                     )}
                   </div>
                 </div>
-
-                {workflow?.run_count > 0 && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">Run Statistics</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Successful
-                        </span>
-                        <span className="text-green-600">
-                          {workflow.success_count || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Failed</span>
-                        <span className="text-red-600">
-                          {workflow.failure_count || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Success Rate
-                        </span>
-                        <span>
-                          {workflow.run_count > 0
-                            ? `${Math.round((workflow.success_count / workflow.run_count) * 100)}%`
-                            : "0%"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
             <div className="border-t p-4 space-y-2">
+              {onImport && (
+                <Button onClick={onImport} variant="outline" className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import from docker-compose or Git
+                </Button>
+              )}
               <Button
                 onClick={handleUpdate}
                 className="w-full"

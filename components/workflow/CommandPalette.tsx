@@ -10,6 +10,32 @@ import {
   Database,
   HardDrive,
   LucideIcon,
+  Monitor,
+  Activity,
+  Shield,
+  GitBranch,
+  MessageSquare,
+  Archive,
+  Play,
+  Brain,
+  TrendingUp,
+  Zap,
+  Cloud,
+  Key,
+  Radio,
+  FileText,
+  Plug,
+  Route,
+  Layers,
+  RefreshCw,
+  Cpu,
+  AlertTriangle,
+  Container,
+  Boxes,
+  Share2,
+  Shuffle,
+  Flame,
+  DollarSign,
 } from "lucide-react";
 import {
   Dialog,
@@ -32,6 +58,7 @@ const ICON_MAP: Record<
   string,
   { icon: LucideIcon; color: string; bgColor: string }
 > = {
+  // Core Kubernetes icons
   Package: {
     icon: Package,
     color: "text-blue-600",
@@ -66,6 +93,262 @@ const ICON_MAP: Record<
     icon: HardDrive,
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
+  },
+  // Plugin category icons
+  Monitor: {
+    icon: Monitor,
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+  },
+  Activity: {
+    icon: Activity,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Shield: {
+    icon: Shield,
+    color: "text-red-600",
+    bgColor: "bg-red-500/10",
+  },
+  GitBranch: {
+    icon: GitBranch,
+    color: "text-cyan-600",
+    bgColor: "bg-cyan-500/10",
+  },
+  MessageSquare: {
+    icon: MessageSquare,
+    color: "text-pink-600",
+    bgColor: "bg-pink-500/10",
+  },
+  MessageCircle: {
+    icon: MessageSquare,
+    color: "text-pink-600",
+    bgColor: "bg-pink-500/10",
+  },
+  Archive: {
+    icon: Archive,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+  },
+  Play: {
+    icon: Play,
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-500/10",
+  },
+  Brain: {
+    icon: Brain,
+    color: "text-violet-600",
+    bgColor: "bg-violet-500/10",
+  },
+  TrendingUp: {
+    icon: TrendingUp,
+    color: "text-teal-600",
+    bgColor: "bg-teal-500/10",
+  },
+  Zap: {
+    icon: Zap,
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-500/10",
+  },
+  Cloud: {
+    icon: Cloud,
+    color: "text-sky-600",
+    bgColor: "bg-sky-500/10",
+  },
+  Key: {
+    icon: Key,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+  },
+  FileKey: {
+    icon: Key,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+  },
+  Radio: {
+    icon: Radio,
+    color: "text-purple-600",
+    bgColor: "bg-purple-500/10",
+  },
+  FileText: {
+    icon: FileText,
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10",
+  },
+  Plug: {
+    icon: Plug,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-500/10",
+  },
+  Route: {
+    icon: Route,
+    color: "text-purple-600",
+    bgColor: "bg-purple-500/10",
+  },
+  Link: {
+    icon: Network,
+    color: "text-purple-600",
+    bgColor: "bg-purple-500/10",
+  },
+  Layers: {
+    icon: Layers,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-500/10",
+  },
+  RefreshCw: {
+    icon: RefreshCw,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Cpu: {
+    icon: Cpu,
+    color: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+  },
+  Search: {
+    icon: Search,
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+  },
+  BarChart2: {
+    icon: Activity,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  BarChart: {
+    icon: Activity,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Eye: {
+    icon: Activity,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Bell: {
+    icon: Activity,
+    color: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+  },
+  Layout: {
+    icon: Layers,
+    color: "text-violet-600",
+    bgColor: "bg-violet-500/10",
+  },
+  Box: {
+    icon: HardDrive,
+    color: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+  },
+  ShieldCheck: {
+    icon: Shield,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Award: {
+    icon: Shield,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+  },
+  Clock: {
+    icon: RefreshCw,
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10",
+  },
+  FileCode: {
+    icon: FileText,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-500/10",
+  },
+  CheckSquare: {
+    icon: Play,
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-500/10",
+  },
+  Workflow: {
+    icon: GitBranch,
+    color: "text-cyan-600",
+    bgColor: "bg-cyan-500/10",
+  },
+  Hash: {
+    icon: Database,
+    color: "text-pink-600",
+    bgColor: "bg-pink-500/10",
+  },
+  BookOpen: {
+    icon: FileText,
+    color: "text-violet-600",
+    bgColor: "bg-violet-500/10",
+  },
+  AlertTriangle: {
+    icon: AlertTriangle,
+    color: "text-red-600",
+    bgColor: "bg-red-500/10",
+  },
+  Container: {
+    icon: Container,
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+  },
+  DoorOpen: {
+    icon: Globe,
+    color: "text-sky-600",
+    bgColor: "bg-sky-500/10",
+  },
+  Boxes: {
+    icon: Boxes,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-500/10",
+  },
+  Share2: {
+    icon: Share2,
+    color: "text-purple-600",
+    bgColor: "bg-purple-500/10",
+  },
+  Settings: {
+    icon: FileSliders,
+    color: "text-slate-600",
+    bgColor: "bg-slate-500/10",
+  },
+  Send: {
+    icon: Zap,
+    color: "text-blue-600",
+    bgColor: "bg-blue-500/10",
+  },
+  Code: {
+    icon: FileText,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-500/10",
+  },
+  Shuffle: {
+    icon: Shuffle,
+    color: "text-purple-600",
+    bgColor: "bg-purple-500/10",
+  },
+  Skull: {
+    icon: AlertTriangle,
+    color: "text-red-600",
+    bgColor: "bg-red-500/10",
+  },
+  Wifi: {
+    icon: Network,
+    color: "text-cyan-600",
+    bgColor: "bg-cyan-500/10",
+  },
+  Flame: {
+    icon: Flame,
+    color: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+  },
+  DollarSign: {
+    icon: DollarSign,
+    color: "text-green-600",
+    bgColor: "bg-green-500/10",
+  },
+  Function: {
+    icon: Zap,
+    color: "text-violet-600",
+    bgColor: "bg-violet-500/10",
   },
 };
 
@@ -183,10 +466,19 @@ export default function CommandPalette({
     const colors: Record<string, string> = {
       core: "bg-blue-100 text-blue-800",
       networking: "bg-purple-100 text-purple-800",
-      storage: "bg-green-100 text-green-800",
+      storage: "bg-orange-100 text-orange-800",
       configuration: "bg-yellow-100 text-yellow-800",
       security: "bg-red-100 text-red-800",
-      monitoring: "bg-orange-100 text-orange-800",
+      monitoring: "bg-green-100 text-green-800",
+      virtualization: "bg-blue-100 text-blue-800",
+      database: "bg-indigo-100 text-indigo-800",
+      messaging: "bg-pink-100 text-pink-800",
+      backup: "bg-amber-100 text-amber-800",
+      cicd: "bg-emerald-100 text-emerald-800",
+      ml: "bg-violet-100 text-violet-800",
+      policy: "bg-rose-100 text-rose-800",
+      scaling: "bg-teal-100 text-teal-800",
+      workflow: "bg-cyan-100 text-cyan-800",
     };
     return colors[category.toLowerCase()] || "bg-gray-100 text-gray-800";
   };

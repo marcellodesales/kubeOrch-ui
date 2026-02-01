@@ -25,6 +25,9 @@ export interface TemplateMetadata {
   difficulty: string;
   dependencies: string[];
   parameters: TemplateParameter[];
+  // Plugin-specific fields
+  isPlugin?: boolean;
+  pluginId?: string;
 }
 
 export interface GetTemplatesResponse {

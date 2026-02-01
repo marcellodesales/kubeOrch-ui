@@ -14,11 +14,31 @@ import type { WorkflowNode, WorkflowEdge } from "@/lib/services/workflow";
 import DeploymentNode from "./DeploymentNode";
 import ServiceNode from "./ServiceNode";
 import IngressNode from "./IngressNode";
+import ConfigMapNode from "./ConfigMapNode";
+import SecretNode from "./SecretNode";
+import PersistentVolumeClaimNode from "./PersistentVolumeClaimNode";
+import StatefulSetNode from "./StatefulSetNode";
+import GenericPluginNode from "./GenericPluginNode";
+import JobNode from "./JobNode";
+import CronJobNode from "./CronJobNode";
+import DaemonSetNode from "./DaemonSetNode";
+import HPANode from "./HPANode";
+import NetworkPolicyNode from "./NetworkPolicyNode";
 
 const nodeTypes = {
   deployment: DeploymentNode,
   service: ServiceNode,
   ingress: IngressNode,
+  configmap: ConfigMapNode,
+  secret: SecretNode,
+  persistentvolumeclaim: PersistentVolumeClaimNode,
+  statefulset: StatefulSetNode,
+  plugin: GenericPluginNode,
+  job: JobNode,
+  cronjob: CronJobNode,
+  daemonset: DaemonSetNode,
+  hpa: HPANode,
+  networkpolicy: NetworkPolicyNode,
 };
 
 interface CompareCanvasProps {
