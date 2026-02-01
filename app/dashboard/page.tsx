@@ -220,10 +220,10 @@ export default function DashboardPage() {
 
   const healthData = metrics?.health || defaultHealth;
 
-  // Default resource data
-  const cpuPercentage = metrics?.resources?.cpu?.percentage ?? 0;
-  const memoryPercentage = metrics?.resources?.memory?.percentage ?? 0;
-  const storagePercentage = metrics?.resources?.storage?.percentage ?? 0;
+  // Resource data - keep as undefined if not available
+  const cpuPercentage = metrics?.resources?.cpu?.percentage;
+  const memoryPercentage = metrics?.resources?.memory?.percentage;
+  const storagePercentage = metrics?.resources?.storage?.percentage;
 
   return (
     <AppLayout>
@@ -433,47 +433,67 @@ export default function DashboardPage() {
                       <div className="flex items-center justify-between text-sm">
                         <span>CPU Usage</span>
                         <span className="font-medium">
-                          {cpuPercentage.toFixed(1)}%
+                          {cpuPercentage !== undefined
+                            ? `${cpuPercentage.toFixed(1)}%`
+                            : "Not available"}
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                        <div
-                          className={`h-2 rounded-full ${getResourceBarColor(cpuPercentage)}`}
-                          style={{ width: `${Math.min(cpuPercentage, 100)}%` }}
-                        />
-                      </div>
+                      {cpuPercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(cpuPercentage)}`}
+                            style={{
+                              width: `${Math.min(cpuPercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-sm">
                         <span>Memory</span>
                         <span className="font-medium">
-                          {memoryPercentage.toFixed(1)}%
+                          {memoryPercentage !== undefined
+                            ? `${memoryPercentage.toFixed(1)}%`
+                            : "Not available"}
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                        <div
-                          className={`h-2 rounded-full ${getResourceBarColor(memoryPercentage)}`}
-                          style={{
-                            width: `${Math.min(memoryPercentage, 100)}%`,
-                          }}
-                        />
-                      </div>
+                      {memoryPercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(memoryPercentage)}`}
+                            style={{
+                              width: `${Math.min(memoryPercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-sm">
                         <span>Storage</span>
                         <span className="font-medium">
-                          {storagePercentage.toFixed(1)}%
+                          {storagePercentage !== undefined
+                            ? `${storagePercentage.toFixed(1)}%`
+                            : "Not available"}
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                        <div
-                          className={`h-2 rounded-full ${getResourceBarColor(storagePercentage)}`}
-                          style={{
-                            width: `${Math.min(storagePercentage, 100)}%`,
-                          }}
-                        />
-                      </div>
+                      {storagePercentage !== undefined ? (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted">
+                          <div
+                            className={`h-2 rounded-full ${getResourceBarColor(storagePercentage)}`}
+                            style={{
+                              width: `${Math.min(storagePercentage, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-1 h-2 w-full rounded-full bg-muted" />
+                      )}
                     </div>
                   </div>
                 )}

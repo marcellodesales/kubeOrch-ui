@@ -77,7 +77,8 @@ interface NodeSettingsPanelProps {
     | "cronjob"
     | "daemonset"
     | "hpa"
-    | "networkpolicy";
+    | "networkpolicy"
+    | "plugin";
   onClose: () => void;
   onUpdate: (nodeId: string, data: WorkflowNodeData) => void;
   onDelete?: (nodeId: string) => void;

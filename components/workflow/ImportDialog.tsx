@@ -158,14 +158,17 @@ export function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
         urlParts[urlParts.length - 2] ||
         importUrl;
 
-      setAnalyses(prev => [
-        ...prev,
-        {
-          id: `url-${Date.now()}`,
-          source: sourceName,
-          analysis: result.analysis,
-        },
-      ]);
+      if (result.analysis) {
+        const analysis = result.analysis;
+        setAnalyses(prev => [
+          ...prev,
+          {
+            id: `url-${Date.now()}`,
+            source: sourceName,
+            analysis,
+          },
+        ]);
+      }
       setImportUrl("");
     } catch (err: unknown) {
       const axiosErr = err as {
