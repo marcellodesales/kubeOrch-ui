@@ -48,29 +48,6 @@ function CronJobStatus({ data }: { data: CronJobNodeData; editable: boolean }) {
   );
 }
 
-// Cron schedule helper
-function CronHelper() {
-  return (
-    <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2 mb-2">
-      <div className="font-medium mb-1">Cron Format:</div>
-      <code className="text-[10px]">
-        minute hour day-of-month month day-of-week
-      </code>
-      <div className="mt-1 space-y-0.5">
-        <div>
-          <code className="text-[10px]">0 2 * * *</code> - Daily at 2 AM
-        </div>
-        <div>
-          <code className="text-[10px]">*/15 * * * *</code> - Every 15 min
-        </div>
-        <div>
-          <code className="text-[10px]">0 0 * * 0</code> - Weekly on Sunday
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export const cronJobSettingsConfig: NodeSettingsConfig = {
   title: "CronJob Settings",
   sections: [
@@ -92,6 +69,8 @@ export const cronJobSettingsConfig: NodeSettingsConfig = {
           field: "schedule",
           placeholder: "0 2 * * *",
           required: true,
+          description:
+            "Format: minute hour day-of-month month day-of-week\n0 2 * * *  →  Daily at 2 AM\n*/15 * * * *  →  Every 15 min\n0 0 * * 0  →  Weekly on Sunday",
         },
         {
           id: "image",
@@ -100,6 +79,22 @@ export const cronJobSettingsConfig: NodeSettingsConfig = {
           field: "image",
           placeholder: "backup-tool:latest",
           required: true,
+        },
+        {
+          id: "command",
+          label: "Command",
+          type: "stringarray",
+          field: "command",
+          placeholder: "/bin/sh, -c, echo hello",
+          description: "Container entrypoint (comma-separated)",
+        },
+        {
+          id: "args",
+          label: "Args",
+          type: "stringarray",
+          field: "args",
+          placeholder: "--verbose, --timeout=30",
+          description: "Arguments to the command (comma-separated)",
         },
       ],
     },
@@ -215,13 +210,10 @@ export const cronJobSettingsConfig: NodeSettingsConfig = {
     <CronJobStatus data={data as CronJobNodeData} editable={editable} />
   ),
   extraContent: (data, { nodeId, editable }) => (
-    <>
-      <CronHelper />
-      <EnvVarsEditor
-        data={data as CronJobNodeData}
-        nodeId={nodeId}
-        editable={editable}
-      />
-    </>
+    <EnvVarsEditor
+      data={data as CronJobNodeData}
+      nodeId={nodeId}
+      editable={editable}
+    />
   ),
 };

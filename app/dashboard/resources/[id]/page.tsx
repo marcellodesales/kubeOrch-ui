@@ -148,19 +148,30 @@ export default function ResourceDetailPage() {
     }
   }, [resourceId, router]);
 
+  // Types that have child resources
+  const hasChildren = [
+    "Deployment",
+    "StatefulSet",
+    "Job",
+    "CronJob",
+    "DaemonSet",
+  ].includes(resource?.type || "");
+  const childLabel = resource?.type === "CronJob" ? "Jobs" : "Pods";
+
   const fetchPods = useCallback(async () => {
-    if (resource?.type !== "Deployment" && resource?.type !== "StatefulSet") {
-      return;
-    }
+    if (!hasChildren) return;
 
     try {
       const response = await api.get(`/resources/${resourceId}/pods`);
-      setPods(response.data.pods || []);
+      // Backend returns "pods" for most types, "jobs" for CronJob
+      setPods(response.data.pods || response.data.jobs || []);
     } catch (error) {
-      console.error("Failed to fetch pods:", error);
-      toast.error(getErrorMessage(error, "Failed to fetch associated pods"));
+      console.error("Failed to fetch child resources:", error);
+      toast.error(
+        getErrorMessage(error, "Failed to fetch associated resources")
+      );
     }
-  }, [resource?.type, resourceId]);
+  }, [hasChildren, resourceId]);
 
   const toggleFavorite = async () => {
     if (!resource) return;
@@ -186,12 +197,10 @@ export default function ResourceDetailPage() {
   }, [fetchResource]);
 
   useEffect(() => {
-    if (resource) {
-      if (resource.type === "Deployment" || resource.type === "StatefulSet") {
-        fetchPods();
-      }
+    if (resource && hasChildren) {
+      fetchPods();
     }
-  }, [resource, fetchPods]);
+  }, [resource, hasChildren, fetchPods]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -364,17 +373,24 @@ export default function ResourceDetailPage() {
                   <FileText className="mr-2 h-4 w-4" />
                   Logs
                 </TabsTrigger>
-                <TabsTrigger value="terminal">
-                  <Activity className="mr-2 h-4 w-4" />
-                  Terminal
-                </TabsTrigger>
+                {!resource.labels?.["job-name"] && (
+                  <TabsTrigger
+                    value="terminal"
+                    disabled={
+                      currentStatus === "completed" ||
+                      currentStatus === "failed"
+                    }
+                  >
+                    <Activity className="mr-2 h-4 w-4" />
+                    Terminal
+                  </TabsTrigger>
+                )}
               </>
             )}
-            {(resource.type === "Deployment" ||
-              resource.type === "StatefulSet") && (
+            {hasChildren && (
               <TabsTrigger value="pods">
                 <Box className="mr-2 h-4 w-4" />
-                Pods
+                {childLabel}
               </TabsTrigger>
             )}
             <TabsTrigger value="history">
@@ -475,17 +491,16 @@ export default function ResourceDetailPage() {
             </>
           )}
 
-          {(resource.type === "Deployment" ||
-            resource.type === "StatefulSet") && (
+          {hasChildren && (
             <TabsContent value="pods">
               <Card>
                 <CardHeader>
-                  <CardTitle>Associated Pods</CardTitle>
+                  <CardTitle>Associated {childLabel}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {pods.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      No pods found
+                      No {childLabel.toLowerCase()} found
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -503,7 +518,7 @@ export default function ResourceDetailPage() {
                               <p className="text-sm font-medium">{pod.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {pod.namespace} •{" "}
-                                {pod.spec?.nodeName || "Unscheduled"}
+                                {pod.spec?.nodeName || pod.status}
                               </p>
                             </div>
                           </div>

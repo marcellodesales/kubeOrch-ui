@@ -33,7 +33,14 @@ import { ResizablePanel } from "@/components/ui/ResizablePanel";
 export interface SettingsField {
   id: string;
   label?: string;
-  type: "text" | "number" | "select" | "port" | "group" | "toggle";
+  type:
+    | "text"
+    | "number"
+    | "select"
+    | "port"
+    | "group"
+    | "toggle"
+    | "stringarray";
   field?: string; // Path like "resources.limits.cpu"
   placeholder?: string;
   required?: boolean;
@@ -144,7 +151,7 @@ export default function NodeSettingsPanel({
 
   const handleFieldUpdate = (
     field: string,
-    value: string | number | boolean
+    value: string | number | boolean | string[]
   ) => {
     const updatedData = setNestedValue(data, field, value);
     onUpdate(nodeId, updatedData);
@@ -184,7 +191,29 @@ export default function NodeSettingsPanel({
             ))}
           </div>
           {field.description && (
-            <p className="text-xs text-muted-foreground">{field.description}</p>
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
+              {field.description}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    if (field.type === "toggle") {
+      return (
+        <div key={field.id} className="space-y-1">
+          <div className="flex items-center justify-between">
+            {field.label && (
+              <Label htmlFor={field.id} className="text-sm">
+                {field.label}
+              </Label>
+            )}
+            {renderFieldInput(field)}
+          </div>
+          {field.description && (
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
+              {field.description}
+            </p>
           )}
         </div>
       );
@@ -199,7 +228,9 @@ export default function NodeSettingsPanel({
         )}
         {renderFieldInput(field)}
         {field.description && (
-          <p className="text-xs text-muted-foreground">{field.description}</p>
+          <p className="text-xs text-muted-foreground whitespace-pre-line">
+            {field.description}
+          </p>
         )}
       </div>
     );
@@ -278,9 +309,36 @@ export default function NodeSettingsPanel({
       );
     }
 
+    if (field.type === "stringarray") {
+      const arrayValue: string[] = Array.isArray(value) ? value : [];
+      return (
+        <DisabledInputWrapper disabled={!editable}>
+          <Input
+            id={field.id}
+            className="mt-1.5"
+            value={arrayValue.join(", ")}
+            placeholder={field.placeholder}
+            onChange={e => {
+              if (!field.field) return;
+              const raw = e.target.value;
+              if (raw === "") {
+                handleFieldUpdate(field.field, []);
+              } else {
+                handleFieldUpdate(
+                  field.field,
+                  raw.split(",").map(s => s.trim())
+                );
+              }
+            }}
+            disabled={!editable}
+          />
+        </DisabledInputWrapper>
+      );
+    }
+
     if (field.type === "toggle") {
       return (
-        <div className="flex items-center space-x-2 mt-1.5">
+        <div className="flex items-center space-x-2">
           <Switch
             id={field.id}
             checked={!!value}

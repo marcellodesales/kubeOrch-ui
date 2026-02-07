@@ -325,7 +325,7 @@ export default function WorkflowPage() {
                               Run
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-destructive hover:bg-red-50 focus:bg-red-50 hover:text-destructive focus:text-destructive"
+                              className="text-destructive hover:bg-red-50 focus:bg-red-50 dark:hover:bg-red-950 dark:focus:bg-red-950 hover:text-destructive focus:text-destructive"
                               onClick={e => {
                                 e.stopPropagation();
                                 handleArchive(workflow.id, workflow.name);

@@ -24,11 +24,8 @@ export interface UseLogStreamResult {
   reconnect: () => void;
 }
 
-const MAX_LOG_LINES = 5000; // Maximum number of log lines to keep in memory
-const RECONNECT_DELAY_MS = 3000; // Delay before auto-reconnecting after error
-
-// Global connection tracker to prevent duplicate connections across all instances
-const activeConnections = new Set<string>();
+const MAX_LOG_LINES = 5000;
+const RECONNECT_DELAY_MS = 3000;
 
 export function useLogStream(
   resourceId: string,
@@ -40,117 +37,63 @@ export function useLogStream(
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<LogStreamMetadata | null>(null);
-  const eventSourceRef = useRef<{ close: () => void } | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isConnectingRef = useRef<boolean>(false);
+  const [connectKey, setConnectKey] = useState(0); // Increment to force reconnect
   const logIdCounter = useRef(0);
-  const connectionKeyRef = useRef<string | null>(null);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
   }, []);
 
-  const cleanup = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    setIsConnected(false);
-
-    // Remove from global tracker using stored key after a small delay
-    // This prevents double connections in React StrictMode (mount->unmount->mount)
-    if (connectionKeyRef.current) {
-      const keyToDelete = connectionKeyRef.current;
-      setTimeout(() => {
-        activeConnections.delete(keyToDelete);
-      }, 100); // Small delay to handle StrictMode double-mount
-      connectionKeyRef.current = null;
-    }
+  const reconnect = useCallback(() => {
+    setLogs([]);
+    setError(null);
+    setConnectKey(k => k + 1);
   }, []);
 
-  const connect = useCallback(async () => {
-    if (!enabled || !resourceId) {
-      isConnectingRef.current = false;
-      return;
-    }
+  useEffect(() => {
+    if (!enabled || !resourceId) return;
 
-    const connectionKey = `${resourceId}-${follow}-${tailLines}`;
-
-    // Prevent duplicate connections globally
-    if (isConnectingRef.current || activeConnections.has(connectionKey)) {
-      return;
-    }
-
-    // First cleanup old connection if exists (without removing from set yet)
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // Now mark as connecting and add to set
-    isConnectingRef.current = true;
-    activeConnections.add(connectionKey);
-    connectionKeyRef.current = connectionKey;
+    const abortController = new AbortController();
 
     const baseUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/v1/api";
     const url = `${baseUrl}/resources/${resourceId}/logs/stream?follow=${follow}&tail=${tailLines}`;
-
-    // Get token from Zustand store
     const token = useAuthStore.getState().token;
 
     if (!token) {
       setError("No authentication token found");
-      isConnectingRef.current = false;
       return;
     }
 
-    try {
-      // Use fetch with streaming to support Authorization headers (EventSource doesn't support custom headers)
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "text/event-stream",
-        },
-      });
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+    const startStream = async () => {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "text/event-stream",
+          },
+          signal: abortController.signal,
+        });
 
-      if (!response.body) {
-        throw new Error("Response body is null");
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-      setIsConnected(true);
-      setError(null);
-      isConnectingRef.current = false;
+        if (!response.body) {
+          throw new Error("Response body is null");
+        }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        setIsConnected(true);
+        setError(null);
 
-      // Store the reader in ref so we can cancel it
-      const abortController = new AbortController();
-      eventSourceRef.current = {
-        close: () => {
-          reader.cancel();
-          abortController.abort();
-        },
-      };
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-      // Process the stream
-      const processStream = async () => {
         try {
-          while (true) {
+          while (!abortController.signal.aborted) {
             const { done, value } = await reader.read();
 
             if (done) {
@@ -158,19 +101,16 @@ export function useLogStream(
               break;
             }
 
-            // Decode the chunk
             buffer += decoder.decode(value, { stream: true });
 
-            // SSE format: "event: eventname\ndata: data\n\n"
-            const lines = buffer.split("\n\n");
-            buffer = lines.pop() || "";
+            const chunks = buffer.split("\n\n");
+            buffer = chunks.pop() || "";
 
-            for (const line of lines) {
-              if (!line.trim()) continue;
+            for (const chunk of chunks) {
+              if (!chunk.trim()) continue;
 
-              // SSE format allows optional space after colon: "event:value" or "event: value"
-              const eventMatch = line.match(/^event:\s*(.+)$/m);
-              const dataMatch = line.match(/^data:\s*(.+)$/m);
+              const eventMatch = chunk.match(/^event:\s*(.+)$/m);
+              const dataMatch = chunk.match(/^data:\s*(.+)$/m);
 
               if (eventMatch && dataMatch) {
                 const eventType = eventMatch[1];
@@ -181,87 +121,65 @@ export function useLogStream(
                     try {
                       setMetadata(JSON.parse(data));
                     } catch {
-                      // Silent fail for metadata parsing
+                      // Silent fail
                     }
                     break;
-                  case "log":
-                    // Parse timestamp and message once when log arrives
-                    const timestampMatch = data.match(/^(\S+)\s+(.*)$/);
-                    const parsedLog: ParsedLog = {
+                  case "log": {
+                    const ts = data.match(/^(\S+)\s+(.*)$/);
+                    const parsed: ParsedLog = {
                       id: logIdCounter.current++,
-                      timestamp: timestampMatch?.[1] || "",
-                      message: timestampMatch?.[2] || data,
+                      timestamp: ts?.[1] || "",
+                      message: ts?.[2] || data,
                       raw: data,
                     };
-
                     setLogs(prev => {
-                      const newLogs = [...prev, parsedLog];
-                      // Keep only the last MAX_LOG_LINES to prevent memory issues
-                      if (newLogs.length > MAX_LOG_LINES) {
-                        return newLogs.slice(-MAX_LOG_LINES);
-                      }
-                      return newLogs;
+                      const next = [...prev, parsed];
+                      return next.length > MAX_LOG_LINES
+                        ? next.slice(-MAX_LOG_LINES)
+                        : next;
                     });
                     break;
+                  }
                   case "error":
                     setError(data);
                     setIsConnected(false);
                     break;
                   case "complete":
                     setIsConnected(false);
-                    cleanup();
                     return;
                 }
               }
             }
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Stream error");
-          setIsConnected(false);
-
-          // Auto-reconnect after delay
-          if (follow && enabled) {
-            reconnectTimeoutRef.current = setTimeout(() => {
-              isConnectingRef.current = false;
-              connect();
-            }, RECONNECT_DELAY_MS);
-          }
+          if (abortController.signal.aborted) return;
+          throw err;
         }
-      };
+      } catch (err) {
+        if (abortController.signal.aborted) return;
 
-      processStream();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Connection failed");
-      setIsConnected(false);
-      isConnectingRef.current = false;
+        setError(err instanceof Error ? err.message : "Connection failed");
+        setIsConnected(false);
 
-      // Auto-reconnect after delay
-      if (follow && enabled) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          isConnectingRef.current = false;
-          connect();
-        }, RECONNECT_DELAY_MS);
+        if (follow && enabled) {
+          reconnectTimeout = setTimeout(() => {
+            if (!abortController.signal.aborted) {
+              startStream();
+            }
+          }, RECONNECT_DELAY_MS);
+        }
       }
-    }
-  }, [enabled, resourceId, follow, tailLines, cleanup]);
-
-  const reconnect = useCallback(() => {
-    setLogs([]);
-    setError(null);
-    isConnectingRef.current = false; // Reset the flag before reconnecting
-    connect();
-  }, [connect]);
-
-  useEffect(() => {
-    // Connect when enabled and parameters change
-    connect();
-
-    // Cleanup function that runs on unmount or before re-running effect
-    return () => {
-      cleanup();
-      isConnectingRef.current = false; // Reset connecting flag on cleanup
     };
-  }, [connect, cleanup]);
+
+    startStream();
+
+    return () => {
+      abortController.abort();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      setIsConnected(false);
+    };
+    // connectKey forces re-run when reconnect() is called
+  }, [enabled, resourceId, follow, tailLines, connectKey]);
 
   return {
     logs,
