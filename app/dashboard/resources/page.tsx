@@ -269,28 +269,15 @@ export default function ResourcesPage() {
     ]
   );
 
-  useEffect(() => {
-    fetchResources(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const isInitialLoad = useRef(true);
 
-  // Refetch when filters, sort, or pagination change
   useEffect(() => {
-    if (!loading) {
-      fetchResources(false);
+    const sync = isInitialLoad.current;
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedCluster,
-    selectedNamespace,
-    selectedType,
-    debouncedSearch,
-    sortBy,
-    sortOrder,
-    page,
-    pageSize,
-    hideSystemResources,
-  ]);
+    fetchResources(sync);
+  }, [fetchResources]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -370,10 +357,7 @@ export default function ResourcesPage() {
   const showingFrom = totalResources === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = Math.min(page * pageSize, totalResources);
 
-  const handleFilterChange = (
-    setter: (v: string) => void,
-    value: string
-  ) => {
+  const handleFilterChange = (setter: (v: string) => void, value: string) => {
     setter(value);
     setPage(1);
   };
@@ -569,18 +553,14 @@ export default function ResourcesPage() {
                             key={resource.id}
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() =>
-                              router.push(
-                                `/dashboard/resources/${resource.id}`
-                              )
+                              router.push(`/dashboard/resources/${resource.id}`)
                             }
                           >
                             <TableCell>
                               <Icon className="h-5 w-5 text-muted-foreground" />
                             </TableCell>
                             <TableCell>
-                              <div className="font-medium">
-                                {resource.name}
-                              </div>
+                              <div className="font-medium">{resource.name}</div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">

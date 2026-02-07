@@ -149,7 +149,13 @@ export default function ResourceDetailPage() {
   }, [resourceId, router]);
 
   // Types that have child resources
-  const hasChildren = ["Deployment", "StatefulSet", "Job", "CronJob", "DaemonSet"].includes(resource?.type || "");
+  const hasChildren = [
+    "Deployment",
+    "StatefulSet",
+    "Job",
+    "CronJob",
+    "DaemonSet",
+  ].includes(resource?.type || "");
   const childLabel = resource?.type === "CronJob" ? "Jobs" : "Pods";
 
   const fetchPods = useCallback(async () => {
@@ -161,6 +167,9 @@ export default function ResourceDetailPage() {
       setPods(response.data.pods || response.data.jobs || []);
     } catch (error) {
       console.error("Failed to fetch child resources:", error);
+      toast.error(
+        getErrorMessage(error, "Failed to fetch associated resources")
+      );
     }
   }, [hasChildren, resourceId]);
 
@@ -367,7 +376,10 @@ export default function ResourceDetailPage() {
                 {!resource.labels?.["job-name"] && (
                   <TabsTrigger
                     value="terminal"
-                    disabled={currentStatus === "completed" || currentStatus === "failed"}
+                    disabled={
+                      currentStatus === "completed" ||
+                      currentStatus === "failed"
+                    }
                   >
                     <Activity className="mr-2 h-4 w-4" />
                     Terminal

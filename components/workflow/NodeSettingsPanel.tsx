@@ -33,7 +33,14 @@ import { ResizablePanel } from "@/components/ui/ResizablePanel";
 export interface SettingsField {
   id: string;
   label?: string;
-  type: "text" | "number" | "select" | "port" | "group" | "toggle" | "stringarray";
+  type:
+    | "text"
+    | "number"
+    | "select"
+    | "port"
+    | "group"
+    | "toggle"
+    | "stringarray";
   field?: string; // Path like "resources.limits.cpu"
   placeholder?: string;
   required?: boolean;
@@ -184,7 +191,9 @@ export default function NodeSettingsPanel({
             ))}
           </div>
           {field.description && (
-            <p className="text-xs text-muted-foreground whitespace-pre-line">{field.description}</p>
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
+              {field.description}
+            </p>
           )}
         </div>
       );
@@ -202,7 +211,9 @@ export default function NodeSettingsPanel({
             {renderFieldInput(field)}
           </div>
           {field.description && (
-            <p className="text-xs text-muted-foreground whitespace-pre-line">{field.description}</p>
+            <p className="text-xs text-muted-foreground whitespace-pre-line">
+              {field.description}
+            </p>
           )}
         </div>
       );
@@ -217,7 +228,9 @@ export default function NodeSettingsPanel({
         )}
         {renderFieldInput(field)}
         {field.description && (
-          <p className="text-xs text-muted-foreground whitespace-pre-line">{field.description}</p>
+          <p className="text-xs text-muted-foreground whitespace-pre-line">
+            {field.description}
+          </p>
         )}
       </div>
     );
