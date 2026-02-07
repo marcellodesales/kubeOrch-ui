@@ -83,6 +83,22 @@ export const jobSettingsConfig: NodeSettingsConfig = {
           placeholder: "postgres:15",
           required: true,
         },
+        {
+          id: "command",
+          label: "Command",
+          type: "stringarray",
+          field: "command",
+          placeholder: "/bin/sh, -c, echo hello",
+          description: "Container entrypoint (comma-separated)",
+        },
+        {
+          id: "args",
+          label: "Args",
+          type: "stringarray",
+          field: "args",
+          placeholder: "--verbose, --timeout=30",
+          description: "Arguments to the command (comma-separated)",
+        },
       ],
     },
     {

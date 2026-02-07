@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Box,
+  ChevronLeft,
+  ChevronRight,
   Database,
   Globe,
   HardDrive,
@@ -154,6 +159,17 @@ const statusConfig = {
   },
 };
 
+type SortOrder = "asc" | "desc" | "";
+
+const sortableColumns = [
+  { key: "name", label: "Name" },
+  { key: "type", label: "Type" },
+  { key: "namespace", label: "Namespace" },
+  { key: "cluster", label: "Cluster" },
+  { key: "status", label: "Status" },
+  { key: "created", label: "Created" },
+] as const;
+
 export default function ResourcesPage() {
   const router = useRouter();
   const [resources, setResources] = useState<Resource[]>([]);
@@ -163,9 +179,29 @@ export default function ResourcesPage() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Sorting
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalResources, setTotalResources] = useState(0);
 
   // Use persisted store for hide system resources preference
   const { hideSystemResources, setHideSystemResources } = useResourcesStore();
+
+  // Debounce search input
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(searchTimer.current);
+  }, [searchQuery]);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -177,7 +213,6 @@ export default function ResourcesPage() {
       try {
         const params = new URLSearchParams();
 
-        // Only add filters if they're not the initial/default values
         if (selectedCluster && selectedCluster !== "all") {
           params.append("cluster", selectedCluster);
         }
@@ -187,67 +222,82 @@ export default function ResourcesPage() {
         if (selectedType && selectedType !== "all") {
           params.append("type", selectedType);
         }
-
-        // Only sync on initial load or manual refresh
+        if (debouncedSearch) {
+          params.append("search", debouncedSearch);
+        }
         if (syncFirst) {
           params.append("sync", "true");
         }
+        if (hideSystemResources) {
+          params.append("hideSystem", "true");
+        }
+
+        // Sorting
+        if (sortBy && sortOrder) {
+          params.append("sort_by", sortBy);
+          params.append("sort_order", sortOrder);
+        }
+
+        // Pagination
+        params.append("limit", String(pageSize));
+        params.append("offset", String((page - 1) * pageSize));
 
         const response = await api.get(
           `/resources${params.toString() ? `?${params.toString()}` : ""}`
         );
         setResources(response.data.resources || []);
+        setTotalResources(response.data.total ?? 0);
       } catch (error) {
         console.error("Failed to fetch resources:", error);
         toast.error(getErrorMessage(error, "Failed to load resources"));
-        setResources([]); // Set empty array on error
+        setResources([]);
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [selectedCluster, selectedNamespace, selectedType]
+    [
+      selectedCluster,
+      selectedNamespace,
+      selectedType,
+      debouncedSearch,
+      sortBy,
+      sortOrder,
+      page,
+      pageSize,
+      hideSystemResources,
+    ]
   );
 
   useEffect(() => {
-    // Sync with clusters on initial load
     fetchResources(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refetch when filters change (without sync)
+  // Refetch when filters, sort, or pagination change
   useEffect(() => {
     if (!loading) {
-      // Only refetch after initial load
       fetchResources(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCluster, selectedNamespace, selectedType]);
+  }, [
+    selectedCluster,
+    selectedNamespace,
+    selectedType,
+    debouncedSearch,
+    sortBy,
+    sortOrder,
+    page,
+    pageSize,
+    hideSystemResources,
+  ]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchResources(true); // Sync when manually refreshing
+    fetchResources(true);
   };
 
-  // System namespaces to filter out (infrastructure namespaces)
-  const systemNamespaces = useMemo(
-    () => [
-      "kube-system",
-      "kube-public",
-      "kube-node-lease",
-      "kube-flannel",
-      "ingress-nginx",
-      "kubernetes-dashboard",
-      "metallb-system",
-      "cert-manager",
-      "monitoring",
-      "istio-system",
-      "linkerd",
-    ],
-    []
-  );
-
-  // Get unique values for filters
+  // Get unique values for filter dropdowns from current page results
   const clusters = useMemo(
     () => [...new Set(resources.map(r => r.clusterName))],
     [resources]
@@ -261,50 +311,10 @@ export default function ResourcesPage() {
     [resources]
   );
 
-  // Filter resources - only apply client-side filters (search and hideSystem)
-  const filteredResources = useMemo(() => {
-    return resources.filter(resource => {
-      // Filter out system resources if checkbox is checked
-      if (hideSystemResources) {
-        // Hide resources in system namespaces
-        if (systemNamespaces.includes(resource.namespace)) {
-          return false;
-        }
-        // Hide system ConfigMaps that appear in user namespaces
-        if (
-          resource.type === "ConfigMap" &&
-          resource.name === "kube-root-ca.crt"
-        ) {
-          return false;
-        }
-        // Hide the kubernetes service in default namespace
-        if (resource.type === "Service" && resource.name === "kubernetes") {
-          return false;
-        }
-        // Hide Node resources (cluster infrastructure)
-        if (resource.type === "Node") {
-          return false;
-        }
-        // Hide system Namespace resources
-        if (
-          resource.type === "Namespace" &&
-          systemNamespaces.includes(resource.name)
-        ) {
-          return false;
-        }
-      }
+  // Resources are now filtered server-side via hideSystem param
+  const filteredResources = resources;
 
-      const matchesSearch =
-        searchQuery === "" ||
-        resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (resource.namespace &&
-          resource.namespace.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      return matchesSearch;
-    });
-  }, [resources, hideSystemResources, searchQuery, systemNamespaces]);
-
-  // Group resources by type for statistics (uses filtered resources)
+  // Stats from current page
   const resourceStats = useMemo(() => {
     return filteredResources.reduce(
       (acc, resource) => {
@@ -325,7 +335,6 @@ export default function ResourcesPage() {
     );
   }, [filteredResources]);
 
-  // Get unique clusters from filtered resources for statistics
   const filteredClusters = useMemo(
     () => [...new Set(filteredResources.map(r => r.clusterName))],
     [filteredResources]
@@ -334,6 +343,39 @@ export default function ResourcesPage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+  };
+
+  // Sort handler: cycles none -> asc -> desc -> none
+  const handleSort = (column: string) => {
+    if (sortBy !== column) {
+      setSortBy(column);
+      setSortOrder("asc");
+    } else if (sortOrder === "asc") {
+      setSortOrder("desc");
+    } else {
+      setSortBy("");
+      setSortOrder("");
+    }
+    setPage(1);
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return ArrowUpDown;
+    if (sortOrder === "asc") return ArrowUp;
+    return ArrowDown;
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(totalResources / pageSize);
+  const showingFrom = totalResources === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo = Math.min(page * pageSize, totalResources);
+
+  const handleFilterChange = (
+    setter: (v: string) => void,
+    value: string
+  ) => {
+    setter(value);
+    setPage(1);
   };
 
   const pageActions = (
@@ -372,9 +414,10 @@ export default function ResourcesPage() {
                 <Checkbox
                   id="hideSystem"
                   checked={hideSystemResources}
-                  onCheckedChange={checked =>
-                    setHideSystemResources(checked as boolean)
-                  }
+                  onCheckedChange={checked => {
+                    setHideSystemResources(checked as boolean);
+                    setPage(1);
+                  }}
                 />
                 <label
                   htmlFor="hideSystem"
@@ -386,25 +429,21 @@ export default function ResourcesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Desktop: Search takes more space, filters are compact in one row */}
-            {/* Mobile: Search full width, filters below */}
             <div className="flex flex-col md:flex-row gap-4">
-              {/* Search - takes remaining space on desktop, full width on mobile */}
               <div className="relative flex-1 md:min-w-[300px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, namespace, or type..."
+                  placeholder="Search by name or namespace..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9 w-full"
                 />
               </div>
 
-              {/* Filters - compact on desktop, stack on mobile */}
               <div className="flex flex-col sm:flex-row gap-4 md:gap-2">
                 <Select
                   value={selectedCluster}
-                  onValueChange={setSelectedCluster}
+                  onValueChange={v => handleFilterChange(setSelectedCluster, v)}
                 >
                   <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue placeholder="Cluster" />
@@ -421,7 +460,9 @@ export default function ResourcesPage() {
 
                 <Select
                   value={selectedNamespace}
-                  onValueChange={setSelectedNamespace}
+                  onValueChange={v =>
+                    handleFilterChange(setSelectedNamespace, v)
+                  }
                 >
                   <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="Namespace" />
@@ -436,7 +477,10 @@ export default function ResourcesPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedType} onValueChange={setSelectedType}>
+                <Select
+                  value={selectedType}
+                  onValueChange={v => handleFilterChange(setSelectedType, v)}
+                >
                   <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
@@ -461,8 +505,8 @@ export default function ResourcesPage() {
               <div>
                 <CardTitle>Resources</CardTitle>
                 <CardDescription>
-                  {filteredResources.length} resource
-                  {filteredResources.length !== 1 ? "s" : ""} found
+                  {totalResources} resource
+                  {totalResources !== 1 ? "s" : ""} found
                 </CardDescription>
               </div>
             </div>
@@ -485,64 +529,140 @@ export default function ResourcesPage() {
                 </p>
               </div>
             ) : (
-              <div className="relative overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40px]"></TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Namespace</TableHead>
-                      <TableHead>Cluster</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredResources.map(resource => {
-                      const Icon =
-                        resourceIcons[resource.type] || resourceIcons.Custom;
-                      const status = statusConfig[resource.status];
+              <>
+                <div className="relative overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[40px]"></TableHead>
+                        {sortableColumns.map(col => {
+                          const Icon = getSortIcon(col.key);
+                          return (
+                            <TableHead
+                              key={col.key}
+                              className="cursor-pointer select-none"
+                              onClick={() => handleSort(col.key)}
+                            >
+                              <div className="flex items-center gap-1">
+                                {col.label}
+                                <Icon
+                                  className={`h-3.5 w-3.5 ${
+                                    sortBy === col.key
+                                      ? "text-foreground"
+                                      : "text-muted-foreground/50"
+                                  }`}
+                                />
+                              </div>
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredResources.map(resource => {
+                        const Icon =
+                          resourceIcons[resource.type] || resourceIcons.Custom;
+                        const status = statusConfig[resource.status];
 
-                      return (
-                        <TableRow
-                          key={resource.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() =>
-                            router.push(`/dashboard/resources/${resource.id}`)
-                          }
-                        >
-                          <TableCell>
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{resource.name}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {resource.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{resource.namespace}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="text-xs">
-                              {resource.clusterName}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={status.variant}>
-                              {status.text}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {formatDate(resource.createdAt)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                        return (
+                          <TableRow
+                            key={resource.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/resources/${resource.id}`
+                              )
+                            }
+                          >
+                            <TableCell>
+                              <Icon className="h-5 w-5 text-muted-foreground" />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {resource.name}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {resource.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{resource.namespace}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="text-xs">
+                                {resource.clusterName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={status.variant}>
+                                {status.text}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {formatDate(resource.createdAt)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between pt-4 border-t mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {showingFrom}–{showingTo} of {totalResources}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-muted-foreground">
+                        Rows:
+                      </span>
+                      <Select
+                        value={String(pageSize)}
+                        onValueChange={v => {
+                          setPageSize(Number(v));
+                          setPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-[70px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[10, 25, 50, 100].map(size => (
+                            <SelectItem key={size} value={String(size)}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Page {page} of {totalPages || 1}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setPage(p => p - 1)}
+                        disabled={page <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setPage(p => p + 1)}
+                        disabled={page >= totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
