@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { ArrowLeft, Save, Lock, Info, AlertTriangle } from "lucide-react";
 import { TokenAuthForm } from "@/components/clusters/TokenAuthForm";
+import { toBase64 } from "@/lib/utils";
 
 type AuthType =
   | "token"
@@ -100,7 +101,7 @@ export default function EditClusterPage() {
     }
   };
 
-  const fetchCluster = async () => {
+  const fetchCluster = useCallback(async () => {
     try {
       const response = await api.get(`/clusters/${clusterName}`);
       const cluster = response.data;
@@ -110,19 +111,24 @@ export default function EditClusterPage() {
       }
 
       let mappedAuthType: AuthType = "token";
-      if (cluster.authType === "bearer" || cluster.authType === "token") {
-        mappedAuthType = "token";
-      } else if (cluster.authType === "certificate") {
-        mappedAuthType = "certificate";
-      } else if (cluster.authType === "kubeconfig") {
-        mappedAuthType = "kubeconfig";
-      } else if (
-        cluster.authType === "serviceaccount" ||
-        cluster.authType === "serviceAccount"
-      ) {
-        mappedAuthType = "serviceaccount";
-      } else if (cluster.authType === "oidc") {
-        mappedAuthType = "oidc";
+      switch (cluster.authType) {
+        case "bearer":
+        case "token":
+          mappedAuthType = "token";
+          break;
+        case "certificate":
+          mappedAuthType = "certificate";
+          break;
+        case "kubeconfig":
+          mappedAuthType = "kubeconfig";
+          break;
+        case "serviceaccount":
+        case "serviceAccount":
+          mappedAuthType = "serviceaccount";
+          break;
+        case "oidc":
+          mappedAuthType = "oidc";
+          break;
       }
 
       setFormData({
@@ -144,16 +150,13 @@ export default function EditClusterPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clusterName]);
 
   useEffect(() => {
     if (clusterName) {
       fetchCluster();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clusterName]);
-
-  const toBase64 = (str: string): string => btoa(str);
+  }, [clusterName, fetchCluster]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +169,6 @@ export default function EditClusterPage() {
         server: formData.server.trim(),
         authType: formData.authType,
         singleNode: formData.singleNode,
-        insecure: formData.credentials.insecure,
       };
 
       // Build credentials object with only non-empty fields

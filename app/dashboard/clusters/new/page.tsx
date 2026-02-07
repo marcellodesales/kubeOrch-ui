@@ -23,6 +23,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 import { TokenAuthForm } from "@/components/clusters/TokenAuthForm";
+import { toBase64 } from "@/lib/utils";
 
 type AuthType =
   | "token"
@@ -97,8 +98,6 @@ export default function NewClusterPage() {
     }
   };
 
-  const toBase64 = (str: string): string => btoa(str);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -110,27 +109,68 @@ export default function NewClusterPage() {
     setLoading(true);
 
     try {
-      // Base64-encode PEM/sensitive credential fields before sending
-      const encodedCredentials = { ...formData.credentials };
-      if (encodedCredentials.clientCertData) {
-        encodedCredentials.clientCertData = toBase64(
-          encodedCredentials.clientCertData
-        );
+      // Build credentials object based on selected authType
+      const credentials: Record<string, unknown> = {};
+      if (formData.credentials.namespace) {
+        credentials.namespace = formData.credentials.namespace;
       }
-      if (encodedCredentials.clientKeyData) {
-        encodedCredentials.clientKeyData = toBase64(
-          encodedCredentials.clientKeyData
-        );
+      if (formData.credentials.insecure) {
+        credentials.insecure = formData.credentials.insecure;
       }
-      if (encodedCredentials.caData) {
-        encodedCredentials.caData = toBase64(encodedCredentials.caData);
+
+      switch (formData.authType) {
+        case "token":
+        case "serviceaccount":
+          if (formData.credentials.token) {
+            credentials.token = formData.credentials.token;
+          }
+          if (formData.credentials.caData) {
+            credentials.caData = toBase64(formData.credentials.caData);
+          }
+          break;
+        case "certificate":
+          if (formData.credentials.clientCertData) {
+            credentials.clientCertData = toBase64(
+              formData.credentials.clientCertData
+            );
+          }
+          if (formData.credentials.clientKeyData) {
+            credentials.clientKeyData = toBase64(
+              formData.credentials.clientKeyData
+            );
+          }
+          if (formData.credentials.caData) {
+            credentials.caData = toBase64(formData.credentials.caData);
+          }
+          break;
+        case "kubeconfig":
+          if (formData.credentials.kubeconfig) {
+            credentials.kubeconfig = formData.credentials.kubeconfig;
+          }
+          break;
+        case "oidc":
+          if (formData.credentials.oidcIssuerUrl) {
+            credentials.oidcIssuerUrl = formData.credentials.oidcIssuerUrl;
+          }
+          if (formData.credentials.oidcClientId) {
+            credentials.oidcClientId = formData.credentials.oidcClientId;
+          }
+          if (formData.credentials.oidcClientSecret) {
+            credentials.oidcClientSecret =
+              formData.credentials.oidcClientSecret;
+          }
+          if (formData.credentials.oidcRefreshToken) {
+            credentials.oidcRefreshToken =
+              formData.credentials.oidcRefreshToken;
+          }
+          break;
       }
 
       const payload = {
         ...formData,
         server: formData.server.trim(),
         name: formData.name.trim(),
-        credentials: encodedCredentials,
+        credentials,
       };
       const response = await api.post("/clusters", payload);
 
