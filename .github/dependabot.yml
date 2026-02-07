@@ -33,3 +33,8 @@ updates:
       - "mohit-nagaraj"
     commit-message:
       prefix: "chore(ci)"
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
