@@ -190,6 +190,24 @@ export default function NodeSettingsPanel({
       );
     }
 
+    if (field.type === "toggle") {
+      return (
+        <div key={field.id} className="space-y-1">
+          <div className="flex items-center justify-between">
+            {field.label && (
+              <Label htmlFor={field.id} className="text-sm">
+                {field.label}
+              </Label>
+            )}
+            {renderFieldInput(field)}
+          </div>
+          {field.description && (
+            <p className="text-xs text-muted-foreground whitespace-pre-line">{field.description}</p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div key={field.id} className="space-y-2">
         {field.label && (
@@ -307,7 +325,7 @@ export default function NodeSettingsPanel({
 
     if (field.type === "toggle") {
       return (
-        <div className="flex items-center space-x-2 mt-1.5">
+        <div className="flex items-center space-x-2">
           <Switch
             id={field.id}
             checked={!!value}
