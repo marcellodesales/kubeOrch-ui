@@ -19,6 +19,10 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+      npm-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -34,7 +38,6 @@ updates:
     commit-message:
       prefix: "chore(ci)"
     groups:
-      actions-security:
-        applies-to: security-updates
+      github-actions:
         patterns:
           - "*"
