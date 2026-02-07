@@ -126,7 +126,12 @@ export default function NewClusterPage() {
         encodedCredentials.caData = toBase64(encodedCredentials.caData);
       }
 
-      const payload = { ...formData, credentials: encodedCredentials };
+      const payload = {
+        ...formData,
+        server: formData.server.trim(),
+        name: formData.name.trim(),
+        credentials: encodedCredentials,
+      };
       const response = await api.post("/clusters", payload);
 
       // The backend automatically tests the connection and sets the status

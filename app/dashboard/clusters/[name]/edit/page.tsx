@@ -163,7 +163,7 @@ export default function EditClusterPage() {
       const updateData: Record<string, unknown> = {
         displayName: formData.displayName,
         description: formData.description,
-        server: formData.server,
+        server: formData.server.trim(),
         authType: formData.authType,
         singleNode: formData.singleNode,
         insecure: formData.credentials.insecure,
