@@ -194,7 +194,7 @@ export default function ResourcesPage() {
   const { hideSystemResources, setHideSystemResources } = useResourcesStore();
 
   // Debounce search input
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     searchTimer.current = setTimeout(() => {
       setDebouncedSearch(searchQuery);
