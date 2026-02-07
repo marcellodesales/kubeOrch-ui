@@ -97,6 +97,8 @@ export default function NewClusterPage() {
     }
   };
 
+  const toBase64 = (str: string): string => btoa(str);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -108,7 +110,24 @@ export default function NewClusterPage() {
     setLoading(true);
 
     try {
-      const response = await api.post("/clusters", formData);
+      // Base64-encode PEM/sensitive credential fields before sending
+      const encodedCredentials = { ...formData.credentials };
+      if (encodedCredentials.clientCertData) {
+        encodedCredentials.clientCertData = toBase64(
+          encodedCredentials.clientCertData
+        );
+      }
+      if (encodedCredentials.clientKeyData) {
+        encodedCredentials.clientKeyData = toBase64(
+          encodedCredentials.clientKeyData
+        );
+      }
+      if (encodedCredentials.caData) {
+        encodedCredentials.caData = toBase64(encodedCredentials.caData);
+      }
+
+      const payload = { ...formData, credentials: encodedCredentials };
+      const response = await api.post("/clusters", payload);
 
       // The backend automatically tests the connection and sets the status
       const clusterStatus = response.data?.status;

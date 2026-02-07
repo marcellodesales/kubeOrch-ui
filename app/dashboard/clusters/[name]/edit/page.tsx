@@ -153,6 +153,8 @@ export default function EditClusterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clusterName]);
 
+  const toBase64 = (str: string): string => btoa(str);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -168,6 +170,7 @@ export default function EditClusterPage() {
       };
 
       // Build credentials object with only non-empty fields
+      // PEM/sensitive fields are base64-encoded before sending
       const credentials: Record<string, unknown> = {};
 
       if (formData.credentials.namespace) {
@@ -184,18 +187,22 @@ export default function EditClusterPage() {
             credentials.token = formData.credentials.token;
           }
           if (formData.credentials.caData) {
-            credentials.caData = formData.credentials.caData;
+            credentials.caData = toBase64(formData.credentials.caData);
           }
           break;
         case "certificate":
           if (formData.credentials.clientCertData) {
-            credentials.clientCertData = formData.credentials.clientCertData;
+            credentials.clientCertData = toBase64(
+              formData.credentials.clientCertData
+            );
           }
           if (formData.credentials.clientKeyData) {
-            credentials.clientKeyData = formData.credentials.clientKeyData;
+            credentials.clientKeyData = toBase64(
+              formData.credentials.clientKeyData
+            );
           }
           if (formData.credentials.caData) {
-            credentials.caData = formData.credentials.caData;
+            credentials.caData = toBase64(formData.credentials.caData);
           }
           break;
         case "kubeconfig":
