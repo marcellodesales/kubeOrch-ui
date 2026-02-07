@@ -150,6 +150,7 @@ export default function EditClusterPage() {
     if (clusterName) {
       fetchCluster();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clusterName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -210,10 +211,12 @@ export default function EditClusterPage() {
             credentials.oidcClientId = formData.credentials.oidcClientId;
           }
           if (formData.credentials.oidcClientSecret) {
-            credentials.oidcClientSecret = formData.credentials.oidcClientSecret;
+            credentials.oidcClientSecret =
+              formData.credentials.oidcClientSecret;
           }
           if (formData.credentials.oidcRefreshToken) {
-            credentials.oidcRefreshToken = formData.credentials.oidcRefreshToken;
+            credentials.oidcRefreshToken =
+              formData.credentials.oidcRefreshToken;
           }
           break;
       }
@@ -563,7 +566,10 @@ export default function EditClusterPage() {
                     id="insecure"
                     checked={formData.credentials.insecure}
                     onCheckedChange={checked =>
-                      handleInputChange("credentials.insecure", checked)
+                      handleInputChange(
+                        "credentials.insecure",
+                        checked as boolean
+                      )
                     }
                   />
                   <div className="space-y-1">
@@ -584,9 +590,9 @@ export default function EditClusterPage() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       <strong>Warning:</strong> Skipping TLS verification is
-                      insecure and should only be used for testing or development
-                      clusters. Production clusters should always use proper
-                      certificates.
+                      insecure and should only be used for testing or
+                      development clusters. Production clusters should always
+                      use proper certificates.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -596,10 +602,7 @@ export default function EditClusterPage() {
                     id="singleNode"
                     checked={formData.singleNode}
                     onCheckedChange={checked =>
-                      setFormData(prev => ({
-                        ...prev,
-                        singleNode: checked as boolean,
-                      }))
+                      handleInputChange("singleNode", checked as boolean)
                     }
                   />
                   <div className="space-y-1">
