@@ -80,7 +80,7 @@ export function RegisterForm() {
   useEffect(() => {
     api
       .get("/auth/methods")
-      .then((res) => {
+      .then(res => {
         setAuthMethods(res.data);
       })
       .catch(() => {
@@ -130,8 +130,7 @@ export function RegisterForm() {
   };
 
   const handleOAuthLogin = (providerName: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/v1/api";
-    window.location.href = `${apiUrl}/auth/oauth/${providerName}/authorize`;
+    window.location.href = `${api.defaults.baseURL}/auth/oauth/${providerName}/authorize`;
   };
 
   if (authMethodsLoading) {
@@ -200,7 +199,7 @@ export function RegisterForm() {
         {/* OAuth provider buttons */}
         {providers.length > 0 && (
           <div className="space-y-2">
-            {providers.map((provider) => (
+            {providers.map(provider => (
               <Button
                 key={provider.name}
                 variant="outline"

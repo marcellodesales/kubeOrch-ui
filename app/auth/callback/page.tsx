@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/AuthStore";
 import api from "@/lib/api";
@@ -11,13 +11,17 @@ function AuthCallbackContent() {
   const router = useRouter();
   const { setAuthDetails } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+  const exchangeAttempted = useRef(false);
 
   useEffect(() => {
+    if (exchangeAttempted.current) return;
+    exchangeAttempted.current = true;
+
     const code = searchParams.get("code");
     const errorParam = searchParams.get("error");
 
     if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+      setError(errorParam);
       setTimeout(() => router.push("/login"), 3000);
       return;
     }
@@ -30,7 +34,7 @@ function AuthCallbackContent() {
 
     api
       .post("/auth/oauth/exchange", { code })
-      .then((response) => {
+      .then(response => {
         const { token, user } = response.data;
         setAuthDetails(token, {
           id: user.id,
@@ -39,6 +43,7 @@ function AuthCallbackContent() {
           role: user.role,
           avatarUrl: user.avatarUrl,
           createdAt: user.createdAt,
+          authProvider: user.authProvider,
         });
         router.push("/dashboard");
       })

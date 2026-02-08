@@ -64,14 +64,14 @@ export function LoginForm() {
     // Check for error from OAuth redirect
     const errorParam = searchParams.get("error");
     if (errorParam) {
-      setError(decodeURIComponent(errorParam));
+      setError(errorParam);
     }
   }, [searchParams]);
 
   useEffect(() => {
     api
       .get("/auth/methods")
-      .then((res) => {
+      .then(res => {
         setAuthMethods(res.data);
       })
       .catch(() => {
@@ -117,8 +117,7 @@ export function LoginForm() {
   };
 
   const handleOAuthLogin = (providerName: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/v1/api";
-    window.location.href = `${apiUrl}/auth/oauth/${providerName}/authorize`;
+    window.location.href = `${api.defaults.baseURL}/auth/oauth/${providerName}/authorize`;
   };
 
   if (authMethodsLoading) {
@@ -157,7 +156,7 @@ export function LoginForm() {
         {/* OAuth provider buttons */}
         {providers.length > 0 && (
           <div className="space-y-2">
-            {providers.map((provider) => (
+            {providers.map(provider => (
               <Button
                 key={provider.name}
                 variant="outline"
