@@ -11,6 +11,7 @@ type User = {
   role?: string;
   createdAt?: string;
   avatarUrl?: string;
+  authProvider?: string;
 };
 
 type AuthStore = {
