@@ -26,7 +26,6 @@ import {
   Server,
   Database,
   Settings,
-  FileCode,
   Activity,
   Shield,
   Monitor,
@@ -95,11 +94,10 @@ const navItems = [
   {
     title: "Monitoring",
     icon: Monitor,
-    href: "/monitoring",
+    href: "/dashboard/monitoring/metrics",
     submenu: [
-      { title: "Metrics", href: "/monitoring/metrics", icon: Activity },
-      { title: "Logs", href: "/monitoring/logs", icon: FileCode },
-      { title: "Alerts", href: "/monitoring/alerts", icon: Shield },
+      { title: "Metrics", href: "/dashboard/monitoring/metrics", icon: Activity },
+      { title: "Alerts", href: "/dashboard/monitoring/alerts", icon: Shield },
     ],
   },
   {
