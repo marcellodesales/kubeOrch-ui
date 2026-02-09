@@ -83,9 +83,9 @@ const pages = [
   },
   {
     name: "Monitoring",
-    path: "/dashboard/monitoring",
+    path: "/dashboard/monitoring/metrics",
     icon: Activity,
-    keywords: ["metrics", "logs"],
+    keywords: ["metrics", "alerts"],
   },
   {
     name: "Settings",

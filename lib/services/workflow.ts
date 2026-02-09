@@ -47,6 +47,47 @@ export interface UpdateWorkflowRequest {
   edges?: WorkflowEdge[];
 }
 
+// Recent workflow summary (lightweight, no nodes/edges)
+export interface RecentWorkflow {
+  id: string;
+  name: string;
+  status: "draft" | "published" | "archived";
+  current_version: number;
+  cluster_id: string;
+  updated_at: string;
+  last_run_at?: string;
+  run_count: number;
+  success_count: number;
+  failure_count: number;
+  tags: string[];
+}
+
+// Get recent workflows for dashboard
+export async function getRecentWorkflows(): Promise<RecentWorkflow[]> {
+  const response = await api.get("/dashboard/recent-workflows");
+  return response.data.workflows || [];
+}
+
+// Dashboard stats types
+export interface StatChange {
+  value: string;
+  change: number;
+  trend: "up" | "down" | "neutral";
+}
+
+export interface DashboardStatsResponse {
+  total_workflows: StatChange;
+  published_workflows: StatChange;
+  total_runs: StatChange;
+  success_rate: StatChange;
+}
+
+// Get dashboard stats with month-over-month changes
+export async function getDashboardStats(): Promise<DashboardStatsResponse> {
+  const response = await api.get("/dashboard/stats");
+  return response.data;
+}
+
 // Create a new workflow
 export async function createWorkflow(data: CreateWorkflowRequest) {
   const response = await api.post("/workflows", data);
