@@ -91,18 +91,30 @@ const workflowStatusConfig = {
 };
 
 function formatRelativeTime(dateString: string): string {
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffSeconds < 60) return "just now";
-  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
-  if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  if (diffSeconds < 60) {
+    return "just now";
+  }
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return rtf.format(-diffMinutes, "minute");
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return rtf.format(-diffHours, "hour");
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) {
+    return rtf.format(-diffDays, "day");
+  }
+
   return date.toLocaleDateString();
 }
 
@@ -146,7 +158,8 @@ export default function DashboardPage() {
   const { defaultCluster, clusters, isLoading: clusterLoading } = useCluster();
   const [recentWorkflows, setRecentWorkflows] = useState<RecentWorkflow[]>([]);
   const [workflowsLoading, setWorkflowsLoading] = useState(true);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStatsResponse | null>(null);
+  const [dashboardStats, setDashboardStats] =
+    useState<DashboardStatsResponse | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
@@ -210,7 +223,8 @@ export default function DashboardPage() {
             {statCardConfig.map(card => {
               const Icon = card.icon;
               const stat = dashboardStats?.[card.key];
-              const TrendIcon = stat?.trend === "down" ? TrendingDown : TrendingUp;
+              const TrendIcon =
+                stat?.trend === "down" ? TrendingDown : TrendingUp;
 
               return (
                 <Card key={card.key}>
@@ -284,7 +298,8 @@ export default function DashboardPage() {
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <FileText className="h-10 w-10 text-muted-foreground mb-3" />
                     <p className="text-sm text-muted-foreground mb-3">
-                      No workflows yet. Create your first workflow to get started.
+                      No workflows yet. Create your first workflow to get
+                      started.
                     </p>
                     <Button size="sm" asChild>
                       <Link href="/dashboard/workflow/new">
@@ -352,25 +367,41 @@ export default function DashboardPage() {
                 <CardDescription>Common tasks and operations</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  asChild
+                >
                   <Link href="/dashboard/workflow/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create New Workflow
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  asChild
+                >
                   <Link href="/dashboard/build/new">
                     <Server className="mr-2 h-4 w-4" />
                     Build Application
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  asChild
+                >
                   <Link href="/dashboard/resources">
                     <Database className="mr-2 h-4 w-4" />
                     Manage Resources
                   </Link>
                 </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  asChild
+                >
                   <Link href="/dashboard/monitoring/metrics">
                     <Activity className="mr-2 h-4 w-4" />
                     View Metrics

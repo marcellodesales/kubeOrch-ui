@@ -9,7 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Activity, Cpu, MemoryStick, HardDrive, Construction } from "lucide-react";
+import {
+  Activity,
+  Cpu,
+  MemoryStick,
+  HardDrive,
+  Construction,
+} from "lucide-react";
 
 const placeholderMetrics = [
   {
@@ -59,7 +65,10 @@ export default function MetricsPage() {
         <div className="space-y-6">
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/50 p-4 text-sm text-muted-foreground">
             <Construction className="h-4 w-4" />
-            <span>Metrics dashboard is coming soon. This page will display real-time cluster and application metrics.</span>
+            <span>
+              Metrics dashboard is coming soon. This page will display real-time
+              cluster and application metrics.
+            </span>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

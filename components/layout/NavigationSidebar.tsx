@@ -96,7 +96,11 @@ const navItems = [
     icon: Monitor,
     href: "/dashboard/monitoring/metrics",
     submenu: [
-      { title: "Metrics", href: "/dashboard/monitoring/metrics", icon: Activity },
+      {
+        title: "Metrics",
+        href: "/dashboard/monitoring/metrics",
+        icon: Activity,
+      },
       { title: "Alerts", href: "/dashboard/monitoring/alerts", icon: Shield },
     ],
   },
