@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { usePanelStore } from "./PanelStore";
 import { useSidebarStore } from "./SidebarStore";
 import { useResourcesStore } from "./ResourcesStore";
+import { useNotificationStore } from "./NotificationStore";
 
 type User = {
   id: string;
@@ -55,6 +56,9 @@ export const useAuthStore = create<AuthStore>()(
 
         // Clear resources preferences
         useResourcesStore.getState().clearResourcesState();
+
+        // Clear notification state
+        useNotificationStore.getState().clearNotificationState();
       },
       isTokenExpired: () => {
         const state = get();

@@ -5,6 +5,7 @@ This document explains how to use the integrated Kubernetes cluster management A
 ## Architecture Overview
 
 The cluster management system consists of:
+
 1. **API Service** (`/lib/services/cluster.ts`) - Handles all API calls
 2. **State Store** (`/stores/ClusterStore.ts`) - Manages cluster state with Zustand
 3. **Custom Hook** (`/hooks/useCluster.ts`) - Provides easy access to cluster functionality
@@ -13,6 +14,7 @@ The cluster management system consists of:
 ## Configuration
 
 The API endpoint is configured in `.env.local`:
+
 ```env
 NEXT_PUBLIC_API_URL=http://your-api-host:3000/v1/api
 ```
@@ -52,15 +54,15 @@ await clusterService.removeCluster("production");
 ### 2. Using the ClusterStore
 
 ```typescript
-import { useClusterStore } from '@/stores/ClusterStore';
+import { useClusterStore } from "@/stores/ClusterStore";
 
 function MyComponent() {
   const clusterStore = useClusterStore();
-  
+
   // Access state
   const clusters = clusterStore.clusters;
   const selectedCluster = clusterStore.selectedCluster;
-  
+
   // Perform actions
   await clusterStore.fetchClusters();
   await clusterStore.addCluster(clusterData);
@@ -90,7 +92,7 @@ function ClusterDashboard() {
   // - Provides helper methods
 
   const connectedClusters = getConnectedClusters();
-  
+
   return (
     <div>
       {isLoading ? (
@@ -114,6 +116,7 @@ function ClusterDashboard() {
 The system supports multiple authentication methods:
 
 ### Token Authentication
+
 ```typescript
 {
   authType: "token",
@@ -125,6 +128,7 @@ The system supports multiple authentication methods:
 ```
 
 ### Certificate Authentication
+
 ```typescript
 {
   authType: "certificate",
@@ -137,6 +141,7 @@ The system supports multiple authentication methods:
 ```
 
 ### KubeConfig File
+
 ```typescript
 {
   authType: "kubeconfig",
@@ -147,6 +152,7 @@ The system supports multiple authentication methods:
 ```
 
 ### Service Account
+
 ```typescript
 {
   authType: "serviceaccount",
@@ -158,6 +164,7 @@ The system supports multiple authentication methods:
 ```
 
 ### OIDC
+
 ```typescript
 {
   authType: "oidc",
@@ -190,13 +197,14 @@ try {
   // Success is automatically toasted
 } catch (error) {
   // Error is automatically toasted
-  console.error('Failed to add cluster:', error);
+  console.error("Failed to add cluster:", error);
 }
 ```
 
 ## Status Monitoring
 
 The system automatically monitors cluster health:
+
 - Polling interval: Every 60 seconds
 - Status values: `connected`, `disconnected`, `error`, `unknown`
 - Stale detection: Status marked as stale if not checked in 2+ minutes
@@ -216,7 +224,7 @@ function ClusterManager() {
     testConnection,
     setDefaultCluster
   } = useCluster();
-  
+
   const [newCluster, setNewCluster] = useState({
     name: '',
     server: '',
@@ -234,15 +242,15 @@ function ClusterManager() {
           token: newCluster.token
         }
       });
-      
+
       // Test the connection
       await testConnection(newCluster.name);
-      
+
       // Set as default if it's the first cluster
       if (clusters.length === 0) {
         await setDefaultCluster(newCluster.name);
       }
-      
+
       // Clear form
       setNewCluster({ name: '', server: '', token: '' });
     } catch (error) {
@@ -302,16 +310,19 @@ function ClusterManager() {
 ## Troubleshooting
 
 ### Connection Issues
+
 - Check the API server URL is correct and reachable
 - Verify credentials are valid and not expired
 - Check CA certificate if using self-signed certificates
 
 ### Authentication Errors
+
 - Ensure JWT token in AuthStore is valid
 - Check token expiration with `useAuthStore.getState().isTokenExpired()`
 - Verify user has permissions to manage clusters
 
 ### Status Not Updating
+
 - Check browser console for errors
 - Verify API endpoint is accessible
 - Check network tab for failed requests

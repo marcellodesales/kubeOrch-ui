@@ -3,7 +3,9 @@
 ## Visual Component Categories
 
 ### 1. 🌐 Web & API
+
 **Quick Deploy Components:**
+
 - **nginx** - Static file server (drag & drop HTML/React/Vue)
 - **Node.js API** - Express/Fastify REST API
 - **Python API** - FastAPI/Flask service
@@ -11,12 +13,15 @@
 - **WordPress** - Full CMS with MySQL
 
 **Visual Indicators:**
+
 - 🟢 Green dot = Ready to deploy
 - 🔵 Blue dot = Needs configuration
 - 🟡 Yellow dot = Optional config available
 
 ### 2. 🗄️ Databases
+
 **One-Click Databases:**
+
 - **PostgreSQL** - Auto-configured with backups
 - **MongoDB** - Replica set ready
 - **Redis** - Cache + persistence
@@ -24,26 +29,32 @@
 - **Elasticsearch** - Search cluster
 
 **Auto-Features:**
+
 - ✅ Automatic backup scheduling
 - ✅ Connection string generation
 - ✅ Replica configuration
 - ✅ Performance tuning
 
 ### 3. 📨 Messaging & Queues
+
 **Drag & Drop Messaging:**
+
 - **RabbitMQ** - Message broker with management UI
 - **Kafka** - Streaming platform with Zookeeper
 - **Redis Pub/Sub** - Simple messaging
 - **NATS** - Lightweight messaging
 
 **Auto-Wiring:**
+
 - Automatically connects to services
 - Auto-creates topics/queues
 - Sets up dead letter queues
 - Configures retention policies
 
 ### 4. ⚖️ Load Balancers & Gateways
+
 **Traffic Management:**
+
 - **NGINX LB** - L7 load balancer
 - **HAProxy** - High-performance LB
 - **Traefik** - Auto-SSL with Let's Encrypt
@@ -51,13 +62,16 @@
 - **Istio** - Service mesh gateway
 
 **Smart Features:**
+
 - 🔐 Auto-SSL certificate generation
 - 🔄 Auto-discovery of backends
 - 📊 Built-in metrics
 - 🛡️ Rate limiting & security
 
 ### 5. 📊 Monitoring (One-Click Plugin)
+
 **Complete Stack:**
+
 ```
 [Install Monitoring] → Deploys:
 ├── Prometheus (metrics collection)
@@ -68,13 +82,16 @@
 ```
 
 **Auto-Integration:**
+
 - Automatically scrapes all services
 - Pre-configured alerts
 - Service-specific dashboards
 - No configuration needed
 
 ### 6. 📝 Logging (One-Click Plugin)
+
 **Complete Stack:**
+
 ```
 [Install Logging] → Deploys:
 ├── Elasticsearch/Loki (log storage)
@@ -84,13 +101,16 @@
 ```
 
 **Features:**
+
 - Auto-collects from all containers
 - Structured logging
 - Full-text search
 - Log correlation
 
 ### 7. 🔒 Security (One-Click Plugin)
+
 **Security Suite:**
+
 ```
 [Install Security] → Deploys:
 ├── cert-manager (TLS certificates)
@@ -101,14 +121,18 @@
 ```
 
 ### 8. 💾 Storage
+
 **Storage Options:**
+
 - **MinIO** - S3-compatible object storage
 - **NFS Server** - Shared file storage
 - **PostgreSQL Backup** - Automated backups
 - **Persistent Volumes** - Dynamic provisioning
 
 ### 9. 🚀 CI/CD (One-Click Plugin)
+
 **DevOps Stack:**
+
 ```
 [Install CI/CD] → Deploys:
 ├── Jenkins/Tekton (pipelines)
@@ -118,7 +142,9 @@
 ```
 
 ### 10. 🤖 ML/AI
+
 **ML Platform:**
+
 - **JupyterHub** - Notebook server
 - **MLflow** - ML lifecycle
 - **TensorFlow Serving** - Model serving
@@ -127,6 +153,7 @@
 ## UI Component Design
 
 ### Component Card Structure
+
 ```
 ┌─────────────────────┐
 │ 🗄️ PostgreSQL      │
@@ -144,12 +171,14 @@
 ```
 
 ### Connection Points
+
 - **Left Side (●)**: Input connections (receives data)
 - **Right Side (●)**: Output connections (provides data)
 - **Top (●)**: Control plane connections
 - **Bottom (●)**: Data plane connections
 
 ### Visual Connection Types
+
 ```
 HTTP/REST:    ━━━━━━━ (solid line)
 Database:     ══════════ (double line)
@@ -160,6 +189,7 @@ Service Mesh: ········ (dotted line)
 ## Drag & Drop Workflow
 
 ### Simple Web App
+
 ```
 1. Drag "React App" → Canvas
 2. Drag "Node.js API" → Canvas
@@ -169,7 +199,9 @@ Service Mesh: ········ (dotted line)
 ```
 
 ### Auto-Configuration Magic
+
 When you drop PostgreSQL:
+
 - ✅ Creates database with random secure password
 - ✅ Sets up automated backups
 - ✅ Configures connection pooling
@@ -178,6 +210,7 @@ When you drop PostgreSQL:
 - ✅ Injects into connected services
 
 When you connect services:
+
 - ✅ Auto-generates environment variables
 - ✅ Creates network policies
 - ✅ Sets up service discovery
@@ -187,6 +220,7 @@ When you connect services:
 ## Smart Defaults by Service Type
 
 ### Web Applications
+
 ```javascript
 defaults: {
   replicas: 2,          // HA by default
@@ -198,6 +232,7 @@ defaults: {
 ```
 
 ### Databases
+
 ```javascript
 defaults: {
   replicas: 1,          // Single for dev
@@ -209,6 +244,7 @@ defaults: {
 ```
 
 ### Message Queues
+
 ```javascript
 defaults: {
   replicas: 3,          // Cluster mode
@@ -221,14 +257,18 @@ defaults: {
 ## Progressive Disclosure
 
 ### Basic Mode (Default)
+
 Shows only:
+
 - Component name
 - Quick info
 - Connection points
 - Deploy button
 
 ### Advanced Mode (Toggle)
+
 Additionally shows:
+
 - Resource limits
 - Replica count
 - Environment variables
@@ -240,6 +280,7 @@ Additionally shows:
 ## Component Search & Filter
 
 ### Quick Filters
+
 - 🔥 **Popular**: Most used components
 - ⚡ **Quick Start**: Pre-configured stacks
 - 🏢 **Enterprise**: Production-ready
@@ -247,6 +288,7 @@ Additionally shows:
 - ⭐ **Favorites**: User's saved components
 
 ### Smart Search
+
 - Type "database" → Shows all database options
 - Type "python" → Shows Python-related services
 - Type "monitoring" → Suggests monitoring stack
@@ -254,6 +296,7 @@ Additionally shows:
 ## Template Marketplace
 
 ### Featured Stacks
+
 1. **MEAN Stack** - MongoDB, Express, Angular, Node.js
 2. **LAMP Stack** - Linux, Apache, MySQL, PHP
 3. **JAMstack** - JavaScript, APIs, Markup
@@ -261,6 +304,7 @@ Additionally shows:
 5. **TICK Stack** - Telegraf, InfluxDB, Chronograf, Kapacitor
 
 ### Industry Templates
+
 - **E-Commerce**: Shop + Payment + Analytics
 - **SaaS Platform**: Multi-tenant + Billing + Monitoring
 - **IoT Platform**: MQTT + TimeSeries + Dashboard
@@ -270,12 +314,14 @@ Additionally shows:
 ## Intelligent Recommendations
 
 ### Context-Aware Suggestions
+
 - Drop PostgreSQL → Suggests: "Add pgAdmin for management?"
 - Drop Node.js → Suggests: "Add Redis for caching?"
 - Drop Frontend → Suggests: "Add CDN for static assets?"
 - Drop Kafka → Suggests: "Add Schema Registry?"
 
 ### Missing Components Detection
+
 - API without database → "Need data storage?"
 - Frontend without backend → "Add API server?"
 - Services without monitoring → "Add observability?"
@@ -284,6 +330,7 @@ Additionally shows:
 ## One-Click Actions
 
 ### Quick Actions Menu
+
 - 🚀 **Deploy All** - Deploy entire workflow
 - 💾 **Save Template** - Save as reusable template
 - 📋 **Clone Workflow** - Duplicate configuration

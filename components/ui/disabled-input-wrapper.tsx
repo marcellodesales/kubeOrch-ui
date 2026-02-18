@@ -9,11 +9,13 @@ let hasShownEditModeToast = false;
 interface DisabledInputWrapperProps {
   children: React.ReactNode;
   disabled: boolean;
+  className?: string;
 }
 
 export function DisabledInputWrapper({
   children,
   disabled,
+  className,
 }: DisabledInputWrapperProps) {
   const handleMouseEnter = () => {
     if (disabled && !hasShownEditModeToast) {
@@ -25,11 +27,11 @@ export function DisabledInputWrapper({
   };
 
   if (!disabled) {
-    return <>{children}</>;
+    return <span className={className}>{children}</span>;
   }
 
   return (
-    <span className="w-full" onMouseEnter={handleMouseEnter}>
+    <span className={className || "w-full"} onMouseEnter={handleMouseEnter}>
       {children}
     </span>
   );

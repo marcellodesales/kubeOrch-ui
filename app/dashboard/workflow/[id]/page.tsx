@@ -244,6 +244,7 @@ export default function WorkflowDetailPage() {
         onRun={handleRun}
         onStatusChange={handleStatusChange}
         onArchive={() => handleStatusChange("archived")}
+        onWorkflowUpdate={updated => setWorkflow(updated)}
         editable={workflow?.status === "draft"}
         openSettings={openSettings}
         onCloseSettings={handleCloseSettings}
