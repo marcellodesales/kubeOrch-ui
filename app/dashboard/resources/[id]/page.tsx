@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RefreshCw,
   Star,
-  StarOff,
   FileText,
   Activity,
   Settings,
@@ -27,10 +27,24 @@ import {
   Globe,
   Package,
   Server,
+  GitBranch,
+  Plus,
+  TrendingUp,
+  Tag,
+  RotateCcw,
+  Trash2,
+  ArrowRight,
+  ChevronsUpDown,
+  type LucideProps,
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import { getErrorMessage } from "@/lib/utils/errorHandling";
 import { LogsTab } from "@/components/resources/LogsTab";
 import { TerminalTab } from "@/components/resources/TerminalTab";
@@ -48,6 +62,8 @@ interface Resource {
   clusterName: string;
   labels?: Record<string, string>;
   annotations?: Record<string, string>;
+  workflowId?: string;
+  workflowName?: string;
   userTags?: string[];
   userNotes?: string;
   isFavorite?: boolean;
@@ -68,6 +84,7 @@ interface ResourceHistory {
   newStatus?: string;
   timestamp: string;
   message?: string;
+  changes?: Record<string, unknown>;
 }
 
 interface Pod {
@@ -85,10 +102,7 @@ interface StatusConfig {
   variant: "default" | "outline" | "destructive" | "secondary";
 }
 
-const resourceIcons: Record<
-  string,
-  React.ComponentType<import("lucide-react").LucideProps>
-> = {
+const resourceIcons: Record<string, React.ComponentType<LucideProps>> = {
   Pod: Box,
   Service: Globe,
   Deployment: Package,
@@ -105,6 +119,173 @@ const statusConfig: Record<string, StatusConfig> = {
   deleted: { text: "Deleted", variant: "outline" },
   warning: { text: "Warning", variant: "outline" },
 };
+
+interface ActionConfig {
+  label: string;
+  borderColor: string;
+  iconColor: string;
+  icon: React.ComponentType<LucideProps>;
+}
+
+const actionConfigMap: Record<string, ActionConfig> = {
+  created: {
+    label: "Created",
+    borderColor: "border-green-500",
+    iconColor: "text-green-500",
+    icon: Plus,
+  },
+  status_changed: {
+    label: "Status Changed",
+    borderColor: "border-blue-500",
+    iconColor: "text-blue-500",
+    icon: Activity,
+  },
+  scaled: {
+    label: "Scaled",
+    borderColor: "border-purple-500",
+    iconColor: "text-purple-500",
+    icon: TrendingUp,
+  },
+  image_changed: {
+    label: "Image Changed",
+    borderColor: "border-orange-500",
+    iconColor: "text-orange-500",
+    icon: Package,
+  },
+  labels_changed: {
+    label: "Labels Changed",
+    borderColor: "border-cyan-500",
+    iconColor: "text-cyan-500",
+    icon: Tag,
+  },
+  container_restarted: {
+    label: "Container Restarted",
+    borderColor: "border-yellow-500",
+    iconColor: "text-yellow-500",
+    icon: RotateCcw,
+  },
+  updated: {
+    label: "Updated",
+    borderColor: "border-blue-400",
+    iconColor: "text-blue-400",
+    icon: Activity,
+  },
+  deleted: {
+    label: "Deleted",
+    borderColor: "border-red-500",
+    iconColor: "text-red-500",
+    icon: Trash2,
+  },
+};
+
+const defaultActionConfig: ActionConfig = {
+  label: "Event",
+  borderColor: "border-muted-foreground/30",
+  iconColor: "text-muted-foreground",
+  icon: Activity,
+};
+
+function ChangeValue({ value }: { value: unknown }) {
+  if (value === null || value === undefined)
+    return <span className="text-muted-foreground italic">none</span>;
+  if (typeof value === "boolean")
+    return <span>{value ? "true" : "false"}</span>;
+  if (Array.isArray(value)) return <span>{value.join(", ")}</span>;
+  return <span>{String(value)}</span>;
+}
+
+function ChangesPanel({ changes }: { changes: Record<string, unknown> }) {
+  return (
+    <div className="mt-2 space-y-1.5 rounded bg-muted/50 p-3 text-xs">
+      {Object.entries(changes).map(([key, value]) => {
+        const change = value as Record<string, unknown> | null;
+        if (!change) return null;
+
+        // Map diff (labels/annotations with added/removed/changed)
+        if ("added" in change || "removed" in change || "changed" in change) {
+          return (
+            <div key={key}>
+              <span className="font-medium text-muted-foreground">{key}:</span>
+              {!!change.added &&
+                Object.keys(change.added as Record<string, string>).length >
+                  0 && (
+                  <div className="ml-3">
+                    {Object.entries(change.added as Record<string, string>).map(
+                      ([k, v]) => (
+                        <div
+                          key={k}
+                          className="text-green-600 dark:text-green-400"
+                        >
+                          + {k}: {v}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              {!!change.removed &&
+                Object.keys(change.removed as Record<string, string>).length >
+                  0 && (
+                  <div className="ml-3">
+                    {Object.entries(
+                      change.removed as Record<string, string>
+                    ).map(([k, v]) => (
+                      <div key={k} className="text-red-600 dark:text-red-400">
+                        - {k}: {v}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              {!!change.changed &&
+                Object.keys(change.changed as Record<string, unknown>).length >
+                  0 && (
+                  <div className="ml-3">
+                    {Object.entries(
+                      change.changed as Record<string, Record<string, unknown>>
+                    ).map(([k, diff]) => (
+                      <div key={k} className="flex items-center gap-1">
+                        <span className="text-muted-foreground">{k}:</span>
+                        <span className="text-red-600 dark:text-red-400">
+                          <ChangeValue value={diff.old} />
+                        </span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-green-600 dark:text-green-400">
+                          <ChangeValue value={diff.new} />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+          );
+        }
+
+        // Field diff with old → new
+        if ("old" in change && "new" in change) {
+          return (
+            <div key={key} className="flex items-center gap-1">
+              <span className="font-medium text-muted-foreground">{key}:</span>
+              <span className="text-red-600 dark:text-red-400">
+                <ChangeValue value={change.old} />
+              </span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <span className="text-green-600 dark:text-green-400">
+                <ChangeValue value={change.new} />
+              </span>
+            </div>
+          );
+        }
+
+        // Creation snapshot (simple key-value)
+        return (
+          <div key={key} className="flex items-center gap-1">
+            <span className="font-medium text-muted-foreground">{key}:</span>
+            <ChangeValue value={value} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ResourceDetailPage() {
   const params = useParams();
@@ -281,7 +462,7 @@ export default function ResourceDetailPage() {
         }
       >
         {resource.isFavorite ? (
-          <StarOff className="h-4 w-4" />
+          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
         ) : (
           <Star className="h-4 w-4" />
         )}
@@ -356,6 +537,18 @@ export default function ResourceDetailPage() {
                 <p className="text-sm text-muted-foreground">Cluster</p>
                 <p className="text-sm">{resource.clusterName}</p>
               </div>
+              {resource.workflowId && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Workflow</p>
+                  <Link
+                    href={`/dashboard/workflow/${resource.workflowId}`}
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  >
+                    <GitBranch className="h-3.5 w-3.5" />
+                    {resource.workflowName || "View Workflow"}
+                  </Link>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -550,34 +743,60 @@ export default function ResourceDetailPage() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {history.map(event => (
-                      <div
-                        key={event.id}
-                        className="flex items-start gap-3 border-l-2 pl-3"
-                      >
-                        <Activity className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {event.action}
-                            </span>
-                            {event.oldStatus && event.newStatus && (
-                              <span className="text-xs text-muted-foreground">
-                                {event.oldStatus} → {event.newStatus}
-                              </span>
-                            )}
+                    {history.map(event => {
+                      const config =
+                        actionConfigMap[event.action] || defaultActionConfig;
+                      const ActionIcon = config.icon;
+                      const hasChanges =
+                        event.changes && Object.keys(event.changes).length > 0;
+
+                      return (
+                        <Collapsible key={event.id}>
+                          <div
+                            className={`border-l-2 ${config.borderColor} pl-3`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <ActionIcon
+                                className={`mt-0.5 h-4 w-4 ${config.iconColor}`}
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">
+                                    {config.label}
+                                  </span>
+                                  {event.oldStatus && event.newStatus && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {event.oldStatus} → {event.newStatus}
+                                    </span>
+                                  )}
+                                  {hasChanges && (
+                                    <CollapsibleTrigger asChild>
+                                      <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                        <ChevronsUpDown className="h-3 w-3" />
+                                        Details
+                                      </button>
+                                    </CollapsibleTrigger>
+                                  )}
+                                </div>
+                                {event.message && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {event.message}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDate(event.timestamp)}
+                                </p>
+                                {hasChanges && (
+                                  <CollapsibleContent>
+                                    <ChangesPanel changes={event.changes!} />
+                                  </CollapsibleContent>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          {event.message && (
-                            <p className="text-xs text-muted-foreground">
-                              {event.message}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(event.timestamp)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                        </Collapsible>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

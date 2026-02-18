@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import {
   LogOut,
   User,
   HelpCircle,
+  BookOpen,
   Command,
   Moon,
   Sun,
@@ -27,7 +28,24 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/AuthStore";
+import { useNotificationStore } from "@/stores/NotificationStore";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import { useTheme } from "next-themes";
+
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const seconds = Math.floor((now - then) / 1000);
+
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 interface TopBarProps {
   onOpenCommandPalette?: () => void;
@@ -37,18 +55,19 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
   const router = useRouter();
   const { user, removeAuthDetails } = useAuthStore();
   const { theme, setTheme } = useTheme();
-  const [notifications] = useState([
-    { id: 1, title: "Deployment successful", time: "2 min ago", unread: true },
-    { id: 2, title: "New version available", time: "1 hour ago", unread: true },
-    {
-      id: 3,
-      title: "Resource limit warning",
-      time: "3 hours ago",
-      unread: false,
-    },
-  ]);
+  const {
+    notifications,
+    unreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotificationStore();
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  useNotificationSSE();
+
+  useEffect(() => {
+    fetchNotifications(5);
+  }, [fetchNotifications]);
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-6 py-[14px]">
@@ -111,33 +130,63 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notifications</span>
-              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
-                Mark all as read
-              </Button>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={e => {
+                    e.preventDefault();
+                    markAllAsRead();
+                  }}
+                >
+                  Mark all as read
+                </Button>
+              )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.map(notification => (
-              <DropdownMenuItem
-                key={notification.id}
-                className="flex items-start gap-2 p-3"
-              >
-                <div className="flex-1">
-                  <p
-                    className={`text-sm ${notification.unread ? "font-medium" : ""}`}
-                  >
-                    {notification.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {notification.time}
-                  </p>
-                </div>
-                {notification.unread && (
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                )}
-              </DropdownMenuItem>
-            ))}
+            {notifications.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No notifications
+              </div>
+            ) : (
+              notifications.map(notification => (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className="flex items-start gap-2 p-3 cursor-pointer"
+                  onClick={() => {
+                    if (!notification.read) {
+                      markAsRead(notification.id);
+                    }
+                    if (notification.link) {
+                      router.push(notification.link);
+                    }
+                  }}
+                >
+                  <div className="flex-1">
+                    <p
+                      className={`text-sm ${!notification.read ? "font-medium" : ""}`}
+                    >
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {timeAgo(notification.createdAt)}
+                    </p>
+                  </div>
+                  {!notification.read && (
+                    <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  )}
+                </DropdownMenuItem>
+              ))
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center">
+            <DropdownMenuItem
+              className="justify-center cursor-pointer"
+              onClick={() => router.push("/dashboard/notifications")}
+            >
               View all notifications
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -152,17 +201,25 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Help & Support</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <HelpCircle className="mr-2 h-4 w-4" />
-              Documentation
+            <DropdownMenuItem asChild>
+              <a
+                href="https://docs.kubeorch.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Documentation
+              </a>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Command className="mr-2 h-4 w-4" />
-              Keyboard shortcuts
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              API Reference
+            <DropdownMenuItem asChild>
+              <a
+                href="https://docs.kubeorch.dev/reference/rest-api/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                API Reference
+              </a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

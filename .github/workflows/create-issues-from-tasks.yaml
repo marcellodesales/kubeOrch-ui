@@ -3,13 +3,13 @@ name: Create Issues from Tasks
 on:
   schedule:
     # Run daily at 9 AM UTC
-    - cron: '0 9 * * *'
+    - cron: "0 9 * * *"
   workflow_dispatch:
     inputs:
       issue_count:
-        description: 'Number of issues to create (default: 1 for testing, 5 for daily)'
+        description: "Number of issues to create (default: 1 for testing, 5 for daily)"
         required: false
-        default: '1'
+        default: "1"
 
 jobs:
   create-issues:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      
+
       - name: Create Issues from Tasks
         uses: actions/github-script@v8
         with:
@@ -25,16 +25,16 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // Read the tasks.md file
             const tasksPath = path.join(process.env.GITHUB_WORKSPACE, 'docs', 'tasks.md');
             const tasksContent = fs.readFileSync(tasksPath, 'utf8');
-            
+
             // Parse tasks from the markdown file - updated regex to capture bullet points
             const taskRegex = /### (UI-\d+): (.+?)\n[\s\S]*?\*\*Description\*\*: (.+?(?:\n- .+?)*)\n\*\*Deliverables\*\*: (.+?)(?=\n\n|\n###|$)/g;
             const tasks = [];
             let match;
-            
+
             while ((match = taskRegex.exec(tasksContent)) !== null) {
               const uiNumber = parseInt(match[1].replace('UI-', ''));
               // Only include tasks from UI-011 onwards
@@ -47,7 +47,7 @@ jobs:
                 });
               }
             }
-            
+
             // Get existing issues to avoid duplicates
             const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -55,23 +55,23 @@ jobs:
               state: 'all',
               per_page: 100
             });
-            
+
             const existingTitles = existingIssues.data.map(issue => issue.title);
-            
+
             // Filter out tasks that already have issues
             const newTasks = tasks.filter(task => 
               !existingTitles.includes(task.title)
             );
-            
+
             // Determine how many issues to create
             const issueCount = context.eventName === 'schedule' ? 5 : parseInt('${{ github.event.inputs.issue_count }}' || '1');
             const tasksToCreate = newTasks.slice(0, Math.min(issueCount, newTasks.length));
-            
+
             if (tasksToCreate.length === 0) {
               console.log('No new tasks to create issues for');
               return;
             }
-            
+
             // Get milestone (if exists)
             let milestoneNumber = null;
             try {
@@ -87,7 +87,7 @@ jobs:
             } catch (error) {
               console.log('No milestone found:', error.message);
             }
-            
+
             // Create issues for selected tasks
             for (const task of tasksToCreate) {
               try {
@@ -201,5 +201,5 @@ jobs:
                 console.error(`Failed to create issue for ${task.title}:`, error.message);
               }
             }
-            
+
             console.log(`Successfully created ${tasksToCreate.length} issue(s)`);

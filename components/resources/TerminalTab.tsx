@@ -43,14 +43,13 @@ export function TerminalTab({
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [container, setContainer] = useState<string>(containers[0]?.name || "");
-  const [shell, setShell] = useState<string>("/bin/sh");
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const { isConnected, error, metadata, sendInput, sendResize, reconnect } =
     useTerminal(
       resourceId,
       container,
-      shell,
+      "/bin/sh",
       resourceType === "Pod",
       data => {
         // onOutput callback
@@ -238,10 +237,6 @@ export function TerminalTab({
     setContainer(value);
   };
 
-  const handleShellChange = (value: string) => {
-    setShell(value);
-  };
-
   if (resourceType !== "Pod") {
     return (
       <div className="flex items-center justify-center h-96 text-muted-foreground">
@@ -285,22 +280,6 @@ export function TerminalTab({
               </Select>
             </div>
           )}
-
-          {/* Shell Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Shell:</span>
-            <Select value={shell} onValueChange={handleShellChange}>
-              <SelectTrigger className="w-[120px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="/bin/sh">sh</SelectItem>
-                <SelectItem value="/bin/bash">bash</SelectItem>
-                <SelectItem value="/bin/zsh">zsh</SelectItem>
-                <SelectItem value="/bin/ash">ash</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Action Buttons */}

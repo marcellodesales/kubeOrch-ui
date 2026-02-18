@@ -5,6 +5,7 @@
 KubeOrchestra uses `orchcli` for development environment orchestration. All docker-compose and orchestration files are managed in the CLI repository.
 
 ### Prerequisites
+
 1. Install orchcli: `npm install -g @kubeorchestra/orchcli`
 2. Docker and Docker Compose installed
 3. Node.js 18+ and npm installed
@@ -12,6 +13,7 @@ KubeOrchestra uses `orchcli` for development environment orchestration. All dock
 ### Development Workflow
 
 #### Using orchcli (Recommended)
+
 ```bash
 # From the parent directory containing all repos
 orchcli init         # Clone UI and Core repositories
@@ -21,6 +23,7 @@ orchcli dev stop     # Stop environment
 ```
 
 #### Local UI Development
+
 If you want to run the UI locally while using orchcli for backend services:
 
 ```bash
@@ -36,6 +39,7 @@ make dev            # Using Makefile
 ### Available Scripts
 
 #### Development
+
 - `npm run dev` - Start development server (port 3001)
 - `npm run build` - Build for production
 - `npm run start` - Start production server
@@ -44,6 +48,7 @@ make dev            # Using Makefile
 - `npm run lint:fix` - Fix linting issues
 
 #### Makefile Commands
+
 - `make dev` - Start development server
 - `make build` - Build the application
 - `make check-next-app` - Run type check, lint, and build
@@ -83,12 +88,14 @@ NEXT_PUBLIC_ENABLE_ANALYTICS=false
 ### Port Configuration
 
 The UI runs on **port 3001** by default (configured in package.json):
+
 - Development: `http://localhost:3001`
 - API Backend: `http://localhost:3000`
 
 ### Component Development
 
 #### Using shadcn/ui Components
+
 ```bash
 # Add a new component from shadcn/ui
 npx shadcn@latest add button
@@ -96,6 +103,7 @@ npx shadcn@latest add dialog
 ```
 
 #### Creating Custom Components
+
 ```typescript
 // components/custom/MyComponent.tsx
 import { FC } from 'react';
@@ -115,17 +123,17 @@ Using Zustand for state management:
 
 ```typescript
 // store/workflow-store.ts
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface WorkflowState {
   components: Component[];
   addComponent: (component: Component) => void;
 }
 
-export const useWorkflowStore = create<WorkflowState>((set) => ({
+export const useWorkflowStore = create<WorkflowState>(set => ({
   components: [],
-  addComponent: (component) => 
-    set((state) => ({ components: [...state.components, component] })),
+  addComponent: component =>
+    set(state => ({ components: [...state.components, component] })),
 }));
 ```
 
@@ -133,10 +141,10 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 
 ```typescript
 // services/api/templates.ts
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from "@/lib/api-client";
 
 export const templatesApi = {
-  getAll: () => apiClient.get('/v1/templates'),
+  getAll: () => apiClient.get("/v1/templates"),
   getById: (id: string) => apiClient.get(`/v1/templates/${id}`),
   // ... other endpoints
 };
@@ -165,6 +173,7 @@ npm run start
 ### Styling
 
 The project uses:
+
 - **Tailwind CSS v4** for utility-first styling
 - **CSS Modules** for component-specific styles
 - **shadcn/ui** for pre-built components
@@ -181,6 +190,7 @@ The project uses:
 ### Common Issues
 
 1. **Port 3001 already in use**
+
    ```bash
    # Find process using port 3001
    lsof -i :3001

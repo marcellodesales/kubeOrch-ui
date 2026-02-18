@@ -58,13 +58,15 @@ import {
   DaemonSetNodeData,
   HPANodeData,
   NetworkPolicyNodeData,
+  NetworkPolicyRule,
+  NetworkPolicyPeer,
 } from "@/lib/types/nodes";
 import NodeSettingsPanel from "./NodeSettingsPanel";
 import WorkflowSettingsPanel from "./WorkflowSettingsPanel";
 import CommandPalette from "./CommandPalette";
 import { MiniLogsPanel } from "./MiniLogsPanel";
 import { ImportDialog } from "./ImportDialog";
-import { Workflow } from "@/lib/services/workflow";
+import { Workflow, updateWorkflow } from "@/lib/services/workflow";
 import { TemplateMetadata } from "@/lib/services/templates";
 import { ImportAnalysis } from "@/lib/services/import";
 
@@ -95,6 +97,7 @@ interface WorkflowCanvasProps {
   onRun?: () => Promise<void>;
   onStatusChange?: (status: "draft" | "published") => Promise<void>;
   onArchive?: () => void;
+  onWorkflowUpdate?: (updated: Workflow) => void;
   editable?: boolean;
   openSettings?: boolean;
   onCloseSettings?: () => void;
@@ -114,6 +117,7 @@ function WorkflowCanvasContent({
   onRun,
   onStatusChange,
   onArchive,
+  onWorkflowUpdate,
   editable = true,
   openSettings = false,
   onCloseSettings,
@@ -995,13 +999,79 @@ function WorkflowCanvasContent({
           }
 
           // NetworkPolicy (source) → Deployment/StatefulSet/DaemonSet (target)
-          // Auto-populate NetworkPolicy's podSelector
           if (
             sourceNode?.type === "networkpolicy" &&
             (targetNode?.type === "deployment" ||
               targetNode?.type === "statefulset" ||
               targetNode?.type === "daemonset")
           ) {
+            const sourceHandle = params.sourceHandle;
+
+            // Per-rule handle: create a podSelector peer in the matching rule
+            if (sourceHandle && sourceHandle !== "output") {
+              const ruleId = sourceHandle;
+              return nds.map(n => {
+                if (n.id === params.source) {
+                  const npData = n.data as NetworkPolicyNodeData;
+                  const targetData = targetNode.data as
+                    | DeploymentRequest
+                    | StatefulSetNodeData
+                    | DaemonSetNodeData;
+
+                  const newPeer: NetworkPolicyPeer = {
+                    id: `peer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    type: "podSelector",
+                    podSelector: { app: targetData.name },
+                    _linkedWorkload: params.target!,
+                  };
+
+                  // Try ingress rules first, then egress
+                  const updatedIngress = (npData.ingressRules || []).map(
+                    (rule: NetworkPolicyRule) => {
+                      if (rule.id === ruleId) {
+                        const existingPeers = rule.from || [];
+                        if (
+                          existingPeers.some(
+                            p => p._linkedWorkload === params.target
+                          )
+                        )
+                          return rule;
+                        return { ...rule, from: [...existingPeers, newPeer] };
+                      }
+                      return rule;
+                    }
+                  );
+
+                  const updatedEgress = (npData.egressRules || []).map(
+                    (rule: NetworkPolicyRule) => {
+                      if (rule.id === ruleId) {
+                        const existingPeers = rule.to || [];
+                        if (
+                          existingPeers.some(
+                            p => p._linkedWorkload === params.target
+                          )
+                        )
+                          return rule;
+                        return { ...rule, to: [...existingPeers, newPeer] };
+                      }
+                      return rule;
+                    }
+                  );
+
+                  return {
+                    ...n,
+                    data: {
+                      ...npData,
+                      ingressRules: updatedIngress,
+                      egressRules: updatedEgress,
+                    },
+                  };
+                }
+                return n;
+              });
+            }
+
+            // Header "output" handle: auto-populate top-level podSelector
             return nds.map(n => {
               if (n.id === params.source) {
                 const targetData = targetNode.data as
@@ -1533,36 +1603,75 @@ function WorkflowCanvasContent({
           // Clear NetworkPolicy's linked workload fields
           if (node.type === "networkpolicy") {
             const networkPolicyData = node.data as NetworkPolicyNodeData;
-            const deletedWorkloadIds = deletedEdgesForNode
-              .filter(edge => {
-                const otherNodeId =
-                  edge.source === node.id ? edge.target : edge.source;
-                const otherType = nds.find(n => n.id === otherNodeId)?.type;
-                return (
-                  otherType === "deployment" ||
-                  otherType === "statefulset" ||
-                  otherType === "daemonset"
-                );
-              })
-              .map(edge =>
-                edge.source === node.id ? edge.target : edge.source
-              );
+            let updatedData = { ...networkPolicyData };
+            let changed = false;
 
-            if (deletedWorkloadIds.length > 0) {
-              const remainingLinked = (
-                networkPolicyData._linkedWorkloads || []
-              ).filter(id => !deletedWorkloadIds.includes(id));
-              return {
-                ...node,
-                data: {
-                  ...networkPolicyData,
+            for (const edge of deletedEdgesForNode) {
+              const otherNodeId =
+                edge.source === node.id ? edge.target : edge.source;
+              const otherType = nds.find(n => n.id === otherNodeId)?.type;
+              if (
+                otherType !== "deployment" &&
+                otherType !== "statefulset" &&
+                otherType !== "daemonset"
+              )
+                continue;
+
+              const sourceHandle = edge.sourceHandle;
+
+              if (!sourceHandle || sourceHandle === "output") {
+                // Header handle: remove from _linkedWorkloads
+                const remainingLinked = (
+                  updatedData._linkedWorkloads || []
+                ).filter(id => id !== otherNodeId);
+                updatedData = {
+                  ...updatedData,
                   podSelector:
-                    remainingLinked.length > 0
-                      ? networkPolicyData.podSelector
-                      : {},
+                    remainingLinked.length > 0 ? updatedData.podSelector : {},
                   _linkedWorkloads:
                     remainingLinked.length > 0 ? remainingLinked : undefined,
-                },
+                };
+                changed = true;
+              } else {
+                // Per-rule handle: remove the linked peer from that rule
+                const ruleId = sourceHandle;
+                const targetNodeId = otherNodeId;
+
+                updatedData = {
+                  ...updatedData,
+                  ingressRules: (updatedData.ingressRules || []).map(
+                    (rule: NetworkPolicyRule) => {
+                      if (rule.id !== ruleId) return rule;
+                      return {
+                        ...rule,
+                        from: (rule.from || []).filter(
+                          (p: NetworkPolicyPeer) =>
+                            p._linkedWorkload !== targetNodeId
+                        ),
+                      };
+                    }
+                  ),
+                  egressRules: (updatedData.egressRules || []).map(
+                    (rule: NetworkPolicyRule) => {
+                      if (rule.id !== ruleId) return rule;
+                      return {
+                        ...rule,
+                        to: (rule.to || []).filter(
+                          (p: NetworkPolicyPeer) =>
+                            p._linkedWorkload !== targetNodeId
+                        ),
+                      };
+                    }
+                  ),
+                };
+                changed = true;
+              }
+            }
+
+            if (changed) {
+              return {
+                ...node,
+                data: updatedData,
               };
             }
           }
@@ -2227,10 +2336,19 @@ function WorkflowCanvasContent({
             setWorkflowSettingsOpen(false);
             onCloseSettings?.();
           }}
-          onUpdate={async () => {
-            // Handle workflow update if needed
-            setWorkflowSettingsOpen(false);
-            onCloseSettings?.();
+          onUpdate={async (updatedWorkflow: Workflow) => {
+            try {
+              const result = await updateWorkflow(workflow.id, {
+                name: updatedWorkflow.name,
+                description: updatedWorkflow.description,
+              });
+              onWorkflowUpdate?.(result);
+              toast.success("Workflow updated");
+              setWorkflowSettingsOpen(false);
+              onCloseSettings?.();
+            } catch {
+              toast.error("Failed to update workflow");
+            }
           }}
           onArchive={onArchive}
           onWorkflowRestore={(restoredNodes, restoredEdges) => {

@@ -36,6 +36,7 @@ import {
   Blocks,
   Container,
   Plug,
+  Bell,
 } from "lucide-react";
 import {
   Collapsible,
@@ -89,6 +90,11 @@ const navItems = [
         icon: Container,
       },
       { title: "Plugins", href: "/dashboard/integrations/plugins", icon: Plug },
+      {
+        title: "Notifications",
+        href: "/dashboard/integrations/notifications",
+        icon: Bell,
+      },
     ],
   },
   {

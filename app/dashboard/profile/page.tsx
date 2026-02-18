@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -16,10 +19,50 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useAuthStore } from "@/stores/AuthStore";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { User, Mail, Shield, Calendar, Edit2, Save, X } from "lucide-react";
+import {
+  User,
+  Mail,
+  Shield,
+  Calendar,
+  Edit2,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import axios from "axios";
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 
 export default function ProfilePage() {
   const { user, token, setAuthDetails } = useAuthStore();
@@ -28,6 +71,20 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+  });
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const passwordForm = useForm<ChangePasswordValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
   const breadcrumbs = [
@@ -75,6 +132,37 @@ export default function ProfilePage() {
       email: user?.email || "",
     });
     setEditMode(false);
+  };
+
+  const handlePasswordChange = async (values: ChangePasswordValues) => {
+    setPasswordLoading(true);
+    try {
+      await api.put("/profile/password", {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      toast.success("Password updated successfully");
+      setPasswordDialogOpen(false);
+      passwordForm.reset();
+    } catch (error) {
+      const message =
+        axios.isAxiosError(error) && error.response?.data?.error
+          ? error.response.data.error
+          : "Failed to update password";
+      toast.error(message);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handlePasswordDialogChange = (open: boolean) => {
+    setPasswordDialogOpen(open);
+    if (!open) {
+      passwordForm.reset();
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+    }
   };
 
   const getRoleBadgeVariant = (role?: string) => {
@@ -210,12 +298,20 @@ export default function ProfilePage() {
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Password</p>
                     <p className="text-sm text-muted-foreground">
-                      Click to update your account password
+                      {user?.authProvider
+                        ? "Password login is not available for OAuth accounts"
+                        : "Click to update your account password"}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Change Password
-                  </Button>
+                  {!user?.authProvider && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPasswordDialogOpen(true)}
+                    >
+                      Change Password
+                    </Button>
+                  )}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -313,6 +409,143 @@ export default function ProfilePage() {
             </Card>
           </div>
         </div>
+
+        <Dialog
+          open={passwordDialogOpen}
+          onOpenChange={handlePasswordDialogChange}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>
+                Enter your current password and choose a new one.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...passwordForm}>
+              <form
+                onSubmit={passwordForm.handleSubmit(handlePasswordChange)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={passwordForm.control}
+                  name="currentPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showCurrentPassword ? "text" : "password"}
+                            placeholder="Enter current password"
+                            disabled={passwordLoading}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowCurrentPassword(!showCurrentPassword)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            disabled={passwordLoading}
+                          >
+                            {showCurrentPassword ? (
+                              <Eye className="h-4 w-4" />
+                            ) : (
+                              <EyeOff className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showNewPassword ? "text" : "password"}
+                            placeholder="Enter new password"
+                            disabled={passwordLoading}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            disabled={passwordLoading}
+                          >
+                            {showNewPassword ? (
+                              <Eye className="h-4 w-4" />
+                            ) : (
+                              <EyeOff className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm new password"
+                            disabled={passwordLoading}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            disabled={passwordLoading}
+                          >
+                            {showConfirmPassword ? (
+                              <Eye className="h-4 w-4" />
+                            ) : (
+                              <EyeOff className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handlePasswordDialogChange(false)}
+                    disabled={passwordLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={passwordLoading}>
+                    {passwordLoading ? "Updating..." : "Update Password"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </PageContainer>
     </AppLayout>
   );

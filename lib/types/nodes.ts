@@ -496,6 +496,8 @@ export interface NetworkPolicyPeer {
     cidr: string;
     except?: string[];
   };
+  /** Internal field: ID of workload node this peer was linked from */
+  _linkedWorkload?: string;
 }
 
 /** NetworkPolicy port rule */

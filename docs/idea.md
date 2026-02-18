@@ -1,9 +1,11 @@
 # KubeOrchestra UI - Project Overview
 
 ## Project Vision
+
 KubeOrchestra UI is the visual interface layer that provides an intuitive drag-and-drop experience for Kubernetes deployments. The UI focuses on simplicity - users design workflows visually, and the system handles all complexity through JSON communication with the backend, which generates and applies the actual Kubernetes YAML.
 
 ## Core Architecture Principles
+
 - **Zero-Configuration Philosophy**: Everything works with smart defaults, no config required
 - **One-Click Everything**: Add complete stacks (monitoring, logging, security) with single click
 - **Auto-Wiring Magic**: Services automatically discover and connect to each other
@@ -15,6 +17,7 @@ KubeOrchestra UI is the visual interface layer that provides an intuitive drag-a
 - **Progressive Disclosure**: Show complexity only when user explicitly asks
 
 ## Core Value Propositions
+
 - **Intuitive Visual Design**: Drag-and-drop templates without YAML knowledge
 - **JSON-Only Communication**: Simple data exchange with backend
 - **Template Library**: Pre-built components for common services
@@ -24,7 +27,9 @@ KubeOrchestra UI is the visual interface layer that provides an intuitive drag-a
 ## Current State
 
 ### What Exists
+
 The frontend (ui) repository currently has:
+
 - **Next.js 15 Setup**: Modern React framework with TypeScript
 - **Component Library**: Initial shadcn/ui components integrated
 - **Styling System**: Tailwind CSS v4 configured
@@ -34,6 +39,7 @@ The frontend (ui) repository currently has:
 - **State Management**: Zustand store setup
 
 ### Technology Stack
+
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
@@ -44,6 +50,7 @@ The frontend (ui) repository currently has:
 - **Build Tool**: Turbopack
 
 ### Current Limitations
+
 - No backend integration yet
 - No actual Kubernetes visualization components
 - No workflow builder interface
@@ -56,6 +63,7 @@ The frontend (ui) repository currently has:
 ## New Core Features
 
 ### Visual Connection System
+
 - **Drag-and-Drop Connections**: Draw lines between component connection points
 - **Connection Points**: Visual dots on left/right sides of components for connections
 - **Auto Port Management**: Automatic port detection and configuration
@@ -63,6 +71,7 @@ The frontend (ui) repository currently has:
 - **Visual Feedback**: Color-coded connections showing status and data flow
 
 ### Image Source Flexibility
+
 - **GitHub Integration**: Direct repository connection with branch selection
 - **Nixpacks Auto-Build**: Automatic build configuration detection
 - **Docker Hub Search**: Browse and select from Docker Hub
@@ -70,6 +79,7 @@ The frontend (ui) repository currently has:
 - **Build Status**: Real-time build progress and logs
 
 ### Configuration Simplicity
+
 - **Default Mode**: One-click deployment with smart defaults
 - **Advanced Mode**: Toggle to reveal all configuration options
 - **Configuration Presets**: Save and reuse common configurations
@@ -77,6 +87,7 @@ The frontend (ui) repository currently has:
 - **Progressive Disclosure**: Show complexity only when needed
 
 ### Enhanced Log Streaming
+
 - **Multi-Container View**: See logs from all containers simultaneously
 - **Real-time Streaming**: Live log updates via WebSocket
 - **Advanced Filtering**: Search, filter by level, container, time
@@ -84,6 +95,7 @@ The frontend (ui) repository currently has:
 - **Export Capabilities**: Download logs for offline analysis
 
 ### Deploy Button Integration
+
 - **One-Click Deploy**: Single button to transform and apply configuration
 - **Deployment Preview**: Review generated configuration before applying
 - **Progress Tracking**: Real-time deployment status updates
@@ -91,6 +103,7 @@ The frontend (ui) repository currently has:
 - **Dry-Run Mode**: Test deployment without actual changes
 
 ### One-Click Plugin System
+
 - **Plugin Marketplace**: Browse and install complete stacks instantly
 - **Monitoring Stack**: Prometheus + Grafana with pre-configured dashboards
 - **Logging Stack**: ELK/Loki with automatic log collection
@@ -101,6 +114,7 @@ The frontend (ui) repository currently has:
 - **Zero Configuration**: All plugins work out-of-the-box
 
 ### Intelligent Auto-Configuration
+
 - **Service Auto-Discovery**: Automatically detect service types and requirements
 - **Port Auto-Assignment**: Intelligent port allocation without conflicts
 - **Connection Auto-Wiring**: Services find and connect to dependencies automatically
@@ -111,6 +125,7 @@ The frontend (ui) repository currently has:
 ## Architecture Direction
 
 ### UI Components Needed
+
 1. **Template Component Library**: Visual representations of Kubernetes resources
    - Deployment blocks (web apps, APIs, workers)
    - Database blocks (PostgreSQL, MySQL, MongoDB)
@@ -133,6 +148,7 @@ The frontend (ui) repository currently has:
    - Quick actions (scale, restart, rollback)
 
 ### Key Features to Build
+
 1. **Visual Workflow Designer**
    - Drag components from palette to canvas
    - Connect components to define dependencies
@@ -164,6 +180,7 @@ The frontend (ui) repository currently has:
 ## Design System Requirements
 
 ### Visual Design Principles
+
 - **Clean and Minimal**: Focus on content, reduce visual noise
 - **Data Dense**: Display maximum information without clutter
 - **Consistent**: Unified design language across all features
@@ -171,6 +188,7 @@ The frontend (ui) repository currently has:
 - **Performant**: Smooth interactions even with large datasets
 
 ### Component Architecture
+
 - Atomic design methodology
 - Composable components
 - Strict TypeScript typing
@@ -178,6 +196,7 @@ The frontend (ui) repository currently has:
 - Comprehensive testing
 
 ## Next Phase Goals
+
 1. Build visual connection system with drag-and-drop lines between components
 2. Create flexible image source selector (GitHub/Docker/Custom)
 3. Implement default/advanced configuration toggle for simplicity
@@ -187,6 +206,7 @@ The frontend (ui) repository currently has:
 7. Build intelligent auto-layout system for connected components
 
 ## Enhanced JSON Output from UI
+
 ```json
 {
   "workflow": {
@@ -309,7 +329,7 @@ The frontend (ui) repository currently has:
         "config": {}
       },
       {
-        "id": "logging-stack", 
+        "id": "logging-stack",
         "type": "loki-promtail",
         "autoConfig": true,
         "config": {}
@@ -327,6 +347,7 @@ The frontend (ui) repository currently has:
 ```
 
 ## Technical Improvements Needed
+
 - Add React Query for server state management
 - Implement proper error boundaries
 - Add loading states and skeletons
@@ -339,6 +360,7 @@ The frontend (ui) repository currently has:
 ## Integration Requirements
 
 ### Backend API Integration
+
 - **JSON-only communication**: No YAML in requests/responses
 - **Template endpoints**: Fetch available templates and their schemas
 - **Workflow submission**: POST JSON workflows for deployment
@@ -346,6 +368,7 @@ The frontend (ui) repository currently has:
 - **WebSocket**: Real-time logs and events streaming
 
 ### Third-party Libraries
+
 - **React Flow**: For visual workflow canvas
 - **React DnD**: For drag-and-drop functionality
 - **Recharts**: For metrics visualization
@@ -355,6 +378,7 @@ The frontend (ui) repository currently has:
 - **Zod**: For JSON schema validation
 
 ### Simplified Integration Points
+
 - No direct Kubernetes API calls
 - No YAML parsing or generation
 - No kubectl commands
@@ -362,6 +386,7 @@ The frontend (ui) repository currently has:
 - Frontend focuses only on visual representation
 
 ## Performance Targets
+
 - Initial load: < 3 seconds
 - Time to Interactive: < 5 seconds
 - Lighthouse score: > 90
@@ -369,6 +394,7 @@ The frontend (ui) repository currently has:
 - Runtime performance: 60 FPS interactions
 
 ## Accessibility Requirements
+
 - Keyboard navigation throughout
 - Screen reader support
 - High contrast mode
@@ -377,12 +403,14 @@ The frontend (ui) repository currently has:
 - ARIA labels and landmarks
 
 ## Browser Support
+
 - Chrome/Edge (latest 2 versions)
 - Firefox (latest 2 versions)
 - Safari (latest 2 versions)
 - No IE11 support
 
 ## Mobile Strategy
+
 - Responsive design for tablets
 - Limited mobile phone support
 - Focus on dashboard and monitoring features
