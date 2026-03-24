@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.gitignore
+*.md
+docs
+coverage
+.env*
+Makefile
+vitest.config.ts
+vitest.setup.ts
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
