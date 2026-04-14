@@ -16,22 +16,14 @@ describe("errorReporter", () => {
       const error = new Error("test error");
       errorReporter.report(error);
 
-      expect(console.error).toHaveBeenCalledWith(
-        "[ErrorReporter]",
-        error,
-        ""
-      );
+      expect(console.error).toHaveBeenCalledWith("[ErrorReporter]", error, "");
     });
 
     it("should include source in log label", () => {
       const error = new Error("test error");
       errorReporter.report(error, { source: "TestComponent" });
 
-      expect(console.error).toHaveBeenCalledWith(
-        "[TestComponent]",
-        error,
-        ""
-      );
+      expect(console.error).toHaveBeenCalledWith("[TestComponent]", error, "");
     });
 
     it("should include metadata in log", () => {
@@ -97,10 +89,7 @@ describe("errorReporter", () => {
 
       errorReporter.initGlobalHandlers();
 
-      expect(addEventSpy).toHaveBeenCalledWith(
-        "error",
-        expect.any(Function)
-      );
+      expect(addEventSpy).toHaveBeenCalledWith("error", expect.any(Function));
       expect(addEventSpy).toHaveBeenCalledWith(
         "unhandledrejection",
         expect.any(Function)

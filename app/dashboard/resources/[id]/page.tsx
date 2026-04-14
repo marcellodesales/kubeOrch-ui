@@ -700,10 +700,16 @@ export default function ResourceDetailPage() {
                       {pods.map(pod => (
                         <div
                           key={pod.id}
+                          role="button"
+                          tabIndex={0}
                           className="flex items-center justify-between rounded border p-3 cursor-pointer hover:bg-muted/50"
                           onClick={() =>
                             router.push(`/dashboard/resources/${pod.id}`)
                           }
+                          onKeyDown={e => {
+                            if (e.key === "Enter" || e.key === " ")
+                              router.push(`/dashboard/resources/${pod.id}`);
+                          }}
                         >
                           <div className="flex items-center gap-3">
                             <Box className="h-4 w-4 text-muted-foreground" />

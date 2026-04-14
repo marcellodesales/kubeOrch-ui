@@ -31,13 +31,20 @@ function CompactCardHeader({
   );
 }
 
-function CompactCardTitle({ className, ...props }: React.ComponentProps<"h3">) {
+function CompactCardTitle({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"h3">) {
   return (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- children are always passed by consumers
     <h3
       data-slot="compact-card-title"
       className={cn("text-sm leading-none font-semibold", className)}
       {...props}
-    />
+    >
+      {children}
+    </h3>
   );
 }
 

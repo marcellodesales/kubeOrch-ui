@@ -760,6 +760,8 @@ export default function NewWorkflowPage() {
                         <div className="space-y-3">
                           {/* File Upload - Full width */}
                           <div
+                            role="button"
+                            tabIndex={0}
                             className={`
                               border rounded-lg p-4 text-center cursor-pointer transition-colors
                               ${
@@ -776,6 +778,10 @@ export default function NewWorkflowPage() {
                             onClick={() =>
                               document.getElementById("file-input")?.click()
                             }
+                            onKeyDown={e => {
+                              if (e.key === "Enter" || e.key === " ")
+                                document.getElementById("file-input")?.click();
+                            }}
                           >
                             <input
                               id="file-input"

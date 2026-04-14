@@ -84,6 +84,10 @@ export function ResizablePanel({
     >
       {/* Resize Handle */}
       <div
+        role="slider"
+        aria-orientation="vertical"
+        aria-valuenow={0}
+        tabIndex={0}
         onMouseDown={handleMouseDown}
         className={`absolute left-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary transition-colors ${
           isResizing ? "bg-primary" : "bg-transparent"

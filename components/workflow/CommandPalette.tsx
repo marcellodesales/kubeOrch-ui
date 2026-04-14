@@ -501,6 +501,7 @@ export default function CommandPalette({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-9"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: command palette search should be focused immediately on open
               autoFocus
             />
             {searchQuery && (

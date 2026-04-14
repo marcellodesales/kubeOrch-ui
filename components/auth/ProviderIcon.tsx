@@ -1,14 +1,9 @@
-import {
-  Github,
-  KeyRound,
-  Lock,
-  Shield,
-  Globe,
-  type LucideProps,
-} from "lucide-react";
+import { KeyRound, Lock, Shield, Globe, type LucideProps } from "lucide-react";
+import { GithubIcon } from "@/components/ui/github-icon";
 
-const iconMap: Record<string, React.FC<LucideProps>> = {
-  github: Github,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const iconMap: Record<string, React.FC<any>> = {
+  github: GithubIcon,
   lock: Lock,
   shield: Shield,
   globe: Globe,

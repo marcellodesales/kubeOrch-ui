@@ -114,7 +114,7 @@ export default function SettingsPage() {
                 {isAdmin ? (
                   <>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Invite Link</label>
+                      <span className="text-sm font-medium">Invite Link</span>
                       <div className="p-3 bg-muted rounded-lg">
                         <code className="text-xs break-all">
                           {getInviteLink(inviteCode || "XXXXXX")}
@@ -124,10 +124,10 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between p-3 rounded-lg border">
                       <div className="space-y-0.5">
-                        <label className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-sm font-medium flex items-center gap-2">
                           <RefreshCw className="h-4 w-4" />
                           Regenerate code after signup
-                        </label>
+                        </span>
                         <p className="text-xs text-muted-foreground">
                           Automatically generate a new invite code after each
                           user signs up

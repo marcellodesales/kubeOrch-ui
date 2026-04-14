@@ -293,6 +293,8 @@ export function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
 
           {/* File Upload */}
           <div
+            role="button"
+            tabIndex={0}
             className={`
               border rounded-lg p-4 text-center cursor-pointer transition-colors
               ${
@@ -309,6 +311,10 @@ export function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
             onClick={() =>
               document.getElementById("import-file-input")?.click()
             }
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ")
+                document.getElementById("import-file-input")?.click();
+            }}
           >
             <input
               id="import-file-input"
