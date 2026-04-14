@@ -41,7 +41,7 @@ function reportMessage(message: string, context: ErrorContext = {}): void {
 function initGlobalHandlers(): void {
   if (typeof window === "undefined") return;
 
-  window.addEventListener("error", (event) => {
+  window.addEventListener("error", event => {
     report(event.error ?? event.message, {
       source: "window.onerror",
       metadata: {
@@ -52,7 +52,7 @@ function initGlobalHandlers(): void {
     });
   });
 
-  window.addEventListener("unhandledrejection", (event) => {
+  window.addEventListener("unhandledrejection", event => {
     report(event.reason, {
       source: "unhandledrejection",
       severity: "error",

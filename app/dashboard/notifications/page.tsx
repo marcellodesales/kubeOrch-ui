@@ -91,6 +91,8 @@ export default function NotificationsPage() {
               {notifications.map(notification => (
                 <div
                   key={notification.id}
+                  role="button"
+                  tabIndex={0}
                   className={`flex items-start gap-3 rounded-lg border p-4 transition-colors cursor-pointer hover:bg-accent ${
                     !notification.read
                       ? "border-primary/20 bg-primary/5"
@@ -102,6 +104,12 @@ export default function NotificationsPage() {
                     }
                     if (notification.link) {
                       router.push(notification.link);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      if (!notification.read) markAsRead(notification.id);
+                      if (notification.link) router.push(notification.link);
                     }
                   }}
                 >

@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/collapsible";
 import {
   Upload,
-  Github,
   GitBranch,
   Link,
   Loader2,
@@ -38,6 +37,7 @@ import {
   ChevronUp,
   Terminal,
 } from "lucide-react";
+import { GithubIcon } from "@/components/ui/github-icon";
 import { toast } from "sonner";
 import {
   ImportAnalysis,
@@ -293,7 +293,7 @@ export function ImportDialog({
               File Upload
             </TabsTrigger>
             <TabsTrigger value="url" className="flex items-center gap-2">
-              <Github className="h-4 w-4" />
+              <GithubIcon className="h-4 w-4" />
               Git URL
             </TabsTrigger>
           </TabsList>
@@ -318,6 +318,8 @@ export function ImportDialog({
             <TabsContent value="file" className="mt-0 space-y-4">
               {/* Drag and drop zone */}
               <div
+                role="button"
+                tabIndex={0}
                 className={`
                   relative border-2 border-dashed rounded-lg p-8 text-center
                   transition-colors cursor-pointer
@@ -332,6 +334,10 @@ export function ImportDialog({
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
                 onClick={() => document.getElementById("file-input")?.click()}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === " ")
+                    document.getElementById("file-input")?.click();
+                }}
               >
                 <input
                   id="file-input"
@@ -426,7 +432,7 @@ export function ImportDialog({
                   </>
                 ) : (
                   <>
-                    <Github className="mr-2 h-4 w-4" />
+                    <GithubIcon className="mr-2 h-4 w-4" />
                     Analyze Repository
                   </>
                 )}

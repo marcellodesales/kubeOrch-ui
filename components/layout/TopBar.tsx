@@ -73,8 +73,13 @@ export function TopBar({ onOpenCommandPalette }: TopBarProps) {
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-6 py-[14px]">
       <div className="flex flex-1 items-center gap-4">
         <div
+          role="button"
+          tabIndex={0}
           className="relative max-w-md flex-1 cursor-pointer"
           onClick={onOpenCommandPalette}
+          onKeyDown={e => {
+            if (e.key === "Enter" || e.key === " ") onOpenCommandPalette?.();
+          }}
         >
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
