@@ -75,7 +75,7 @@ ui/
 
 ## 🤝 Contributing
 
-We welcome contributions! Check out [tasks.md](tasks.md) for the development roadmap.
+We welcome contributions! Check the GitHub issues for the current roadmap.
 
 ## 📄 License
 
